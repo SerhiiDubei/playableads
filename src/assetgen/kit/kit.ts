@@ -18,7 +18,25 @@ export const FIXED_DEFAULT: Record<string, number> = {
   "ic-settings": 96, "ic-sound": 96, "ic-plus": 96, "ic-check": 96, "ic-close": 96, "ic-back": 96,
 };
 
-export type KitAsset = { dataUri: string; bytes: number; w: number; h: number; slice?: string };
+export type KitAsset = { dataUri: string; bytes: number; w: number; h: number; slice?: string; titleY?: number };
+
+/** Вертикальний центр писемної смуги банера (зважений по к-сті насичених пікселів у рядку). */
+async function bannerTitleY(buf: Buffer): Promise<number> {
+  const { data, info } = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { width: w, height: h, channels: ch } = info;
+  let sum = 0, cnt = 0;
+  for (let y = 0; y < h; y++) {
+    let row = 0;
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * ch;
+      if (data[i + 3] < 200) continue;
+      const r = data[i], g = data[i + 1], b = data[i + 2];
+      if (Math.max(r, g, b) - Math.min(r, g, b) > 45) row++; // насичений (тканина/золото)
+    }
+    sum += y * row; cnt += row;
+  }
+  return cnt ? sum / cnt / h : 0.5;
+}
 export type KitAssets = Record<string, KitAsset>;
 
 async function toWebp(pipe: sharp.Sharp): Promise<{ data: Buffer; w: number; h: number }> {
@@ -57,6 +75,7 @@ export async function loadKit(
       const m = fixed[key];
       const { data, w, h } = await toWebp(sharp(`${srcDir}/${key}.png`).trim().resize({ width: m, height: m, fit: "inside", withoutEnlargement: true, ...rk }));
       assets[key] = { dataUri: uri(data), bytes: data.length, w, h };
+      if (key === "banner") assets[key].titleY = await bannerTitleY(data);
       save(key, data);
     }
   }
@@ -82,8 +101,10 @@ export function makeKit(a: KitAssets, opts: { font?: string } = {}) {
 
   .c-banner{position:relative;width:100%;max-width:340px;aspect-ratio:${a.banner ? a.banner.w + "/" + a.banner.h : "340/180"};margin:0 auto}
   .c-banner img{width:100%;display:block;filter:drop-shadow(0 4px 6px #0008)}
-  .c-banner .t{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:${font};
-    font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:24px;padding-bottom:8%}
+  .c-banner .t{position:absolute;left:17%;right:17%;top:${a.banner?.titleY != null ? (a.banner.titleY * 100).toFixed(1) + "%" : "46%"};
+    transform:translateY(-50%);display:flex;align-items:center;justify-content:center;font-family:${font};
+    font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:20px;
+    white-space:nowrap;text-align:center;overflow:hidden}
 
   .c-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-family:${font};
     min-height:58px;padding:6px 22px;border-style:solid;border-width:28px 48px;border-color:transparent;white-space:nowrap;
