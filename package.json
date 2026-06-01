@@ -1,0 +1,32 @@
+{
+  "name": "playable-forge",
+  "version": "0.1.0",
+  "description": "CLI toolchain to build Meta playable ads from mechanic templates x styles x briefs",
+  "type": "module",
+  "bin": {
+    "playable": "./dist/cli.js"
+  },
+  "scripts": {
+    "playable": "tsx src/cli.ts",
+    "menu": "tsx src/assetgen/build-test-playable.ts",
+    "components": "tsx src/assetgen/build-components.ts",
+    "visual": "tsx src/assetgen/visual-test.ts",
+    "build:cli": "esbuild src/cli.ts --bundle --platform=node --packages=external --format=esm --outfile=dist/cli.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@imgly/background-removal-node": "^1.4.5",
+    "dotenv": "^17.4.2",
+    "gsap": "^3.12.5",
+    "openai": "^6.39.1",
+    "pixi.js": "^8.6.6",
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "esbuild": "^0.24.2",
+    "playwright": "^1.60.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

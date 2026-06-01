@@ -1,0 +1,14 @@
+{
+  "id": "default",
+  "name": "Bold Arcade",
+  "colors": {
+    "background": "#10131c",
+    "primary": "#b8860b",
+    "accent": "#ffd54a",
+    "text": "#ffffff"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 700
+  }
+}

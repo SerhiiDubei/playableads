@@ -1,0 +1,134 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "playable/style-brief",
+  "title": "Style Brief",
+  "description": "Канонічний бриф стабілізації стилю. Заповнюється агентом-прокладкою з референсу або інтерв'ю. Глобальні параметри (artDirection/palette/rendering/typography) застосовуються до ВСІХ ассетів; будь-який з них можна точково перевизначити в assets[].overrides.",
+  "type": "object",
+  "required": ["id", "name", "version", "artDirection", "palette", "rendering"],
+  "properties": {
+    "id": { "type": "string", "description": "Машинний id стилю, напр. 'pirate-casual'." },
+    "name": { "type": "string", "description": "Людська назва, напр. 'Pirate Casual'." },
+    "version": { "type": "string", "description": "Semver брифа, напр. '1.0.0'. Бампається вручну при зміні." },
+    "derivedFrom": {
+      "type": "string",
+      "description": "Звідки агент згенерував бриф: назва гри-референсу/опис, напр. 'reference: Royal Match'. Порожнє якщо з нуля."
+    },
+
+    "artDirection": {
+      "type": "object",
+      "required": ["artStyle", "mood"],
+      "properties": {
+        "artStyle": {
+          "type": "string",
+          "description": "Базова техніка рендеру.",
+          "enum": ["flat-vector", "cartoon-3d-glossy", "hand-painted", "pixel-art", "realistic", "flat-illustration", "low-poly", "claymation"]
+        },
+        "mood": {
+          "type": "array",
+          "description": "Настрій/вайб (1-3 значення).",
+          "items": { "enum": ["casual-cute", "epic-fantasy", "neon-arcade", "minimalist", "playful", "dark-moody", "premium-shiny"] }
+        },
+        "theme": { "type": "string", "description": "Тематика світу, напр. 'pirate treasure', 'candy', 'space'." }
+      }
+    },
+
+    "palette": {
+      "type": "object",
+      "required": ["primary", "accent", "text", "source"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Звідки взято кольори.",
+          "enum": ["manual", "from-style-json", "from-reference-image"]
+        },
+        "background": { "type": "string", "description": "HEX фону сцени." },
+        "primary": { "type": "string", "description": "HEX основного кольору елементів (тіло кнопки тощо)." },
+        "secondary": { "type": "string", "description": "HEX додаткового кольору." },
+        "accent": { "type": "string", "description": "HEX акценту (підсвітки, важливі елементи)." },
+        "text": { "type": "string", "description": "HEX кольору тексту." },
+        "extra": { "type": "array", "items": { "type": "string" }, "description": "Додаткові HEX за потреби." }
+      }
+    },
+
+    "rendering": {
+      "type": "object",
+      "required": ["outline", "material", "lighting", "perspective", "shapeLanguage"],
+      "properties": {
+        "outline": {
+          "type": "object",
+          "properties": {
+            "style": { "enum": ["thick-cartoon", "thin", "none"], "description": "Тип обводу." },
+            "color": { "type": "string", "description": "HEX обводу (якщо є)." }
+          }
+        },
+        "material": { "enum": ["glossy", "matte", "metallic", "plastic", "glass"], "description": "Фініш поверхні." },
+        "lighting": { "enum": ["soft-top", "dramatic", "flat", "rim"], "description": "Схема світла." },
+        "shading": { "enum": ["cel", "smooth-gradient", "flat"], "description": "Тип тіней." },
+        "perspective": { "enum": ["front-flat", "slight-3d", "isometric", "top-down"], "description": "Ракурс." },
+        "shapeLanguage": { "enum": ["rounded-friendly", "sharp-aggressive", "geometric"], "description": "Мова форм." },
+        "cornerRadius": { "enum": ["pill", "rounded", "sharp"], "description": "Скруглення кутів елементів." }
+      }
+    },
+
+    "typography": {
+      "type": "object",
+      "description": "Для текстових ассетів (кнопки).",
+      "properties": {
+        "case": { "enum": ["uppercase", "titlecase", "lowercase"] },
+        "weight": { "enum": ["regular", "bold", "black"] },
+        "textColor": { "type": "string", "description": "HEX тексту." },
+        "textStroke": { "type": "string", "description": "HEX обводу тексту, '' якщо без." }
+      }
+    },
+
+    "references": {
+      "type": "array",
+      "description": "Фото-референси для стабілізації. path (локальний) або url. Передаються в images.edit / Nano Banana.",
+      "items": {
+        "type": "object",
+        "required": ["src", "role"],
+        "properties": {
+          "src": { "type": "string", "description": "Шлях або URL зображення." },
+          "role": { "enum": ["style", "palette", "character", "composition"], "description": "Що саме брати з референсу." },
+          "weight": { "type": "number", "description": "Сила впливу 0..1.", "default": 0.6 }
+        }
+      }
+    },
+
+    "negative": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Чого уникати в усіх ассетах, напр. 'no white halo', 'no text artifacts'."
+    },
+
+    "defaults": {
+      "type": "object",
+      "description": "Дефолти генерації для всіх ассетів.",
+      "properties": {
+        "provider": { "enum": ["openai", "gemini", "recraft", "scenario", "pixellab"] },
+        "model": { "type": "string", "description": "напр. 'gpt-image-1.5'." },
+        "size": { "enum": ["1024x1024", "1024x1536", "1536x1024"] },
+        "quality": { "enum": ["low", "medium", "high"] },
+        "transparent": { "type": "boolean" }
+      }
+    },
+
+    "assets": {
+      "type": "array",
+      "description": "Список ассетів. Кожен наслідує глобальні параметри; overrides точково міняє БУДЬ-ЯКЕ поле саме для цього ассета.",
+      "items": {
+        "type": "object",
+        "required": ["key", "kind", "subject"],
+        "properties": {
+          "key": { "type": "string", "description": "Унікальний id ассета, напр. 'btn-play'." },
+          "kind": { "enum": ["button", "icon", "sprite", "background", "logo"], "description": "Тип ассета." },
+          "subject": { "type": "string", "description": "Що зображено / текст, напр. 'PLAY button', 'gold coin'." },
+          "overrides": {
+            "type": "object",
+            "description": "Точкові зміни параметрів для цього ассета (deep-merge поверх глобальних). Напр. { \"rendering\": { \"outline\": { \"style\": \"none\" } } }."
+          }
+        }
+      }
+    }
+  }
+}

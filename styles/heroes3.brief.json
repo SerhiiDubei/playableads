@@ -1,0 +1,77 @@
+{
+  "id": "heroes3",
+  "name": "Heroes III",
+  "version": "1.0.0",
+  "derivedFrom": "reference: Heroes of Might and Magic III (New World Computing, 1999)",
+
+  "artDirection": {
+    "artStyle": "hand-painted",
+    "mood": ["epic-fantasy", "premium-shiny"],
+    "theme": "bright medieval high-fantasy kingdom, chivalry and magic"
+  },
+
+  "palette": {
+    "source": "manual",
+    "background": "#e7d9b0",
+    "primary": "#c9a227",
+    "secondary": "#2f6fb0",
+    "accent": "#d23b2f",
+    "text": "#fff6df",
+    "extra": ["#7a4a1c"]
+  },
+
+  "rendering": {
+    "outline": { "style": "thin", "color": "#5a3a12" },
+    "material": "metallic",
+    "lighting": "soft-top",
+    "shading": "smooth-gradient",
+    "perspective": "front-flat",
+    "shapeLanguage": "rounded-friendly",
+    "cornerRadius": "rounded"
+  },
+
+  "typography": {
+    "case": "uppercase",
+    "weight": "bold",
+    "textColor": "#fff6df",
+    "textStroke": "#5a3a12"
+  },
+
+  "negative": [
+    "no dark grim tones",
+    "no modern flat UI",
+    "no gibberish text",
+    "no white halo",
+    "no photo realism"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1024x1024",
+    "quality": "medium",
+    "transparent": true
+  },
+
+  "assets": [
+    { "key": "btn-frame", "kind": "icon", "subject": "empty wide horizontal ornate fantasy UI button plate shaped like a flat pill, smooth blank light-grey stone center, slim gold filigree frame that is PERFECTLY SYMMETRIC top-to-bottom with equal thin identical borders on the top edge and bottom edge, small red gems only on the left and right ends, centered, absolutely NO text NO letters NO symbols", "overrides": { "typography": null } },
+    { "key": "panel-frame", "kind": "icon", "subject": "square ornate fantasy UI panel frame, thick symmetrical gold filigree border with corner ornaments and small red gems, flat dark parchment-stone center, equal margins on all four sides, blank, absolutely NO text", "overrides": { "typography": null } },
+    { "key": "bar-track", "kind": "icon", "subject": "horizontal empty progress bar groove, ornate gold metal frame with rounded ends, dark hollow recessed inner channel, completely empty with no fill, blank, NO text", "overrides": { "typography": null } },
+    { "key": "avatar-frame", "kind": "icon", "subject": "round circular ornate fantasy portrait frame ring, thick gold filigree with small red gems, the entire center is an EMPTY transparent hole with nothing inside (no face, no person, no content), blank center, NO text", "overrides": { "typography": null } },
+    { "key": "banner", "kind": "icon", "subject": "ornate fantasy heraldic title banner ribbon, gold-trimmed deep-red cloth banner with curled ends, flat blank center area, blank, absolutely NO text", "overrides": { "typography": null } },
+    { "key": "bg-castle", "kind": "background", "subject": "bright high-fantasy kingdom vista as a vertical mobile game menu backdrop, a grand golden castle on a hill, blue sky with soft clouds, green hills and banners, distant mountains, warm heroic atmosphere, empty foreground for UI, NO text, NO characters", "overrides": { "defaults": { "size": "1024x1536", "quality": "high", "transparent": false }, "typography": null } },
+    { "key": "btn-new-game", "kind": "button", "subject": "wide ornate fantasy UI button, polished stone tablet with gold filigree frame, engraved with the words \"NEW GAME\"" },
+    { "key": "btn-battle", "kind": "button", "subject": "wide ornate fantasy UI button, polished stone tablet with gold filigree frame and crossed-swords emblem, engraved with the word \"BATTLE\"" },
+    { "key": "btn-shop", "kind": "button", "subject": "wide ornate fantasy UI button, polished stone tablet with gold filigree frame and coin emblem, engraved with the word \"SHOP\"" },
+    { "key": "btn-quest", "kind": "button", "subject": "wide ornate fantasy UI button, polished stone tablet with gold filigree frame and scroll emblem, engraved with the word \"QUEST\"" },
+    { "key": "btn-options", "kind": "button", "subject": "wide ornate fantasy UI button, polished stone tablet with gold filigree frame, engraved with the word \"OPTIONS\"" },
+    { "key": "btn-exit", "kind": "button", "subject": "wide ornate fantasy UI button, weathered stone tablet with iron-and-gold frame, engraved with the word \"EXIT\"" },
+
+    { "key": "ic-settings", "kind": "icon", "subject": "round ornate fantasy UI icon button with a golden gear settings symbol on a blue gem center, gold rim", "overrides": { "typography": null } },
+    { "key": "ic-close", "kind": "icon", "subject": "round ornate fantasy UI icon button with a red X close symbol, gold rim", "overrides": { "typography": null } },
+    { "key": "ic-back", "kind": "icon", "subject": "round ornate fantasy UI icon button with a golden left-pointing arrow, gold rim", "overrides": { "typography": null } },
+    { "key": "ic-sound", "kind": "icon", "subject": "round ornate fantasy UI icon button with a golden speaker sound symbol, gold rim", "overrides": { "typography": null } },
+    { "key": "ic-plus", "kind": "icon", "subject": "round ornate fantasy UI icon button with a green plus add symbol, gold rim", "overrides": { "typography": null } },
+    { "key": "ic-check", "kind": "icon", "subject": "round ornate fantasy UI icon button with a green checkmark confirm symbol, gold rim", "overrides": { "typography": null } }
+  ]
+}

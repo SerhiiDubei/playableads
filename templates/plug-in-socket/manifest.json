@@ -1,0 +1,11 @@
+{
+  "id": "plug-in-socket",
+  "name": "Plug in the Socket",
+  "description": "Drag the plug into the socket. The cable is a verlet rope that sags and swings naturally (drawn in code). On connect: spark + CTA.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "params": {
+    "ropeSegments": 16,
+    "cordColor": "#e23b3b"
+  }
+}

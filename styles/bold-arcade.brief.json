@@ -1,0 +1,72 @@
+{
+  "id": "bold-arcade",
+  "name": "Bold Arcade",
+  "version": "1.0.0",
+  "derivedFrom": "reference: Royal Match-style casual UI + styles/default.json palette",
+
+  "artDirection": {
+    "artStyle": "cartoon-3d-glossy",
+    "mood": ["casual-cute", "premium-shiny"],
+    "theme": "arcade treasure"
+  },
+
+  "palette": {
+    "source": "from-style-json",
+    "background": "#10131c",
+    "primary": "#b8860b",
+    "secondary": "#7a5a06",
+    "accent": "#ffd54a",
+    "text": "#ffffff",
+    "extra": []
+  },
+
+  "rendering": {
+    "outline": { "style": "thick-cartoon", "color": "#3a2a00" },
+    "material": "glossy",
+    "lighting": "soft-top",
+    "shading": "smooth-gradient",
+    "perspective": "slight-3d",
+    "shapeLanguage": "rounded-friendly",
+    "cornerRadius": "pill"
+  },
+
+  "typography": {
+    "case": "uppercase",
+    "weight": "black",
+    "textColor": "#ffffff",
+    "textStroke": "#3a2a00"
+  },
+
+  "references": [],
+
+  "negative": [
+    "no white halo",
+    "no sticker border",
+    "no padding",
+    "no text artifacts",
+    "no extra background"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1024x1024",
+    "quality": "medium",
+    "transparent": true
+  },
+
+  "assets": [
+    { "key": "btn-play", "kind": "button", "subject": "main menu button, text \"PLAY\"" },
+    { "key": "btn-shop", "kind": "button", "subject": "main menu button, text \"SHOP\"" },
+    { "key": "btn-settings", "kind": "button", "subject": "main menu button, text \"SETTINGS\"" },
+    {
+      "key": "coin",
+      "kind": "icon",
+      "subject": "gold coin reward icon",
+      "overrides": {
+        "rendering": { "outline": { "style": "thin" } },
+        "typography": null
+      }
+    }
+  ]
+}

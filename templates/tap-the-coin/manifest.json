@@ -1,0 +1,10 @@
+{
+  "id": "tap-the-coin",
+  "name": "Tap the Coin",
+  "description": "Tap a coin N times to fill a goal, then reveal the install CTA. Drawn entirely in code (no image assets).",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "params": {
+    "tapsToWin": 8
+  }
+}

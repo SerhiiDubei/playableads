@@ -1,0 +1,18 @@
+{
+  "name": "plug-in-socket-en",
+  "mechanic": "plug-in-socket",
+  "style": "default",
+  "store": {
+    "ios": "https://apps.apple.com/app/id000000000",
+    "android": "https://play.google.com/store/apps/details?id=com.example.app"
+  },
+  "copy": {
+    "title": "Plug it in!",
+    "cta": "Play Now"
+  },
+  "lang": "en",
+  "params": {
+    "ropeSegments": 16,
+    "cordColor": "#e23b3b"
+  }
+}

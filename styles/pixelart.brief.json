@@ -1,0 +1,74 @@
+{
+  "id": "pixelart",
+  "name": "Pixel Quest",
+  "version": "1.0.0",
+  "derivedFrom": "reference: classic 16-bit SNES fantasy JRPG pixel art (Secret of Mana / Chrono Trigger era)",
+
+  "artDirection": {
+    "artStyle": "pixel-art",
+    "mood": ["playful", "epic-fantasy"],
+    "theme": "16-bit fantasy adventure kingdom"
+  },
+
+  "palette": {
+    "source": "manual",
+    "background": "#1a1c2c",
+    "primary": "#ffcd75",
+    "secondary": "#5d275d",
+    "accent": "#ef7d57",
+    "text": "#f4f4f4",
+    "extra": ["#38b764", "#41a6f6"]
+  },
+
+  "rendering": {
+    "outline": { "style": "thin", "color": "#1a1c2c" },
+    "material": "matte",
+    "lighting": "flat",
+    "shading": "flat",
+    "perspective": "front-flat",
+    "shapeLanguage": "geometric",
+    "cornerRadius": "sharp"
+  },
+
+  "typography": {
+    "case": "uppercase",
+    "weight": "bold",
+    "textColor": "#ffcd75",
+    "textStroke": "#1a1c2c"
+  },
+
+  "negative": [
+    "no anti-aliasing",
+    "no blur",
+    "no smooth gradients",
+    "no 3D render",
+    "no realistic shading",
+    "no photorealism"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1024x1024",
+    "quality": "medium",
+    "transparent": true
+  },
+
+  "assets": [
+    { "key": "btn-frame", "kind": "icon", "subject": "empty wide horizontal pixel-art UI button frame shaped like a flat plate, blank flat stone center, simple gold-and-stone border that is perfectly symmetric top-to-bottom, crisp clean 16-bit pixels, limited palette, absolutely NO text NO letters", "overrides": { "typography": null } },
+    { "key": "panel-frame", "kind": "icon", "subject": "square pixel-art UI panel frame, symmetric chunky gold border with corner studs, flat dark parchment center, equal margins all sides, crisp 16-bit pixels, blank, absolutely NO text", "overrides": { "typography": null } },
+    { "key": "bar-track", "kind": "icon", "subject": "horizontal pixel-art empty progress bar groove, dark hollow inner channel, chunky gold frame with rounded ends, crisp 16-bit pixels, empty, NO text", "overrides": { "typography": null } },
+    { "key": "avatar-frame", "kind": "icon", "subject": "round pixel-art portrait frame ring, chunky gold border with studs, the entire center is an EMPTY transparent hole with nothing inside, crisp 16-bit pixels, blank center, NO text", "overrides": { "typography": null } },
+    { "key": "banner", "kind": "icon", "subject": "pixel-art fantasy title banner ribbon, gold-trimmed deep-purple cloth with flat blank center, crisp 16-bit pixels, blank, absolutely NO text", "overrides": { "typography": null } },
+
+    { "key": "ic-settings", "kind": "icon", "subject": "round pixel-art icon button with a golden gear settings symbol, gold rim, crisp 16-bit pixels", "overrides": { "typography": null } },
+    { "key": "ic-close", "kind": "icon", "subject": "round pixel-art icon button with a red X close symbol, gold rim, crisp 16-bit pixels", "overrides": { "typography": null } },
+    { "key": "ic-back", "kind": "icon", "subject": "round pixel-art icon button with a golden left arrow, gold rim, crisp 16-bit pixels", "overrides": { "typography": null } },
+    { "key": "ic-sound", "kind": "icon", "subject": "round pixel-art icon button with a golden speaker sound symbol, gold rim, crisp 16-bit pixels", "overrides": { "typography": null } },
+    { "key": "ic-plus", "kind": "icon", "subject": "round pixel-art icon button with a green plus add symbol, gold rim, crisp 16-bit pixels", "overrides": { "typography": null } },
+    { "key": "ic-check", "kind": "icon", "subject": "round pixel-art icon button with a green checkmark symbol, gold rim, crisp 16-bit pixels", "overrides": { "typography": null } },
+
+    { "key": "bg", "kind": "background", "subject": "pixel-art fantasy overworld landscape as a vertical mobile menu backdrop, a stone castle on green hills under a blue sky with chunky clouds, distant mountains, 16-bit JRPG overworld, crisp pixels, empty foreground for UI, NO text NO characters", "overrides": { "defaults": { "size": "1024x1536", "quality": "high", "transparent": false }, "typography": null } },
+    { "key": "hero", "kind": "sprite", "subject": "pixel-art fantasy hero knight character, full body, blue tunic and silver armor, sword and shield, heroic front-facing standing pose, 16-bit JRPG character sprite, crisp clean pixels, limited palette", "overrides": { "defaults": { "size": "1024x1536", "quality": "high" }, "typography": null } }
+  ]
+}

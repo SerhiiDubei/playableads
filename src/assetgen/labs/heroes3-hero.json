@@ -1,0 +1,28 @@
+{
+  "target": "heroes3-knight",
+  "model": "gpt-image-1.5",
+  "size": "1024x1536",
+  "quality": "medium",
+  "strategies": [
+    {
+      "name": "1-keywords",
+      "prompt": "Heroes of Might and Magic III, HoMM3, classic high fantasy, knight hero, full body, ornate shining plate armor, heraldic tabard, sword and shield, colorful painterly 2D RPG art, vibrant saturated colors, bright cheerful lighting, storybook fantasy, highly detailed, isolated on transparent background, no background, no ground, no shadow, game character portrait sprite"
+    },
+    {
+      "name": "2-structured",
+      "prompt": "full body heroic knight commander, ornate polished plate armor with gold trim, flowing royal-blue cape, sword raised, confident pose. Art style: bright painterly high-fantasy illustration, classic late-90s fantasy game box art. mood: heroic, adventurous, regal. theme: medieval high fantasy kingdom, chivalry and magic. glossy armor highlights, warm bright daylight, three-quarter view, ornate noble shapes, painterly soft edges. color palette: primary #c9a227, accent #2f6fb0, background #cfe0f0, text #ffffff. isolated on transparent background, clean cutout. Avoid: dark grim tones, gritty realism, modern UI, white halo, painted backdrop, ground shadow"
+    },
+    {
+      "name": "3-narrative",
+      "prompt": "Full-body hero portrait of a noble knight champion for a classic turn-based fantasy strategy game. Painted in the bright, richly colorful, storybook style of late-1990s New World Computing box art: gleaming ornate plate armor with golden filigree, a heraldic surcoat, a jeweled sword held proudly, a billowing cape, warm heroic lighting, an expression of valor. Render the figure entirely alone — no environment, no ground, no backdrop — only the hero on empty transparency."
+    },
+    {
+      "name": "4-ip-anchored",
+      "prompt": "Hero portrait in the exact visual style of Heroes of Might and Magic III (New World Computing, 1999): vibrant painterly high-fantasy illustration, saturated jewel-tone colors, clean bright lighting, slightly idealized heroic proportions, ornate detail. Subject: a Castle-faction Knight hero in radiant gold-trimmed plate armor with a sword and kite shield. Full body, three-quarter view, perfectly isolated on a plain transparent background with absolutely no scenery, no floor, no shadow."
+    },
+    {
+      "name": "5-cutout-first",
+      "prompt": "Game asset sprite: a single full-body heroic fantasy Knight, centered, framed head-to-toe. Heroes-3-style bright colorful painterly illustration, vibrant saturated palette, ornate shining armor, regal and heroic. CRITICAL ISOLATION REQUIREMENT: the character must be 100% isolated on a fully transparent background — no scenery, no ground, no cast shadow, no banner, no vignette, no painted backdrop of any kind, with clean crisp alpha edges tightly around the character silhouette."
+    }
+  ]
+}

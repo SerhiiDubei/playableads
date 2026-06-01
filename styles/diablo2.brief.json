@@ -1,0 +1,80 @@
+{
+  "id": "diablo2",
+  "name": "Diablo II",
+  "version": "1.0.0",
+  "derivedFrom": "reference: Diablo II (Blizzard) — dark gothic ARPG, gritty painterly",
+
+  "artDirection": {
+    "artStyle": "hand-painted",
+    "mood": ["dark-moody", "epic-fantasy"],
+    "theme": "dark gothic medieval fantasy, demonic, gothic horror, blood and steel"
+  },
+
+  "palette": {
+    "source": "manual",
+    "background": "#0a0a0c",
+    "primary": "#7a1f1f",
+    "secondary": "#3a2f25",
+    "accent": "#c8962f",
+    "text": "#d8c9a0",
+    "extra": ["#1c2330"]
+  },
+
+  "rendering": {
+    "outline": { "style": "none", "color": "" },
+    "material": "metallic",
+    "lighting": "dramatic",
+    "shading": "smooth-gradient",
+    "perspective": "front-flat",
+    "shapeLanguage": "sharp-aggressive",
+    "cornerRadius": "sharp"
+  },
+
+  "typography": {
+    "case": "uppercase",
+    "weight": "bold",
+    "textColor": "#c8962f",
+    "textStroke": "#1a1209"
+  },
+
+  "negative": [
+    "no bright saturated colors",
+    "no cartoon style",
+    "no flat vector",
+    "no modern UI",
+    "no white background halo",
+    "no gibberish text"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1024x1024",
+    "quality": "medium",
+    "transparent": true
+  },
+
+  "assets": [
+    { "key": "btn-play", "kind": "button", "subject": "ornate gothic stone-and-iron main menu button engraved with the word \"PLAY\"" },
+    { "key": "btn-shop", "kind": "button", "subject": "ornate gothic stone-and-iron main menu button engraved with the word \"SHOP\"" },
+    { "key": "btn-settings", "kind": "button", "subject": "ornate gothic stone-and-iron main menu button engraved with the word \"SETTINGS\"" },
+    {
+      "key": "hero",
+      "kind": "sprite",
+      "subject": "full body dark fantasy barbarian warrior hero, heavy battle-worn armor, glowing menacing eyes, wielding a massive sword, standing pose",
+      "overrides": {
+        "defaults": { "size": "1024x1536", "quality": "high" },
+        "typography": null
+      }
+    },
+    {
+      "key": "bg-cathedral",
+      "kind": "background",
+      "subject": "ruined gothic cathedral dungeon interior, broken stone arches, burning torches, fog, scattered bones, atmospheric empty scene as a game menu backdrop",
+      "overrides": {
+        "defaults": { "size": "1536x1024", "quality": "high", "transparent": false },
+        "typography": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "id": "plug-test",
+  "name": "Bold Arcade",
+  "version": "1.0.0",
+  "derivedFrom": "reference: Royal Match-style casual UI + styles/default.json palette",
+
+  "artDirection": {
+    "artStyle": "cartoon-3d-glossy",
+    "mood": ["casual-cute", "premium-shiny"],
+    "theme": "electric puzzle"
+  },
+
+  "palette": {
+    "source": "from-style-json",
+    "background": "#10131c",
+    "primary": "#3a7bd5",
+    "secondary": "#23406b",
+    "accent": "#ffd54a",
+    "text": "#ffffff",
+    "extra": ["#e23b3b"]
+  },
+
+  "rendering": {
+    "outline": { "style": "thick-cartoon", "color": "#10131c" },
+    "material": "glossy",
+    "lighting": "soft-top",
+    "shading": "smooth-gradient",
+    "perspective": "slight-3d",
+    "shapeLanguage": "rounded-friendly",
+    "cornerRadius": "pill"
+  },
+
+  "references": [],
+
+  "negative": [
+    "no white halo",
+    "no sticker border",
+    "no padding",
+    "no extra background",
+    "no electric sparks",
+    "no wall, no plaster"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1024x1024",
+    "quality": "medium",
+    "transparent": true
+  },
+
+  "assets": [
+    {
+      "key": "plug",
+      "kind": "icon",
+      "subject": "a single chunky cute electrical power plug (the male plug end with two flat prongs pointing to the RIGHT), shown in side profile, with a short stub of thick glossy bright-red cable attached at its LEFT back end, cable color #e23b3b"
+    },
+    {
+      "key": "socket",
+      "kind": "icon",
+      "subject": "a single cute wall power socket outlet, front view, a rounded-square glossy faceplate with two vertical plug holes in the center, facing the viewer"
+    }
+  ]
+}

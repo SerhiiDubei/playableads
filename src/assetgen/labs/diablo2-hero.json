@@ -1,0 +1,28 @@
+{
+  "target": "hero",
+  "model": "gpt-image-1.5",
+  "size": "1024x1536",
+  "quality": "medium",
+  "strategies": [
+    {
+      "name": "1-keywords",
+      "prompt": "Diablo II, dark gothic action-RPG, barbarian warrior, full body, heavy spiked battle-worn armor, glowing infernal eyes, massive notched greatsword, oil painting, muted desaturated earthy palette, dramatic torchlight, chiaroscuro, highly detailed, isolated on transparent background, no background, no ground, no shadow, no vignette, game character splash art"
+    },
+    {
+      "name": "2-structured",
+      "prompt": "full body dark fantasy barbarian warrior hero, heavy battle-worn armor, glowing menacing eyes, massive sword, standing pose. Art style: dark hand-painted digital painting, gritty realistic dark-fantasy concept art. mood: dark-moody, epic-fantasy. theme: dark gothic medieval fantasy, demonic, blood and steel. weathered metal surface, dramatic chiaroscuro torch-lit lighting, front view, sharp ornate gothic shapes, no outline, painterly edges. color palette: primary #7a1f1f, accent #c8962f, background #0a0a0c, text #d8c9a0. isolated on transparent background, clean cutout. Avoid: bright saturated colors, cartoon, flat vector, modern UI, white halo, painted backdrop, ground shadow"
+    },
+    {
+      "name": "3-narrative",
+      "prompt": "Full-body character splash art of a battle-hardened barbarian champion for a dark fantasy action-RPG. Painted in the gritty, low-saturation oil-painting tradition of late-1990s Blizzard concept art: weathered plate-and-bone armor caked in grime, a massive notched greatsword planted point-down before him, embers and ash drifting, eyes burning with infernal light, heavy dramatic side lighting from a torch. Render the figure entirely alone — no environment, no ground plane, no backdrop, no atmospheric haze — only the character standing on empty transparency."
+    },
+    {
+      "name": "4-ip-anchored",
+      "prompt": "Character select splash art in the exact visual style of Diablo II (Blizzard, 2000): dark medieval oil-painted realism, heavy chiaroscuro, desaturated earthy color palette, grim ominous atmosphere, painterly brushwork. Subject: a hulking Barbarian class hero in battered spiked armor gripping an enormous two-handed sword. Full body, front view, perfectly isolated on a plain transparent background with absolutely no scenery, no floor, no shadow."
+    },
+    {
+      "name": "5-cutout-first",
+      "prompt": "Game asset sprite: a single full-body dark-fantasy Barbarian warrior, centered, framed head-to-toe. Diablo-style gritty painterly realism, muted desaturated colors, weathered armor, torch-lit, menacing. CRITICAL ISOLATION REQUIREMENT: the character must be 100% isolated on a fully transparent background — no scenery, no ground, no cast shadow, no smoke, no embers, no vignette, no painted backdrop of any kind, with clean crisp alpha edges tightly around the character silhouette."
+    }
+  ]
+}
