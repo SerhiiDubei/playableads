@@ -1,0 +1,67 @@
+{
+  "id": "connect",
+  "name": "Arcane Gems",
+  "version": "1.0.0",
+  "derivedFrom": "ornate fantasy game UI, painterly, glowing magic artifacts",
+
+  "artDirection": {
+    "artStyle": "hand-painted",
+    "mood": ["epic-fantasy", "magical"],
+    "theme": "ornate arcane fantasy, glowing magic gemstones and carved stone rune sockets"
+  },
+
+  "palette": {
+    "source": "manual",
+    "background": "#1a1206",
+    "primary": "#c8962f",
+    "secondary": "#3a2f25",
+    "accent": "#ffe08a",
+    "text": "#f7ead0"
+  },
+
+  "rendering": {
+    "outline": { "style": "none", "color": "" },
+    "material": "glossy",
+    "lighting": "dramatic",
+    "shading": "smooth-gradient",
+    "perspective": "front-flat",
+    "shapeLanguage": "geometric",
+    "cornerRadius": "rounded"
+  },
+
+  "negative": [
+    "no text, no letters, no numbers",
+    "no flat vector",
+    "no modern UI",
+    "no white background halo",
+    "no cast shadow on ground",
+    "not asymmetric"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1024x1024",
+    "quality": "medium",
+    "transparent": true
+  },
+
+  "assets": [
+    { "key": "gem-red", "kind": "sprite", "subject": "a single brilliant faceted glowing RUBY-RED magic gemstone, polished crystal, front view, perfectly centered and symmetric",
+      "overrides": { "palette": { "primary": "#c81f1f", "accent": "#ff6b6b" } } },
+    { "key": "gem-blue", "kind": "sprite", "subject": "a single brilliant faceted glowing SAPPHIRE-BLUE magic gemstone, polished crystal, front view, perfectly centered and symmetric",
+      "overrides": { "palette": { "primary": "#1f4fc8", "accent": "#6ba8ff" } } },
+    { "key": "gem-green", "kind": "sprite", "subject": "a single brilliant faceted glowing EMERALD-GREEN magic gemstone, polished crystal, front view, perfectly centered and symmetric",
+      "overrides": { "palette": { "primary": "#1faa3f", "accent": "#6bff8b" } } },
+    { "key": "socket-red", "kind": "sprite", "subject": "an empty round carved-stone socket mount with a RED glowing rune rim and a hollow gem-shaped hole in the center, front view, perfectly centered and symmetric, waiting to receive a gem",
+      "overrides": { "palette": { "primary": "#c81f1f", "accent": "#ff6b6b" } } },
+    { "key": "socket-blue", "kind": "sprite", "subject": "an empty round carved-stone socket mount with a BLUE glowing rune rim and a hollow gem-shaped hole in the center, front view, perfectly centered and symmetric, waiting to receive a gem",
+      "overrides": { "palette": { "primary": "#1f4fc8", "accent": "#6ba8ff" } } },
+    { "key": "socket-green", "kind": "sprite", "subject": "an empty round carved-stone socket mount with a GREEN glowing rune rim and a hollow gem-shaped hole in the center, front view, perfectly centered and symmetric, waiting to receive a gem",
+      "overrides": { "palette": { "primary": "#1faa3f", "accent": "#6bff8b" } } },
+    { "key": "gem-purple", "kind": "sprite", "subject": "a single brilliant faceted glowing AMETHYST-PURPLE magic gemstone, polished crystal, front view, perfectly centered and symmetric",
+      "overrides": { "palette": { "primary": "#7a2fc8", "accent": "#c08bff" } } },
+    { "key": "socket-purple", "kind": "sprite", "subject": "an empty round carved-stone socket mount with a PURPLE glowing rune rim and a hollow gem-shaped hole in the center, front view, perfectly centered and symmetric, waiting to receive a gem",
+      "overrides": { "palette": { "primary": "#7a2fc8", "accent": "#c08bff" } } }
+  ]
+}

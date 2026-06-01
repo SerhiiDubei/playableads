@@ -17,7 +17,8 @@ const VIEWPORTS = [
   { name: "landscape", w: 740, h: 360 },
   { name: "square", w: 600, h: 600 },
 ];
-const SCREENS = ["menu", "game", "battle", "shop", "options"];
+// екрани визначаються з DOM автоматично (працює на будь-якому білді: menu / experiments / ...)
+let SCREENS: string[] = [];
 
 // перевірка: жоден інтерактивний елемент активного екрана не вилазить за viewport
 const OVERFLOW_CHECK = `(() => {
@@ -69,6 +70,7 @@ async function main() {
   console.log("");
   const ref = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
   await ref.goto(url, { waitUntil: "networkidle" });
+  SCREENS = (await ref.evaluate(() => [...document.querySelectorAll(".screen")].map((s) => s.id))) as string[];
   for (const s of SCREENS) {
     await ref.evaluate((id) => (window as any).go(id), s);
     await ref.waitForTimeout(350);
