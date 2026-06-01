@@ -109,9 +109,14 @@ export function makeKit(a: KitAssets, opts: { font?: string } = {}) {
   .c-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-family:${font};
     min-height:58px;padding:6px 22px;border-style:solid;border-width:28px 48px;border-color:transparent;white-space:nowrap;
     border-image:url(${u("btn-frame")}) ${a["btn-frame"].slice} fill;
-    font-weight:700;text-transform:uppercase;font-size:17px;letter-spacing:.5px;transition:transform .12s}
+    font-weight:700;text-transform:uppercase;font-size:17px;letter-spacing:.5px;transition:transform .12s,filter .2s}
   .c-btn:active{transform:scale(.95)}
   .c-btn.block{display:flex;width:100%}
+  /* ієрархія: primary (головна дія) > default > tertiary (приглушена) */
+  .c-btn.primary{min-height:72px;border-width:34px 56px;font-size:22px;color:#fff7e0;
+    text-shadow:0 1px 0 #6b4a1e,0 2px 4px rgba(0,0,0,.6),0 0 16px #ffdf8aaa;animation:cbtnGlow 1.9s ease-in-out infinite}
+  @keyframes cbtnGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.13)}}
+  .c-btn.tertiary{min-height:46px;border-width:20px 42px;font-size:14px;opacity:.72;color:#e9dcc2}
 
   .c-panel{border-style:solid;border-width:40px;border-color:transparent;font-family:${font};
     border-image:url(${u("panel-frame")}) ${a["panel-frame"].slice} fill;padding:6px 10px}
@@ -136,8 +141,8 @@ export function makeKit(a: KitAssets, opts: { font?: string } = {}) {
   return {
     css,
     banner: (title: string) => `<div class="c-banner"><img src="${u("banner")}"><div class="t gold">${title}</div></div>`,
-    button: (text: string, onclick = "", o: { block?: boolean } = {}) =>
-      `<div class="c-btn gold${o.block ? " block" : ""}" onclick="${onclick}">${text}</div>`,
+    button: (text: string, onclick = "", o: { block?: boolean; level?: "primary" | "tertiary" } = {}) =>
+      `<div class="c-btn gold${o.block ? " block" : ""}${o.level ? " " + o.level : ""}" onclick="${onclick}">${text}</div>`,
     iconBtn: (key: string, onclick = "", extra = "") => `<img class="icon" src="${u(key)}" onclick="${onclick}" ${extra}>`,
     panel: (inner: string, style = "") => `<div class="c-panel"${style ? ` style="${style}"` : ""}>${inner}</div>`,
     bar: (pct: number) => `<div class="c-bar"><div class="fill" style="width:${pct}%"></div></div>`,

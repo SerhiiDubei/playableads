@@ -34,11 +34,11 @@ function screens(k: ReturnType<typeof makeKit>, a: KitAssets): string {
     <div class="topbar">${k.pill("ic-plus", "1 250")}${k.iconBtn("ic-settings", "go('options')")}</div>
     ${k.banner("Realm of Valor")}
     <div class="stack">
-      ${k.button("New Game", "go('game')", { block: true })}
+      ${k.button("New Game", "go('game')", { block: true, level: "primary" })}
       ${k.button("Battle", "go('battle')", { block: true })}
       ${k.button("Shop", "go('shop')", { block: true })}
       ${k.button("Options", "go('options')", { block: true })}
-      ${k.button("Exit", "endCard()", { block: true })}
+      ${k.button("Exit", "endCard()", { block: true, level: "tertiary" })}
     </div>
   </section>
 
@@ -48,21 +48,21 @@ function screens(k: ReturnType<typeof makeKit>, a: KitAssets): string {
     <img class="knight" src="${knight}">
     ${k.panel(`<div class="gold" style="font-size:18px;text-align:center">Sir Roland</div>
       <div class="sub" style="margin:4px 0 8px;text-align:center">Knight · Level 7</div>${k.bar(65)}`, "width:320px")}
-    <div class="stack">${k.button("Begin Quest", "go('battle')", { block: true })}</div>
+    <div class="stack">${k.button("Begin Quest", "go('battle')", { block: true, level: "primary" })}</div>
   </section>
 
   <section class="screen" id="battle">
     <div class="topbar">${k.iconBtn("ic-back", "go('menu')")}<span></span></div>
     <div class="title">Battle</div>
     ${k.panel(`<div class="sub" style="text-align:center;padding:6px 2px">Choose your foe and claim victory!</div>`, "width:320px")}
-    <div class="stack">${k.button("Fight", "endCard()", { block: true })}</div>
+    <div class="stack">${k.button("Fight", "endCard()", { block: true, level: "primary" })}</div>
   </section>
 
   <section class="screen" id="shop">
     <div class="topbar">${k.iconBtn("ic-back", "go('menu')")}<span></span></div>
     <div class="title">Shop</div>
     ${k.panel(`<div class="k-row" style="justify-content:center">${k.pill("ic-plus", "x3")}${k.pill("ic-check", "x1")}</div>`, "width:320px")}
-    <div class="stack">${k.button("Buy", "go('menu')", { block: true })}</div>
+    <div class="stack">${k.button("Buy", "go('menu')", { block: true, level: "primary" })}</div>
   </section>
 
   <section class="screen" id="options">

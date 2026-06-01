@@ -37,11 +37,12 @@ function page(k: ReturnType<typeof makeKit>): string {
   <h2>Resource pills</h2>
   <div class="k-row">${k.pill("ic-plus", "1 250")}${k.pill("ic-check", "48")}${k.pill("ic-settings", "12")}</div>
 
-  <h2>Buttons (9-slice · any width)</h2>
+  <h2>Buttons — hierarchy (primary / default / tertiary)</h2>
   <div class="stack">
-    ${k.button("New Game", "", { block: true })}
+    ${k.button("Play Now", "", { block: true, level: "primary" })}
     ${k.button("Continue Campaign", "", { block: true })}
-    <div class="k-row">${k.button("OK")}${k.button("Cancel")}</div>
+    ${k.button("Options", "", { block: true })}
+    ${k.button("Exit", "", { block: true, level: "tertiary" })}
   </div>
 
   <h2>Progress bar</h2>

@@ -43,6 +43,13 @@ These come from real regressions. Follow them directly when touching UI assets/c
    (portrait phones, tablet, landscape, square) into `test/visual/` and **asserts no element overflows
    the viewport**. Must be `ALL PASS` before UI is considered done. Don't eyeball one size and call it.
 
+## UI quality rules
+
+- **Visual hierarchy is mandatory, not cosmetic.** Never leave peer elements all equal-weight.
+  Each screen has exactly ONE `primary` action (bigger + accent + glow), `default` secondary actions,
+  and `tertiary` (dimmed/smaller) for de-emphasized ones. Use `kit.button(..., {level})`. Same for text
+  (title > label > sub). The eye must land on the main action first.
+
 ## Asset-gen rules
 
 - Model: **gpt-image-1.5** (transparent PNG native). Avoid gpt-image-2 (no alpha, 3–4× slower).
