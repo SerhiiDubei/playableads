@@ -43,6 +43,19 @@ These come from real regressions. Follow them directly when touching UI assets/c
    (portrait phones, tablet, landscape, square) into `test/visual/` and **asserts no element overflows
    the viewport**. Must be `ALL PASS` before UI is considered done. Don't eyeball one size and call it.
 
+## Layout / zoning rules
+
+- **Placement is zone-driven, never ad-hoc.** Every screen declares a `screenType`; `src/assetgen/kit/layout.ts`
+  resolves `BASE ⊕ ARCHETYPE[type]` into named zones (`hud / title / stage / actions / footer`). Components are
+  placed into zones (`zone("actions", ...)`), not at arbitrary coordinates.
+- **Base rules are universal** (every screen): safe margins (~6% sides), thumb-zone for the primary CTA
+  (`actions`, bottom-center — Hoober's green zone), tap targets ≥44px, HUD only in top corners.
+- **Archetypes specialize** per screen type (menu / pick-hero / endcard / …). Add a new archetype rather than
+  hand-tweaking a screen. Identify the screen's type explicitly (a field), don't guess from content.
+- **Zone bands must fit their contents.** A too-short band makes elements overflow it — caught by the zone
+  assertion in `npm run visual` (every interactive element must stay within its zone; primary CTA must be in `actions`).
+- Debug overlay: append `#zones` (or `?zones=1`) to the URL to see zone outlines.
+
 ## UI quality rules
 
 - **Visual hierarchy is mandatory, not cosmetic.** Never leave peer elements all equal-weight.
