@@ -1,7 +1,8 @@
 import { writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { loadKit, makeKit, kitBytes, NINE, fontFace, type KitAssets } from "./kit/kit.js";
 import { stageCss, stageJs } from "./kit/stage.js";
-import { resolveLayout, zoneCss, zone, zonesOverlay, OVERLAY_CSS, type Layout } from "./kit/layout.js";
+import { logStage, timed } from "./stage-log.js";
+import { getLayout, DEFAULT_LAYOUT, type Layout } from "./layouts/index.js";
 
 const OUT = "test/menu-playable";
 const ASSET_DIR = `${OUT}/assets`;
@@ -11,126 +12,68 @@ const KNIGHT_SRC = "out/prompt-lab/heroes3-knight/4-ip-anchored.png";
 const FONT_FACE = fontFace("Cinzel", "src/assetgen/kit/cinzel-700.woff2");
 const FONT = `"Cinzel",Georgia,serif`;
 
-const LAYOUTS: Record<string, Layout> = {
-  menu: resolveLayout("menu"),
-  "pick-hero": resolveLayout("pick-hero"),
-  endcard: resolveLayout("endcard"),
-};
-const ZONE_CSS = Object.values(LAYOUTS).map(zoneCss).join("");
-
-const pageCss = `
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  body{font-family:${FONT}}
-  .screen{position:absolute;inset:0;opacity:0;visibility:hidden;transform:translateY(16px);
-    transition:opacity .28s ease,transform .28s ease}
-  .screen.active{opacity:1;visibility:visible;transform:none}
-  .title{color:#ffe9b0;font-family:${FONT};font-weight:700;letter-spacing:1px;font-size:28px;text-align:center;
-    text-shadow:0 2px 0 #3a2208,0 0 18px #c9962f55}
-  .sub{color:#d8c49a;font-size:13px;text-align:center}
-  .knight{width:100%;height:62%;background-position:center bottom;background-repeat:no-repeat;background-size:contain;
-    filter:drop-shadow(0 8px 12px #0009)}
-  .knight.big{height:92%}
-  .zone .c-btn.block{width:100%}
-  .zone .c-panel{width:100%}
-  .stars{color:#ffd54a;font-size:18px;letter-spacing:2px}
-`;
-
-// один екран = тип (архетип) + компоненти, розкладені по зонах
-function screen(id: string, type: string, active: boolean, zones: string): string {
-  return `<section class="screen${active ? " active" : ""}" id="${id}" data-type="${type}">${zonesOverlay(LAYOUTS[type])}${zones}</section>`;
-}
-
-function screens(k: ReturnType<typeof makeKit>): string {
-  return [
-    screen("menu", "menu", true,
-      zone("hud", `${k.pill("ic-plus", "1 250")}${k.iconBtn("ic-settings", "go('options')")}`) +
-      zone("title", k.banner("Realm of Valor")) +
-      zone("stage", "") +
-      zone("actions",
-        k.button("New Game", "go('game')", { block: true, level: "primary" }) +
-        k.button("Battle", "go('battle')", { block: true }) +
-        k.button("Shop", "go('shop')", { block: true }) +
-        k.button("Options", "go('options')", { block: true }) +
-        k.button("Exit", "go('endcard')", { block: true, level: "tertiary" }))),
-
-    screen("game", "pick-hero", false,
-      zone("hud", `${k.iconBtn("ic-back", "go('menu')")}<span></span>`) +
-      zone("title", `<div class="title">Choose Your Hero</div>`) +
-      zone("stage", `<div class="knight"></div>` +
-        k.panel(`<div class="gold" style="font-size:18px;text-align:center">Sir Roland</div>
-          <div class="sub" style="margin:4px 0 8px">Knight · Level 7</div>${k.bar(65)}`)) +
-      zone("actions", k.button("Begin Quest", "go('battle')", { block: true, level: "primary" }))),
-
-    screen("battle", "pick-hero", false,
-      zone("hud", `${k.iconBtn("ic-back", "go('menu')")}<span></span>`) +
-      zone("title", `<div class="title">Battle</div>`) +
-      zone("stage", k.panel(`<div class="sub" style="padding:6px 2px">Choose your foe and claim victory!</div>`)) +
-      zone("actions", k.button("Fight", "go('endcard')", { block: true, level: "primary" }))),
-
-    screen("shop", "pick-hero", false,
-      zone("hud", `${k.iconBtn("ic-back", "go('menu')")}<span></span>`) +
-      zone("title", `<div class="title">Shop</div>`) +
-      zone("stage", k.panel(`<div class="k-row" style="justify-content:center">${k.pill("ic-plus", "x3")}${k.pill("ic-check", "x1")}</div>`)) +
-      zone("actions", k.button("Buy", "go('menu')", { block: true, level: "primary" }))),
-
-    screen("options", "pick-hero", false,
-      zone("hud", `${k.iconBtn("ic-back", "go('menu')")}<span></span>`) +
-      zone("title", `<div class="title">Options</div>`) +
-      zone("stage", k.panel(`<div class="k-row" style="justify-content:center;margin-bottom:10px">
-        ${k.iconBtn("ic-sound", "this.style.opacity=this.style.opacity==='0.4'?'1':'0.4'")}${k.iconBtn("ic-settings", "")}</div>
-        <div class="sub" style="margin-bottom:6px">Music volume</div>${k.bar(80)}`)) +
-      zone("actions", k.button("Save", "go('menu')", { block: true, level: "primary" }))),
-
-    screen("endcard", "endcard", false,
-      zone("hud", `${k.iconBtn("ic-back", "go('menu')")}<span></span>`) +
-      zone("title", `<div class="title">Realm of Valor</div><div class="stars">★★★★★</div>`) +
-      zone("stage", `<div class="knight big"></div>`) +
-      zone("actions",
-        k.button("Install", "cta()", { block: true, level: "primary" }) +
-        k.button("Replay", "go('menu')", { block: true, level: "tertiary" }))),
-  ].join("");
-}
-
-function html(k: ReturnType<typeof makeKit>, a: KitAssets, pixelated = false): string {
-  const pix = pixelated ? "img{image-rendering:pixelated}#viewport{image-rendering:pixelated}" : "";
-  const body = screens(k);
+function html(layout: Layout, k: ReturnType<typeof makeKit>, a: KitAssets, pixelated = false): string {
+  const pixCss = pixelated ? "img{image-rendering:pixelated}#viewport{image-rendering:pixelated}" : "";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Realm of Valor — test playable</title>
-<style>${FONT_FACE}${stageCss(a["bg-castle"].dataUri)}${pageCss}${ZONE_CSS}${OVERLAY_CSS}${k.css}${pix}
-.knight{background-image:url(${a["knight"].dataUri})}</style></head>
-<body><div id="viewport"><div id="stage">${body}</div></div>
+<title>${layout.name} — playable</title>
+<style>${FONT_FACE}${stageCss(a["bg-castle"].dataUri)}${layout.pageCss(FONT)}${k.css}${pixCss}</style></head>
+<body><div id="viewport"><div id="stage">${layout.screens(k, a)}</div></div>
 <script>window.FbPlayableAd=window.FbPlayableAd||{onCTAClick:function(){try{console.log("[FbPlayableAd] onCTAClick (stub)")}catch(e){}}};</script>
 <script>
-  var cur='menu';
+  var cur=document.querySelector('.screen.active')?.id||'';
   function go(id){var a=document.getElementById(cur),b=document.getElementById(id);
     if(a)a.classList.remove('active');if(b)b.classList.add('active');cur=id;}
   function cta(){try{window.FbPlayableAd.onCTAClick();}catch(e){}}
-  if(/zones/.test(location.search+location.hash))document.body.classList.add('show-zones');
+  function endCard(){cta();}
 </script>
 <script>${stageJs()}</script></body></html>`;
 }
 
-export async function buildKitPlayable(styleId = "heroes3"): Promise<{ html: string; assetBytes: number }> {
+export type BuildKitOpts = { layout?: string };
+
+export async function buildKitPlayable(styleId = "heroes3", opts: BuildKitOpts = {}): Promise<{ html: string; assetBytes: number; layoutId: string }> {
+  const layout = getLayout(opts.layout ?? DEFAULT_LAYOUT);
+  logStage("build", `start.${styleId}.${layout.id}`);
   const src = `out/${styleId}`;
   const pixelated = /pixel/i.test(styleId);
   const bgSrc = existsSync(`${src}/bg.png`) ? `${src}/bg.png` : `${src}/bg-castle.png`;
   const heroSrc = existsSync(`${src}/hero.png`) ? `${src}/hero.png` : KNIGHT_SRC;
-  const assets = await loadKit(src, {
-    keys: [...Object.keys(NINE), "banner", ...ICONS],
-    extra: [
-      { key: "bg-castle", src: bgSrc, size: 680 },
-      { key: "knight", src: heroSrc, size: 520 },
-    ],
-    writeDir: ASSET_DIR,
-    pixelated,
+  logStage("build", "resolve.paths", { note: `layout=${layout.id} bg=${bgSrc} hero=${heroSrc} pixelated=${pixelated}` });
+
+  const assets = await timed(
+    "build",
+    "loadKit",
+    () => loadKit(src, {
+      keys: [...Object.keys(NINE), "banner", ...ICONS],
+      extra: [
+        { key: "bg-castle", src: bgSrc, size: 680 },
+        { key: "knight", src: heroSrc, size: 520 },
+      ],
+      writeDir: ASSET_DIR,
+      pixelated,
+      onProgress: (key, ms, bytes) =>
+        logStage("build", `load.${key}`, { durationMs: ms, bytes }),
+    }),
+    { bytesFromResult: kitBytes, note: "sharp: trim→resize→webp + dataURI" }
+  );
+
+  const kitInstance = await timed("build", "makeKit", () => makeKit(assets, { font: FONT }), {
+    note: `${Object.keys(assets).length} assets ready`,
   });
-  const k = makeKit(assets, { font: FONT });
-  return { html: html(k, assets, pixelated), assetBytes: kitBytes(assets) };
+  const htmlStr = await timed(
+    "build",
+    `compose.html.${layout.id}`,
+    () => html(layout, kitInstance, assets, pixelated),
+    { bytesFromResult: (s) => Buffer.byteLength(s, "utf8") }
+  );
+  return { html: htmlStr, assetBytes: kitBytes(assets), layoutId: layout.id };
 }
 
 async function main() {
-  const { html: out, assetBytes } = await buildKitPlayable("heroes3");
+  const styleId = process.argv[2] ?? "heroes3";
+  const layoutId = process.argv[3] ?? DEFAULT_LAYOUT;
+  const { html: out, assetBytes } = await buildKitPlayable(styleId, { layout: layoutId });
   mkdirSync(OUT, { recursive: true });
   writeFileSync(`${OUT}/index.html`, out);
   const kb = Buffer.byteLength(out, "utf8") / 1024;
@@ -139,4 +82,7 @@ async function main() {
   console.log(`-> ${OUT}/index.html`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main().catch((e) => { console.error("FATAL:", e?.message ?? e); process.exit(1); });
+const invokedAsScript = process.argv[1]?.endsWith("build-test-playable.ts") || process.argv[1]?.endsWith("build-test-playable.js");
+if (invokedAsScript) {
+  main().catch((e) => { console.error("FATAL:", e?.message ?? e); process.exit(1); });
+}
