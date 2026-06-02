@@ -74,7 +74,7 @@
 | ID | Назва | Пріор. | Тег | Цінність | Оцінка | Залежності | Статус |
 |----|-------|--------|-----|----------|--------|------------|--------|
 | S-01 | **Словник** термінів: `templates/`=ігри, `layouts/`=екрани, `styles/`vs`briefs/`. Зафіксувати в `SYSTEMS.md`; (опц.) `layouts/`→`screens/` | P1 | #structure | High | 0.5h | — | todo |
-| S-02 | **Зберігання ігор**: вирішити канон (`templates/<гра>/` manifest-driven) vs standalone `build-game/connect.ts`. Звести дублі (tap≈tap-the-coin, connect≈plug-in-socket) | P1 | #structure | High | 2h | рішення | **blocked (decision)** |
+| S-02 | **Зберігання ігор — РІШЕННЯ: labs-first.** Усі ігри/чернетки → `labs/`. `templates/` = ЗАРЕЗЕРВОВАНО за промоутованими (що пройшли стандарт T). Промоція — лише за прямим запитом. Зараз **0 ігор = шаблони** (стандарту ще нема). Перемістити поточні `templates/<гра>/` + `build-game/connect/experiments/recipes` → `labs/` | P1 | #structure | High | 2h | T-01 | **blocked (T-01 = ворота)** |
 | S-03 | `out/` структурувати: `playables/ · assets/<style>/ · runs/ · logs/` (узгодити зі старим пласким + новим `out/runs/`) | P2 | #structure | Med | 1h | — | todo |
 | S-04 | `test/`: консолідувати 6 `visual-*` тек під `test/visual/<suite>/` | P3 | #structure | Low | 0.5h | — | todo |
 | S-05 | Тріаж one-off скриптів у `src/assetgen/` (optimize-madmage, gen-only, menu-buttons, sprite-icons, ref-test, test-openai, prompt-lab, md-to-html) → `labs/` або видалити | P3 | #cleanup | Low | 1h | — | todo |
@@ -87,7 +87,11 @@
 | T-02 | Оновити `layout-authoring-guide.md` під zone-driven (meta.zoneTypes/assets, спільний CSS, патерни text-title/compact-cards/enforceZones з Z-міграції) | P1 | #templates | High | 1h | T-01 | todo |
 | T-03 | Кодифікувати усталені патерни як **soft-lint** правила (тонкий title→текст; дрібні картки→compact; nav→enforceZones:false) | P2 | #templates | Med | 1.5h | T-01 | todo |
 
-**Порядок:** S-01 (словник, дешево) → T-01/T-02 (стандарт — найважливіше «як працювати далі») → S-02 (рішення про ігри) → решта гігієни.
+**Порядок (оновлено рішенням labs-first):** T-01 (стандарт = ворота промоції) → S-01 (словник) → S-02 (перенести ігри в `labs/`, зарезервувати `templates/`) → T-02/T-03 → решта гігієни.
+
+> **Принцип labs-first (рішення 2026-06-02):** гра/чернетка живе в `labs/` за замовчуванням.
+> `templates/` зарезервовано за іграми, промоутованими за стандартом **T**. Промоція — лише за
+> явним запитом. Поточні `templates/<гра>/` — насправді labs (стандарту ще не було).
 
 ---
 
