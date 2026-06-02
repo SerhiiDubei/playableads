@@ -24,8 +24,10 @@ export const DESIGN_W = 400;
 export const DESIGN_H = 860;
 export const MIN_TOUCH = 44;
 
-// Зони серіалізуються в browser, тому імпортуються тільки для генерації expressions
-import { ZONES } from "./zones.js";
+// Зони серіалізуються в browser, тому імпортуються тільки для генерації expressions.
+// Єдине джерело геометрії зон — kit/layout.ts (LINT_ZONES виводиться з BASE),
+// щоб lint перевіряв ТІ САМІ зони, у які кладе builder.
+import { LINT_ZONES as ZONES } from "../kit/layout.js";
 
 export type RuleResult = {
   rule: string;

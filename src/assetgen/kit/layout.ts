@@ -91,6 +91,41 @@ export function zonesOverlay(L: ZoneSpec): string {
   return Object.keys(L.zones).map((n) => `<div class="zone zone-${n} zdbg" data-zone="${n}"><span>${n}</span></div>`).join("");
 }
 
+// ── Single source of truth for lint geometry ─────────────────────────────────
+// lint.ts checks playables against the SAME zones the builder places into, so the
+// checker and the placement engine can never drift. The px rects are DERIVED from
+// BASE (above); allow/forbid is lint POLICY (what may live in a zone), kept here
+// next to the geometry it constrains.
+export type LintZone = {
+  id: string;
+  rect: { x: number; y: number; w: number; h: number };
+  allow?: string[];
+  forbid?: string[];
+  hint: string;
+};
+
+function pxRect(topFrac: number, botFrac: number, fullWidth = false) {
+  const { W, H } = DESIGN;
+  const L = fullWidth ? 0 : Math.round(BASE.safe.left * W);
+  const R = fullWidth ? 0 : Math.round(BASE.safe.right * W);
+  return { x: L, y: Math.round(topFrac * H), w: W - L - R, h: Math.round(botFrac * H) - Math.round(topFrac * H) };
+}
+
+export const LINT_ZONES: LintZone[] = [
+  { id: "safe-top", rect: pxRect(0, BASE.safe.top, true), forbid: ["c-btn", "c-pill", "icon"],
+    hint: "iOS status bar / notch — no interactive elements." },
+  { id: "topbar", rect: pxRect(BASE.safe.top, BASE.zones.hud.bottom), allow: ["icon", "c-pill"], forbid: ["c-btn", "c-panel"],
+    hint: "Icons (settings/back), pill counters. No big buttons." },
+  { id: "hero", rect: pxRect(BASE.zones.stage.top, BASE.zones.stage.bottom), forbid: ["c-btn"],
+    hint: "Main visual — hero/product. CTA waits in the cta zone." },
+  { id: "content", rect: pxRect(BASE.zones.title.top, BASE.zones.stage.bottom),
+    hint: "Text, panels, feature grids. Flexible; may overlap hero." },
+  { id: "cta", rect: pxRect(BASE.zones.actions.top, BASE.zones.actions.bottom), allow: ["c-btn"],
+    hint: "Primary CTA — thumb-reachable actions band (same zone the builder places into)." },
+  { id: "safe-bottom", rect: pxRect(1 - BASE.safe.bottom, 1, true), forbid: ["c-btn", "c-pill", "icon"],
+    hint: "iOS home-gesture area — no interactive elements." },
+];
+
 export const OVERLAY_CSS =
   `.zone.zdbg{display:none!important}` +
   `body.show-zones .zone.zdbg{display:flex!important;align-items:flex-start!important;justify-content:flex-start!important;` +
