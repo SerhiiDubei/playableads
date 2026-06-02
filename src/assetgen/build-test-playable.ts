@@ -3,6 +3,14 @@ import { loadKit, makeKit, kitBytes, NINE, fontFace, type KitAssets } from "./ki
 import { stageCss, stageJs } from "./kit/stage.js";
 import { logStage, timed } from "./stage-log.js";
 import { getLayout, DEFAULT_LAYOUT, type Layout } from "./layouts/index.js";
+import { resolveLayout, zoneCss, OVERLAY_CSS } from "./kit/layout.js";
+
+/** Zone CSS for every archetype a template declares (deduped). Empty for legacy templates. */
+function zoneCssFor(layout: Layout): string {
+  const types = [...new Set(Object.values(layout.meta.zoneTypes ?? {}))];
+  if (types.length === 0) return "";
+  return types.map((t) => zoneCss(resolveLayout(t))).join("") + OVERLAY_CSS;
+}
 
 const OUT = "test/menu-playable";
 const ASSET_DIR = `${OUT}/assets`;
@@ -17,7 +25,7 @@ function html(layout: Layout, k: ReturnType<typeof makeKit>, a: KitAssets, pixel
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>${layout.name} — playable</title>
-<style>${FONT_FACE}${stageCss(a["bg-castle"].dataUri)}${layout.pageCss(FONT)}${k.css}${pixCss}</style></head>
+<style>${FONT_FACE}${stageCss(a["bg-castle"].dataUri)}${layout.pageCss(FONT)}${zoneCssFor(layout)}${k.css}${pixCss}</style></head>
 <body><div id="viewport"><div id="stage">${layout.screens(k, a)}</div></div>
 <script>window.FbPlayableAd=window.FbPlayableAd||{onCTAClick:function(){try{console.log("[FbPlayableAd] onCTAClick (stub)")}catch(e){}}};</script>
 <script>
@@ -26,6 +34,7 @@ function html(layout: Layout, k: ReturnType<typeof makeKit>, a: KitAssets, pixel
     if(a)a.classList.remove('active');if(b)b.classList.add('active');cur=id;}
   function cta(){try{window.FbPlayableAd.onCTAClick();}catch(e){}}
   function endCard(){cta();}
+  if(/zones/.test(location.search+location.hash))document.body.classList.add('show-zones');
 </script>
 <script>${stageJs()}</script></body></html>`;
 }

@@ -51,4 +51,12 @@ export type LayoutMeta = {
    * по центру — це і є дизайн.
    */
   enforceZones?: boolean;
+  /**
+   * Zone-driven placement: map screenId -> archetype in kit/layout.ts
+   * (`menu` | `pick-hero` | `endcard` | …). When present, the builder injects the
+   * zone CSS for those archetypes and the template's screens place content via
+   * `zone("actions", …)` instead of ad-hoc CSS. Absent = legacy ad-hoc layout
+   * (lets templates migrate to zones one at a time).
+   */
+  zoneTypes?: Record<string, string>;
 };
