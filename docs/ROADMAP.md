@@ -21,18 +21,19 @@
 
 | ID | Назва | Пріор. | Тег | Цінність | Оцінка | Архетип | Залежності | Статус |
 |----|-------|--------|-----|----------|--------|---------|------------|--------|
-| Z-00 | `endcard` → зони (еталон) | P1 | #zones | High | 1.5h | `endcard` (є) | — | **done** |
-| Z-01 | `pick-hero` → зони | P1 | #zones | High | 0.5h | `pick-hero` (є) | — | todo |
-| Z-02 | `menu5` → зони (5 екранів nav) | P1 | #zones | High | 1h | `menu` (є) | **`showcase.ts` = готовий 10-екранний референс** | todo |
-| Z-03 | `feature-grid` → зони | P2 | #zones | Med | 0.5h | `grid` (є ✅) | — | todo |
-| Z-04 | `feature-list` → зони | P2 | #zones | Med | 0.5h | `dense`/`grid` (є ✅) | — | todo |
-| Z-05 | `tap-reveal` → зони (2 екр.) | P2 | #zones | Med | 1h | `focal` (є ✅) | — | todo |
-| Z-06 | `progress-reveal` → зони (2 екр.) | P2 | #zones | Med | 1h | `focal` (є ✅) | — | todo |
-| Z-07 | `two-choice` → зони (2 екр.) | P2 | #zones | Med | 1h | `split` (є ✅) | — | todo |
-| Z-08 | `match-cluster` → зони (board+reveal) | P2 | #zones | Med | 1.5h | `puzzle` (є ✅) | — | todo |
-| Z-09 | `tutorial` → зони (3 екр.) | P3 | #zones | Low | 1.5h | `immersive` (є ✅) | — | todo |
+| Z-00 | `endcard` → зони (еталон) | P1 | #zones | High | 1.5h | `endcard` | — | **done** |
+| Z-01 | `pick-hero` → зони | P1 | #zones | High | 0.5h | `pick-hero` | — | **done** |
+| Z-02 | `menu5` → зони (5 екранів nav) | P1 | #zones | High | 1h | `menu`+`pick-hero` | — | **done** |
+| Z-03 | `feature-grid` → зони | P2 | #zones | Med | 0.5h | `grid` | — | **done** |
+| Z-04 | `feature-list` → зони | P2 | #zones | Med | 0.5h | `grid` | — | **done** |
+| Z-05 | `tap-reveal` → зони (2 екр.) | P2 | #zones | Med | 1h | `immersive` | — | **done** |
+| Z-06 | `progress-reveal` → зони (2 екр.) | P2 | #zones | Med | 1h | `immersive` | — | **done** |
+| Z-07 | `two-choice` → зони (2 екр.) | P2 | #zones | Med | 1h | `split` | — | **done** |
+| Z-08 | `match-cluster` → зони (board+reveal) | P2 | #zones | Med | 1.5h | `grid`+`immersive` | — | **done** |
+| Z-09 | `tutorial` → зони (3 екр.) | P3 | #zones | Low | 1.5h | `immersive` | — | **done** |
 
-**Сума епіку:** ≈ 9.5h (з них 1.5h done). Залежності зняті: усі архетипи вже є (10 шт. після layered-merge), а `showcase.ts` — готовий приклад багатоекранного zone-шаблону. Дешеві першими: Z-01, Z-03, Z-04.
+**Епік ЗАКРИТО ✅** — усі шаблони zone-driven; кожен `tsc`+build+lint+visual зелений на cyber-heist.
+Рішення під час міграції: тонкі title-band → текстові заголовки (не banner); дрібні картки → `border-width:16px` (дефолтні 40px-рамки `c-panel` завеликі); nav-меню (menu5) → `enforceZones:false`.
 
 ---
 
@@ -41,7 +42,7 @@
 | ID | Назва | Пріор. | Тег | Цінність | Оцінка | Залежності | Статус |
 |----|-------|--------|-----|----------|--------|------------|--------|
 | I-01 | `visual-test.ts` перевіряє зони для **будь-якого** `data-type` (auto-discover) | P1 | #infra | High | 1h | — | **done** (прийшло з layered-merge) |
-| I-02 | `check:layouts -- all` зелений на всіх мігрованих шаблонах | P1 | #infra | High | 0.5h | епік Z-* | blocked (Z-*) |
+| I-02 | `check:layouts` зелений на всіх мігрованих шаблонах | P1 | #infra | High | 0.5h | епік Z-* | **done** (11/11 lint PASS) |
 | I-03 | Звірити merge `kit.ts` + `CLAUDE.md` на здоровий глузд (не лише tsc) | P1 | #cleanup | High | 0.5h | — | **done** (tsc+build+visual+lint зелені через усі merge) |
 | I-04 | Прибрати `enforceZones`/`maxHeroPx` дублі після міграції (lint бере з зон) | P2 | #cleanup | Med | 0.5h | епік Z-* | todo |
 | I-05 | (опц.) перейменувати теку `layouts/` → `templates/`? — обережно, багато import-шляхів | P3 | #cleanup | Low | 1h | — | todo |
