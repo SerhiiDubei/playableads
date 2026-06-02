@@ -30,3 +30,37 @@
 **Відкрито/борг:** …
 **Чекпойнт:** статус (passed/awaiting)
 -->
+
+---
+
+## 2026-06-02 — Phase 0: Контракти й каркас
+
+**Зроблено:**
+- **P0-1** — `npm install zod` → `zod@^4.4.3` у dependencies. Додано `npm run test` script (`node --import tsx --test "src/**/*.test.ts"`).
+- **P0-2** — `src/assetgen/pipeline/types.ts`:
+  - zod-схеми: `BriefSchema` (passthrough на майбутні поля), `AssetEntrySchema`, `FontSchema`, `PlanScreenSchema` / `PlanSchema` (optional, Phase 5), `BuildSchema`, `ValidationSchema`, `EnvelopeSchema`, `StageStatusSchema`, `StageRunRecordSchema`, `RunStatusSchema`, `RunStateSchema`.
+  - inferred TS types як single source of truth.
+  - `RunContext` + `Stage<In, Out>` як TS-only interfaces (не серіалізовуються).
+- **P0-3** — `src/assetgen/pipeline/runDir.ts`:
+  - `makeRunId(now?)` — сортований compact ISO + 8 hex chars (e.g. `20260602T131422-a3f1c8d2`).
+  - `runDirOf(baseDir, runId)` — pure path join.
+  - `ensureRunDir(runDir)` — mkdir -p для `assets/` + `failures/` (Q35).
+  - `readRunState` / `writeRunState` / `readEnvelope` / `writeEnvelope` — атомарний запис (tmp → rename) + zod-валідація на write.
+  - `read*` повертає `null` коли файла нема (runner розрізнить «свіжий run» vs «corrupt»).
+- **P0-4** — `types.test.ts` (15 тестів) + `runDir.test.ts` (14 тестів) у hermetic tmpdir.
+
+**Перевірено:**
+- `npm run typecheck` — чистий.
+- `npm run test` — **29 tests / 7 suites / 0 fail / 461ms**.
+- Що покрите: schema parse OK/throw на valid/invalid, runId формат і унікальність, ensureRunDir idempotent, round-trip Envelope/RunState, null on missing, throw on invalid payload, atomicity (no .tmp residue).
+
+**AC закрито:**
+- AC0.1 ✅ — `*.parse(valid)` ok, `parse(invalid)` кидає.
+- AC0.2 ✅ — наявні команди не зачеплено (нічого з існуючого не редагувалось, лише додано теку `pipeline/` + один рядок у scripts).
+- AC0.3 ✅ — `tsc --noEmit` чистий, `npm run test` зелений.
+
+**Відкрито/борг:**
+- `Envelope.plan` навмисне залишений `optional` — справжня форма прибуде у Phase 5. `PlanScreenSchema` має `passthrough`, тож додавання полів не потребуватиме schema-міграції.
+- `RunContext` поки тільки `{runId, runDir}`. У Phase 1 додамо logger / abort signal.
+
+**Чекпойнт A:** awaiting — користувач підтверджує форму `Envelope` + `RunState` + `Stage`, тоді стартуємо Phase 1.

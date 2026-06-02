@@ -15,7 +15,8 @@
     "components": "tsx src/assetgen/build-components.ts",
     "visual": "tsx src/assetgen/visual-test.ts",
     "build:cli": "esbuild src/cli.ts --bundle --platform=node --packages=external --format=esm --outfile=dist/cli.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@imgly/background-removal-node": "^1.4.5",
@@ -23,7 +24,8 @@
     "gsap": "^3.12.5",
     "openai": "^6.39.1",
     "pixi.js": "^8.6.6",
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
