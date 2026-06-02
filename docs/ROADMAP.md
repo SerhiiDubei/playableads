@@ -67,6 +67,30 @@
 
 ---
 
+## Епік: S — структура й зберігання (порядок у файлах)
+
+Джерело: [`audit-2026-06-02/STRUCTURE-AUDIT.md`](audit-2026-06-02/STRUCTURE-AUDIT.md).
+
+| ID | Назва | Пріор. | Тег | Цінність | Оцінка | Залежності | Статус |
+|----|-------|--------|-----|----------|--------|------------|--------|
+| S-01 | **Словник** термінів: `templates/`=ігри, `layouts/`=екрани, `styles/`vs`briefs/`. Зафіксувати в `SYSTEMS.md`; (опц.) `layouts/`→`screens/` | P1 | #structure | High | 0.5h | — | todo |
+| S-02 | **Зберігання ігор**: вирішити канон (`templates/<гра>/` manifest-driven) vs standalone `build-game/connect.ts`. Звести дублі (tap≈tap-the-coin, connect≈plug-in-socket) | P1 | #structure | High | 2h | рішення | **blocked (decision)** |
+| S-03 | `out/` структурувати: `playables/ · assets/<style>/ · runs/ · logs/` (узгодити зі старим пласким + новим `out/runs/`) | P2 | #structure | Med | 1h | — | todo |
+| S-04 | `test/`: консолідувати 6 `visual-*` тек під `test/visual/<suite>/` | P3 | #structure | Low | 0.5h | — | todo |
+| S-05 | Тріаж one-off скриптів у `src/assetgen/` (optimize-madmage, gen-only, menu-buttons, sprite-icons, ref-test, test-openai, prompt-lab, md-to-html) → `labs/` або видалити | P3 | #cleanup | Low | 1h | — | todo |
+
+## Епік: T — стандарт шаблонів (як вони мають виглядати)
+
+| ID | Назва | Пріор. | Тег | Цінність | Оцінка | Залежності | Статус |
+|----|-------|--------|-----|----------|--------|------------|--------|
+| T-01 | **Стандарт вигляду по архетипах** — що повинен містити кожен тип екрана (endcard/feature-grid/pick-hero/…): обов'язкові елементи, ліміти, ієрархія. Новий `docs/TEMPLATE-STANDARD.md` | P1 | #templates | High | 2h | — | todo |
+| T-02 | Оновити `layout-authoring-guide.md` під zone-driven (meta.zoneTypes/assets, спільний CSS, патерни text-title/compact-cards/enforceZones з Z-міграції) | P1 | #templates | High | 1h | T-01 | todo |
+| T-03 | Кодифікувати усталені патерни як **soft-lint** правила (тонкий title→текст; дрібні картки→compact; nav→enforceZones:false) | P2 | #templates | Med | 1.5h | T-01 | todo |
+
+**Порядок:** S-01 (словник, дешево) → T-01/T-02 (стандарт — найважливіше «як працювати далі») → S-02 (рішення про ігри) → решта гігієни.
+
+---
+
 ## Зроблено (контекст)
 
 - **Крок 0** — desktop-робота збережена в гілці `desktop-forge-wip` (push). ✅
