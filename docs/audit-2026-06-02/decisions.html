@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Brief Decisions — 2026-06-02</title>
+<style>
+  :root{--bg:#0e0e12;--card:#16161d;--line:#262631;--full:#36d399;--part:#fbbd23;--open:#f87272;--txt:#e6e6ee;--dim:#9a9ab0}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.5 system-ui,Segoe UI,Roboto,sans-serif}
+  header{padding:22px 26px;border-bottom:1px solid var(--line)}
+  h1{margin:0 0 4px;font-size:20px}.sub{color:var(--dim);font-size:13px}
+  .counts{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .pill{padding:6px 12px;border-radius:999px;font-weight:700;font-size:13px}
+  .pill.full{background:#0f3a2c;color:var(--full)}.pill.part{background:#3a2f0c;color:var(--part)}.pill.open{background:#3a1414;color:var(--open)}
+  .wrap{display:grid;grid-template-columns:1fr 380px;gap:0;min-height:70vh}
+  .board{padding:18px 26px;overflow:auto}
+  .ch{margin-bottom:18px}
+  .ch h2{font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--dim);margin:0 0 8px;font-weight:700}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:9px;background:var(--card);border:1px solid var(--line);
+    cursor:pointer;transition:.15s;max-width:340px}
+  .chip:hover{border-color:#3a3a4a;transform:translateY(-1px)}
+  .chip.sel{outline:2px solid #5b8cff}
+  .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .dot.full{background:var(--full)}.dot.part{background:var(--part)}.dot.open{background:var(--open)}
+  .qid{font-weight:700;color:var(--dim);font-size:12px}
+  .qt{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  aside{border-left:1px solid var(--line);padding:20px 22px;position:sticky;top:0;align-self:start}
+  aside .badge{display:inline-block;padding:3px 10px;border-radius:6px;font-weight:700;font-size:12px;margin-bottom:10px}
+  aside h3{margin:6px 0 4px;font-size:16px}
+  aside .ctx{color:var(--dim);font-size:12px;margin-bottom:12px}
+  aside .dec{font-size:14px;line-height:1.6;white-space:pre-wrap}
+  .legend{color:var(--dim);font-size:12px;margin-top:10px}
+  footer{border-top:1px solid var(--line);padding:18px 26px;color:var(--dim);font-size:13px}
+  footer b{color:var(--txt)}
+  .notes{padding:6px 26px 0}.notes .col{margin:14px 0}
+  .notes h2{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim)}
+  .notes li{margin:3px 0}
+</style></head>
+<body>
+<header>
+  <h1>Brief Decisions — voice-сесія 2026-06-02</h1>
+  <div class="sub">50 питань · 10 розділів · джерело: <code>brief-quest.html</code> → рішення команди</div>
+  <div class="counts" id="counts"></div>
+  <div class="legend">Клікни на питання → праворуч рішення. 🟢 повна · 🟡 частково (деталі на тестування) · 🔴 відкрито</div>
+</header>
+<div class="wrap">
+  <div class="board" id="board"></div>
+  <aside id="panel">
+    <div class="ctx">Обери питання ліворуч, щоб побачити рішення.</div>
+  </aside>
+</div>
+<div class="notes" id="notes"></div>
+<footer>
+  Дашборд згенеровано з <b>docs/audit-2026-06-02/brief-decisions.md</b>. Оновлюй разом із ним.
+</footer>
+
+<script>
+const CH = {
+  1:"Vision & Identity", 2:"User & Entry Point", 3:"Mechanics Catalog", 4:"Style System", 5:"Brief Stage",
+  6:"Planning Layer", 7:"Asset Generation", 8:"Composition & Zones", 9:"Validation & Quality", 10:"Orchestration & Future"
+};
+const Q = [
+  {id:"Q01",ch:1,s:"full",t:"Помічник чи фабрика?",d:"D — фабрика, людина схвалює ключові точки. Мета: майже 100% автономна (бриф→файл)."},
+  {id:"Q02",ch:1,s:"full",t:"Користувач v1?",d:"B — мала команда дизайнерів (2-5) без dev-бекграунду; виросте до performance-marketing agency."},
+  {id:"Q03",ch:1,s:"full",t:"Скільки/тиждень?",d:"20-100 playable/тиждень (вища планка одразу)."},
+  {id:"Q04",ch:1,s:"part",t:"Одна метрика успіху?",d:"Основна — автономна ЯКІСТЬ. Вторинні: час ідея→файл, install-rate, варіації. Pass-rate Meta = технічна база."},
+  {id:"Q05",ch:1,s:"full",t:"Агент одним реченням",d:"S0: N якісних шаблонів, з 1 промта робить playable 0→кінець, фікси в середовищі.\nS1: інструмент для playable-ads (спершу інструмент → автоматизація), розуміє контекст+обмеження, створює нові/схожі.\n⚠️ напруга: «фабрика» vs «спершу інструмент»."},
+  {id:"Q06",ch:2,s:"full",t:"З чого починається сесія?",d:"Бриф: продукт+куди ведемо / теза / ідеї+файли / опц.референс. → summarize-agent: топ-3 рішення зверху, поле-інпут знизу, «суперкнопка» фіналізації. Знизу — розкладка механік. S1: прототип(грейбокс)→драфт→фінал."},
+  {id:"Q07",ch:2,s:"part",t:"Час на запит?",d:"Не обмежуємо жорстко (залежить від креативу). Орієнтир швидкого брифу 1-5 хв коли напрямок ясний."},
+  {id:"Q08",ch:2,s:"full",t:"Що користувач ТОЧНО знає?",d:"Знає: хто звернувся, продукт, посилання. НЕ принесе: ЦА/нішу/KPI/бюджет/конкурентів/tone. → агент-дозаповнювач."},
+  {id:"Q09",ch:2,s:"full",t:"Закороткий запит → агент…",d:"Агресивні defaults + обов'язкові критерії (опис продукту+мінбаза). «Жовті» поля з попередженням. Решта опційні."},
+  {id:"Q10",ch:2,s:"full",t:"Перебити пайплайн?",d:"Так, обов'язково. Майлстоуни + human-in-the-loop підтверджує кожен."},
+  {id:"Q11",ch:3,s:"full",t:"Скільки механік v1?",d:"10 для першої здачі, але архітектурно необмежено; pipeline додавання; кожна наступна простіше."},
+  {id:"Q12",ch:3,s:"open",t:"Must-have механіки?",d:"ВІДКРИТО — окрема сесія, самі принесуть список. Далі: руками робити playable під кожну."},
+  {id:"Q13",ch:3,s:"full",t:"Комбінувати 2 механіки?",d:"Так. Механіки = методи/функції, жонглюються в формаціях — основна цінність."},
+  {id:"Q14",ch:3,s:"full",t:"Як описуються технічно?",d:"Гібрид: code-scaffold + AI-fill. Усі елементи редаговані руками без зміни механіки = конструктор. Два режими: dev / user."},
+  {id:"Q15",ch:3,s:"full",t:"Хто додає механіку?",d:"Розробник через код (dev). + bucket: аналіз сесій → нереалізовані фічі."},
+  {id:"Q16",ch:4,s:"full",t:"Скільки стилів v1?",d:"3-5 перевірених + опція «власний стиль» (full-generated з референсу)."},
+  {id:"Q17",ch:4,s:"full",t:"Стиль — це…",d:"Референс-картинки обов'язкові (якість). + окремий prototype/greybox-стиль. Стиль нижче в пріоритеті."},
+  {id:"Q18",ch:4,s:"full",t:"Агент створює нові стилі?",d:"Так (image2style). + авторизація/каталог стилів — запінити стиль користувача."},
+  {id:"Q19",ch:4,s:"full",t:"Стиль ↔ механіка",d:"Незалежні. Механіка=код, візуал будь-який. Нюанс: guard-tips механіки (анімація/взриви) докидаються параметрами."},
+  {id:"Q20",ch:4,s:"full",t:"Стиль і механіка не пасують?",d:"warn, але робить (поки). Style-critic — не зараз. «Чи гарно» — відповідальність дизайнера."},
+  {id:"Q21",ch:5,s:"full",t:"Макс полів у брифі?",d:"Переформулювати як fast-flow vs deep-flow (кнопки)."},
+  {id:"Q22",ch:5,s:"part",t:"Обов'язкові поля?",d:"Поки тільки: основний промт + реферальні зображення. Точний список — у тестуванні."},
+  {id:"Q23",ch:5,s:"full",t:"Приклад успіху?",d:"Опційно, якщо є."},
+  {id:"Q24",ch:5,s:"full",t:"Формат брифу",d:"Мультиформат: перетяг картинок + вибір з варіацій + поле-інпут на ВСІХ етапах."},
+  {id:"Q25",ch:5,s:"full",t:"Версіонування брифу",d:"Так — на user-brief; зараз 1.0; нетригерний відкат до попередньої версії."},
+  {id:"Q26",ch:6,s:"full",t:"1-екранний endcard?",d:"Так. Може бути 1-екран / середина гри / сторітел на 15 екранів."},
+  {id:"Q27",ch:6,s:"full",t:"Макс довжина?",d:"Обмеження тільки часом, 30с не фіксуємо. Базово 10-15с + поле для експериментів (4-хв, комікси)."},
+  {id:"Q28",ch:6,s:"full",t:"Хто вирішує к-сть екранів?",d:"Механіка диктує базу + код. Юзер хоче більше → попереджаємо, але робимо."},
+  {id:"Q29",ch:6,s:"full",t:"Редагувати plan ДО asset-gen?",d:"Так, з UI-формою — прислати що буде згенеровано (прототипний підхід)."},
+  {id:"Q30",ch:6,s:"full",t:"Planner невпевнений?",d:"Запитує користувача (~3 кнопки). + червона overpush «роби з того що маєш» з попередженням."},
+  {id:"Q31",ch:7,s:"full",t:"Провайдер картинок",d:"OpenAI gpt-image-1.5 — лишаємо (бенчмарк > Flux)."},
+  {id:"Q32",ch:7,s:"full",t:"Бюджет на playable",d:"$0.24-1.13 зараз, до $20 якщо гіпер. Обов'язково prediction вартості перед генерацією."},
+  {id:"Q33",ch:7,s:"full",t:"Asset fail 3 спроби",d:"Перерендер із модифікованим промтом. Вузьке горло — підмітити на pipeline."},
+  {id:"Q34",ch:7,s:"full",t:"Редагувати асети?",d:"Так, повний toolkit. Може дати варіанти на вибір."},
+  {id:"Q35",ch:7,s:"full",t:"Зберігати невдалі?",d:"Так, усі — для debug, окреме місце."},
+  {id:"Q36",ch:8,s:"open",t:"Непорушні правила зон?",d:"ВІДКРИТО — вирішується в тестах, збираємо дані, вчимося."},
+  {id:"Q37",ch:8,s:"full",t:"Experimental layouts?",d:"Так. Dev порушує вільно; user — галочка за прапором experimental."},
+  {id:"Q38",ch:8,s:"part",t:"Animation strategy",d:"І GSAP-патерни, І AI-SVG — кілька варіацій, тест ваги/якості."},
+  {id:"Q39",ch:8,s:"part",t:"Variability range",d:"Підхід: 1 асет → 20 варіацій → human-feedback → база знань. Точний range — defer."},
+  {id:"Q40",ch:8,s:"full",t:"Localization",d:"Пофіг зараз — англ + укр."},
+  {id:"Q41",ch:9,s:"full",t:"Що блокує випуск?",d:"Лишаємо як є: meta-validator (розмір + CTA + no-redirect/no-external)."},
+  {id:"Q42",ch:9,s:"open",t:"Visual regression коли?",d:"ВІДКРИТО — користувач попросив пояснити, що це (бракує контексту)."},
+  {id:"Q43",ch:9,s:"open",t:"Semantic critic",d:"ВІДКРИТО — бракує контексту, потрібні пояснення (additional questions)."},
+  {id:"Q44",ch:9,s:"full",t:"Fail with warning?",d:"Ні, не може."},
+  {id:"Q45",ch:9,s:"full",t:"Прогонів на playable?",d:"Single-shot за замовч.; опція к-сті + паралелізація — не зараз."},
+  {id:"Q46",ch:10,s:"full",t:"Як часто переписувати промти?",d:"Доволі часто; постійні A/B-експерименти."},
+  {id:"Q47",ch:10,s:"open",t:"Multi-agent vs single",d:"ВІДКЛАДЕНО — «забагато», не роздуваємо зараз."},
+  {id:"Q48",ch:10,s:"open",t:"UI пріоритет",d:"НЕ ОБГОВОРЕНО (сесія обірвалась)."},
+  {id:"Q49",ch:10,s:"open",t:"Open vs closed",d:"НЕ ОБГОВОРЕНО."},
+  {id:"Q50",ch:10,s:"part",t:"Через 1 рік",d:"Майже 100% автономна 0→файл (випливає з Q01)."}
+];
+
+const ICON={full:"🟢",part:"🟡",open:"🔴"};
+const counts={full:0,part:0,open:0}; Q.forEach(q=>counts[q.s]++);
+(function(){
+  const c=document.getElementById('counts');
+  [["full","повна",counts.full],["part","частково",counts.part],["open","відкрито",counts.open]].forEach(([k,lab,n])=>{
+    const el=document.createElement('span'); el.className='pill '+k; el.textContent=ICON[k]+' '+n+' '+lab; c.appendChild(el);
+  });
+})();
+
+const panel=document.getElementById('panel');
+function select(q,chip){
+  document.querySelectorAll('.chip.sel').forEach(e=>e.classList.remove('sel'));
+  chip.classList.add('sel');
+  panel.textContent='';
+  const b=document.createElement('div'); b.className='badge '+( {full:'pill full',part:'pill part',open:'pill open'}[q.s]?'':'' );
+  b.style.cssText='display:inline-block;padding:3px 10px;border-radius:6px;font-weight:700;font-size:12px;margin-bottom:10px;'+
+    (q.s==='full'?'background:#0f3a2c;color:#36d399':q.s==='part'?'background:#3a2f0c;color:#fbbd23':'background:#3a1414;color:#f87272');
+  b.textContent=q.id+' · '+CH[q.ch]+' · '+ICON[q.s];
+  const h=document.createElement('h3'); h.textContent=q.t;
+  const d=document.createElement('div'); d.className='dec'; d.textContent=q.d;
+  panel.appendChild(b); panel.appendChild(h); panel.appendChild(d);
+}
+
+const board=document.getElementById('board');
+Object.keys(CH).forEach(ch=>{
+  const items=Q.filter(q=>q.ch==Number(ch)); if(!items.length)return;
+  const sec=document.createElement('div'); sec.className='ch';
+  const h=document.createElement('h2'); h.textContent=ch+' · '+CH[ch]; sec.appendChild(h);
+  const row=document.createElement('div'); row.className='chips';
+  items.forEach(q=>{
+    const chip=document.createElement('div'); chip.className='chip';
+    const dot=document.createElement('span'); dot.className='dot '+q.s;
+    const id=document.createElement('span'); id.className='qid'; id.textContent=q.id;
+    const t=document.createElement('span'); t.className='qt'; t.textContent=q.t;
+    chip.appendChild(dot); chip.appendChild(id); chip.appendChild(t);
+    chip.addEventListener('click',()=>select(q,chip));
+    row.appendChild(chip);
+  });
+  sec.appendChild(row); board.appendChild(sec);
+});
+
+// наскрізні / спрощене / відкрите
+const NOTES=[
+  ["Наскрізні рішення",["Два режими: dev vs user(designer)","Human-in-the-loop за майлстоунами + overpush-кнопка","Інтерактивний viewport/мокап (грейбокс) — рухомі об'єкти","Prediction вартості + збереження невдач для debug","Версіонування + нетригерний відкат усього","«Warn, але роби»; критики відкладені","Референс-картинки обов'язкові + дозаповнення контексту агентом"]],
+  ["Спростилося / descoped",["Localization → лише en+uk","Style/semantic critic, multi-agent — відкладені","Обов'язкові поля й правила зон — у тестування","Provider не чіпаємо (gpt-image-1.5)"]],
+  ["Відкриті (потребують дії)",["Q12 — список must-have механік (окрема сесія)","Q36 — непорушні правила зон (з тестів)","Q42/Q43 — пояснити visual-regression і semantic-critic","Q47/Q48/Q49 — оркестрація / UI / open-source"]]
+];
+const notes=document.getElementById('notes');
+const grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px';
+NOTES.forEach(([title,items])=>{
+  const col=document.createElement('div'); col.className='col';
+  const h=document.createElement('h2'); h.textContent=title; col.appendChild(h);
+  const ul=document.createElement('ul'); ul.style.cssText='margin:6px 0;padding-left:18px';
+  items.forEach(it=>{const li=document.createElement('li'); li.textContent=it; ul.appendChild(li);});
+  col.appendChild(ul); grid.appendChild(col);
+});
+notes.appendChild(grid);
+</script>
+</body></html>
