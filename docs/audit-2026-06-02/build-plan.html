@@ -1,0 +1,126 @@
+<!doctype html><html lang="uk"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Build Plan — Pipeline v1</title>
+<style>
+:root{--bg:#0e0e12;--card:#16161d;--line:#262631;--txt:#e7e7f0;--dim:#9a9ab0;--acc:#5b8cff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.7 system-ui,"Segoe UI",Roboto,sans-serif}
+.layout{display:grid;grid-template-columns:280px 1fr;max-width:1280px;margin:0 auto}
+nav{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;padding:26px 18px;border-right:1px solid var(--line)}
+nav .tt{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+nav a{display:block;color:var(--dim);text-decoration:none;padding:5px 10px;border-radius:7px;font-size:13.5px}
+nav a:hover{color:var(--txt);background:var(--card)}
+nav a.lv1{font-weight:700;color:var(--txt);margin-top:8px}
+nav a.lv2{padding-left:20px}
+main{padding:34px 46px;min-width:0}
+h1{font-size:27px;margin:.2em 0 .5em;line-height:1.25}
+h2{font-size:20px;margin:1.5em 0 .5em;padding-top:.5em;border-top:1px solid var(--line)}
+h3{font-size:16px;margin:1.3em 0 .4em;color:#cfd2ff}
+h4{font-size:14px;margin:1.1em 0 .3em;color:var(--dim);text-transform:uppercase;letter-spacing:.4px}
+p{margin:.6em 0}a{color:var(--acc)}
+code{background:#20202a;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font:13px/1.5 ui-monospace,Menlo,monospace}
+pre{background:#0a0a0f;border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow:auto}
+pre code{background:none;border:none;padding:0;font-size:12.5px;color:#bfe3d2;white-space:pre}
+blockquote{margin:.8em 0;padding:10px 16px;border-left:3px solid var(--acc);background:#161824;border-radius:0 8px 8px 0;color:#cfd0e6}
+hr{border:none;border-top:1px solid var(--line);margin:1.8em 0}
+ul,ol{margin:.5em 0;padding-left:22px}li{margin:.25em 0}
+strong{color:#fff}em{color:#cfd2ff;font-style:normal;background:#1c1c28;padding:0 4px;border-radius:4px}
+.tw{overflow:auto;margin:1em 0;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:#1b1b24;color:#cfd2ff;font-weight:700}
+tbody tr:hover{background:#15151d}
+td code{font-size:12px}
+@media(max-width:880px){.layout{grid-template-columns:1fr}nav{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}}
+</style></head>
+<body><div class="layout">
+<nav><div class="tt">Зміст</div><a class="lv1" href="#h1">Pipeline v1 — Developer Build Plan</a><a class="lv2" href="#h2">0. Глобальні контракти й конвенції (читати першими)</a><a class="lv2" href="#h8">Definition of Done (для КОЖНОЇ фази)</a><a class="lv2" href="#h9">Phase 0 — Контракти й каркас</a><a class="lv2" href="#h10">Phase 1 — Orchestrator + перша стадія (Validator)</a><a class="lv2" href="#h11">Phase 2 — Полагодити зламаний envelope (assetgen → builder) ⭐ головна</a><a class="lv2" href="#h12">Phase 3 — CLI (керованість)</a><a class="lv2" href="#h13">Phase 4 — Gates (human-in-the-loop)</a><a class="lv2" href="#h14">Phase 5 — Planner (новий модуль)</a><a class="lv2" href="#h15">Зведення human-checkpoints (де приходиш ТИ)</a><a class="lv2" href="#h16">Ризики</a><a class="lv2" href="#h17">Процес</a></nav>
+<main><h1 id="h1">Pipeline v1 — Developer Build Plan</h1>
+<p>Повний план імплементації pipeline-движка (фази 0-5), звірений по коду (<a href="implementation-plan.md" target="_blank" rel="noopener">implementation-plan.md</a>). Працюємо <strong>через беклог</strong> (<a href="backlog.md" target="_blank" rel="noopener">backlog.md</a>); після кожної фази — запис у <a href="BUILD-LOG.md" target="_blank" rel="noopener">BUILD-LOG.md</a>.</p>
+<hr>
+<h2 id="h2">0. Глобальні контракти й конвенції (читати першими)</h2>
+<h3 id="h3">Envelope (передається між стадіями)</h3>
+<p>Єдиний JSON-конверт. Кожна стадія приймає Envelope і повертає Envelope (доповнений).</p>
+<pre><code>Envelope {
+  runId: string
+  createdAt: string            // ISO, ставиться раннером
+  brief:  { style: string, prompt?: string, refs?: string[], ... }
+  assets: { key: string, path: string, bytes: number, prompt: string, briefVersion: string }[]
+  font:   { family: string, path: string }
+  plan?:  { screens: ScreenPlan[], assetKeys: string[] }   // зʼявляється у фазі 5
+  build?: { htmlPath: string, bytes: number }
+  validation?: { ok: boolean, checks: {...} }
+}</code></pre>
+<h3 id="h4">run.json (стейт-машина прогону)</h3>
+<pre><code>RunState {
+  runId: string
+  style: string
+  status: "running" | "needs-approval" | "done" | "failed"
+  stages: { name: string, status: "todo"|"running"|"done"|"failed"|"skipped",
+            startedAt?, endedAt?, error?, note? }[]
+}</code></pre>
+<h3 id="h5">Stage-інтерфейс</h3>
+<pre><code>Stage&lt;In, Out&gt; = {
+  name: string
+  run(input: In, ctx: RunContext): Promise&lt;Out&gt;
+  gate?: boolean            // якщо true — після стадії стоп зі status:"needs-approval"
+}</code></pre>
+<h3 id="h6">Розкладка на диску</h3>
+<p><code>out/runs/{runId}/</code> — <code>run.json</code>, <code>envelope.json</code>, <code>assets/</code>, <code>index.html</code>, <code>failures/</code>. (Зараз: <code>out/{style}/</code> per-style — мігруємо на per-run.)</p>
+<h3 id="h7">Тестування</h3>
+<ul><li><strong><code>npm run test</code></strong> — <code>node:test</code> через <code>tsx</code> (вбудований, без нових тест-фреймворків). Файли <code>*.test.ts</code> поруч з кодом.</li><li><strong><code>npm run typecheck</code></strong> — <code>tsc --noEmit</code>, має бути чистим <strong>щокроку</strong>.</li><li><strong><code>npm run visual</code></strong> — Playwright 8 viewports + zone-assertions, для рефактор-фаз.</li><li><strong>Golden-file</strong> (фази 0-2, де поведінка НЕ міняється): знімок <code>index.html</code> (розмір + visual) ДО рефактора → після має збігатись (±2% розміру, visual ALL PASS).</li></ul>
+<hr>
+<h2 id="h8">Definition of Done (для КОЖНОЇ фази)</h2>
+<ol><li>✅ <code>npm run typecheck</code> чистий.</li><li>✅ <code>npm run test</code> зелений (нові тести фази проходять).</li><li>✅ Для рефактор-фаз (0-2): поведінка незмінна — golden + <code>npm run visual</code> ALL PASS.</li><li>✅ Запис у <code>BUILD-LOG.md</code> (що зроблено, що перевірено, що лишилось).</li><li>✅ Статуси в <code>backlog.md</code> оновлені (todo→done).</li><li>🛑 Пройдено <strong>human-checkpoint</strong> фази (нижче), якщо він є.</li></ol>
+<hr>
+<h2 id="h9">Phase 0 — Контракти й каркас</h2>
+<p><strong>Мета:</strong> ввести контракти, <strong>нічого не міняючи в поведінці</strong>. <strong>Беклог:</strong> P0-1…P0-4.</p>
+<ul><li><strong>P0-1</strong> — додати <code>zod</code> у залежності.</li><li><strong>P0-2</strong> — <code>src/assetgen/pipeline/types.ts</code>: zod-схеми + TS-типи <code>Envelope</code>, <code>RunState</code>, <code>Stage</code>, <code>RunContext</code>.</li><li><strong>P0-3</strong> — <code>src/assetgen/pipeline/runDir.ts</code>: розкладка <code>out/runs/{runId}/</code>, генерація <code>runId</code>, read/write <code>run.json</code> + <code>envelope.json</code>.</li><li><strong>P0-4</strong> — <code>types.test.ts</code>: валідний Envelope парситься, кривий — кидає.</li></ul>
+<p><strong>Acceptance criteria</strong></p>
+<ul><li>AC0.1 — <code>Envelope</code>/<code>RunState</code> мають zod-схему; <code>schema.parse(valid)</code> ок, <code>schema.parse(invalid)</code> кидає.</li><li>AC0.2 — жодна наявна команда не змінила вивід (<code>npm run menu</code> дає той самий файл).</li><li>AC0.3 — <code>tsc</code> чистий, <code>npm run test</code> зелений.</li></ul>
+<p><strong>Тести:</strong> <code>pipeline/types.test.ts</code> (valid/invalid parse) · <code>typecheck</code>.</p>
+<blockquote>🛑 <strong>CHECKPOINT A — ти перевіряєш:</strong> форму <code>Envelope</code> + <code>run.json</code> (це фундамент усього). Питання до тебе: «це правильний контракт, нічого не бракує?» Поки не підтвердиш — фазу 1 не починаємо.</blockquote>
+<hr>
+<h2 id="h10">Phase 1 — Orchestrator + перша стадія (Validator)</h2>
+<p><strong>Мета:</strong> раннер, що веде стадії й пише <code>run.json</code>; перша стадія — найбезпечніший Validator (<code>html→verdict</code>). <strong>Беклог:</strong> P1-1…P1-3.</p>
+<ul><li><strong>P1-1</strong> — <code>pipeline/runner.ts</code>: <code>runStages(runId, stages, ctx)</code> — послідовно, після кожної пише <code>run.json</code>; при повторі skip-ає <code>done</code>.</li><li><strong>P1-2</strong> — переходи статусів + resume.</li><li><strong>P1-3</strong> — обгорнути наявний валідатор як <code>Stage</code> (pure, без побічних ефектів).</li></ul>
+<p><strong>Acceptance criteria</strong></p>
+<ul><li>AC1.1 — Validator-як-стадія дає <strong>той самий verdict</strong>, що й прямий <code>validate</code>.</li><li>AC1.2 — <code>run.json</code> пишеться зі статусами стадій; повторний запуск skip-ає завершені.</li><li>AC1.3 — наявні команди працюють як раніше.</li></ul>
+<p><strong>Тести:</strong> інтеграційний — прогнати стадію, звірити <code>run.json.stages[].status==="done"</code> + verdict == прямий виклик · resume-тест (друга прогонка skip).</p>
+<blockquote>🛑 <strong>CHECKPOINT B — ти перевіряєш:</strong> реальний <code>run.json</code> після прогону + що resume працює (постав на паузу, продовж).</blockquote>
+<hr>
+<h2 id="h11">Phase 2 — Полагодити зламаний envelope (assetgen → builder) ⭐ головна</h2>
+<p><strong>Мета:</strong> генератор віддає повний Envelope; білдер <strong>читає Envelope</strong>, а не хардкод. <strong>Беклог:</strong> P2-1…P2-3.</p>
+<ul><li><strong>P2-1</strong> — обгорнути <code>runAssetGen</code> → emit <code>envelope.json</code> (<code>assets[]</code>, <code>font</code>, <code>style</code>).</li><li><strong>P2-2</strong> — рефактор <code>buildKitPlayable</code>: приймає Envelope; прибрати хардкод <code>ICONS/NINE/"banner"/"bg-castle"/"knight"/KNIGHT_SRC/FONT</code> (<code>build-test-playable.ts:17-21,57-61</code>).</li><li><strong>P2-3</strong> — <code>cmdMenu</code> ходить через раннер (assetgen-стадія → build-стадія).</li></ul>
+<p><strong>Acceptance criteria</strong></p>
+<ul><li>AC2.1 — у <code>build-test-playable.ts</code> <strong>нема</strong> констант <code>ICONS/KNIGHT_SRC/FONT</code> і хардкод-імен (grep чистий).</li><li>AC2.2 — вихідний playable <strong>візуально ідентичний</strong>: <code>npm run visual</code> ALL PASS; розмір <code>index.html</code> ±2% до golden.</li><li>AC2.3 — <code>manifest.json</code>/envelope з Phase 1 <strong>реально читається</strong> білдером (а не ігнориться).</li></ul>
+<p><strong>Тести:</strong> golden (розмір+visual heroes3 до/після) · grep-тест на відсутність хардкоду · integration full-run.</p>
+<blockquote>🛑 <strong>CHECKPOINT C — ти перевіряєш:</strong> before/after playable поряд — <strong>мають бути однакові</strong>. Підписуєш, що рефактор нічого не зламав.</blockquote>
+<hr>
+<h2 id="h12">Phase 3 — CLI (керованість)</h2>
+<p><strong>Мета:</strong> команди прогону. <strong>Беклог:</strong> P3-1…P3-3. <code>forge run &lt;style&gt;</code> · <code>forge resume &lt;runId&gt;</code> · <code>forge inspect &lt;runId&gt;</code>.</p>
+<p><strong>Acceptance criteria</strong></p>
+<ul><li>AC3.1 — <code>forge run heroes3</code> → <code>runId</code> + <code>envelope.json</code> + playable.</li><li>AC3.2 — <code>forge resume &lt;runId&gt;</code> продовжує з місця паузи.</li><li>AC3.3 — <code>forge inspect &lt;runId&gt;</code> друкує статуси стадій.</li></ul>
+<p><strong>Тести:</strong> integration run→inspect · resume після штучного переривання.</p>
+<blockquote>🛑 <strong>CHECKPOINT D — ти перевіряєш:</strong> запускаєш 3 команди сам.</blockquote>
+<hr>
+<h2 id="h13">Phase 4 — Gates (human-in-the-loop)</h2>
+<p><strong>Мета:</strong> стоп на майлстоунах + <code>cost-preview</code> перед генерацією. Реалізує Q10/Q30/Q32. <strong>Беклог:</strong> P4-1…P4-3. <code>gate:true</code> на стадії → <code>status:"needs-approval"</code>; <code>forge approve &lt;runId&gt;</code>; перший gate — cost-preview.</p>
+<p><strong>Acceptance criteria</strong></p>
+<ul><li>AC4.1 — прогін <strong>зупиняється перед asset-gen</strong> з прогнозом вартості; <code>run.json.status==="needs-approval"</code>.</li><li>AC4.2 — <code>forge approve</code> продовжує; відмова — лишає на паузі.</li><li>AC4.3 — є «overpush» (продовжити попри ворнінг) — Q30.</li></ul>
+<p><strong>Тести:</strong> integration: стоп на gate → approve → завершення; відмова → лишається needs-approval.</p>
+<blockquote>🛑 <strong>CHECKPOINT E — ти перевіряєш:</strong> реальний cost-preview gate (підтверджуєш суму перед генерацією).</blockquote>
+<hr>
+<h2 id="h14">Phase 5 — Planner (новий модуль)</h2>
+<p><strong>Мета:</strong> відсутня стадія: намір → план екранів + список ассетів. Реалізує Q28/Q29. <strong>Беклог:</strong> P5-1…P5-3.</p>
+<p><strong>Acceptance criteria</strong></p>
+<ul><li>AC5.1 — Planner-стадія видає <code>plan.screens[]</code> + <code>plan.assetKeys[]</code> у валідному форматі.</li><li>AC5.2 — план <strong>редагований ДО asset-gen</strong> (Q29).</li><li>AC5.3 — downstream (assetgen/build) споживає <code>plan</code>, а не статичний список.</li></ul>
+<p><strong>Тести:</strong> planner дає валідний plan-schema · integration наскрізь до білда.</p>
+<blockquote>🛑 <strong>CHECKPOINT F — ти перевіряєш:</strong> згенерований план екранів <strong>перед</strong> генерацією ассетів.</blockquote>
+<hr>
+<h2 id="h15">Зведення human-checkpoints (де приходиш ТИ)</h2>
+<div class="tw"><table><thead><tr><th>#</th><th>Коли</th><th>Що підтверджуєш</th></tr></thead><tbody><tr><td>A</td><td>після Phase 0</td><td>форма Envelope + run.json (контракт)</td></tr><tr><td>B</td><td>після Phase 1</td><td>реальний run.json + resume працює</td></tr><tr><td>C</td><td>після Phase 2</td><td>before/after playable ідентичні (no regress)</td></tr><tr><td>D</td><td>після Phase 3</td><td>3 CLI-команди працюють</td></tr><tr><td>E</td><td>після Phase 4</td><td>cost-preview gate (підтвердження суми)</td></tr><tr><td>F</td><td>після Phase 5</td><td>план екранів перед asset-gen</td></tr></tbody></table></div>
+<h2 id="h16">Ризики</h2>
+<ul><li><strong>R1</strong> — рефактор Phase 2 може непомітно змінити вивід → мітигація: golden + visual ALL PASS, обовʼязковий CHECKPOINT C.</li><li><strong>R2</strong> — нова тест-інфра (<code>node:test</code>) → тримати тести малими й швидкими.</li><li><strong>R3</strong> — <code>zod</code> як нова залежність → ок, стандарт, легка.</li></ul>
+<h2 id="h17">Процес</h2>
+<p>Спершу ця спека → рев'ю → твоя вичитка → <strong>тільки потім</strong> код. Кожна фаза закривається за Definition of Done + чекпойнт.</p></main>
+</div></body></html>

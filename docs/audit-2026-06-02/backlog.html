@@ -1,0 +1,43 @@
+<!doctype html><html lang="uk"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Backlog — Pipeline v1</title>
+<style>
+:root{--bg:#0e0e12;--card:#16161d;--line:#262631;--txt:#e7e7f0;--dim:#9a9ab0;--acc:#5b8cff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.7 system-ui,"Segoe UI",Roboto,sans-serif}
+.layout{display:grid;grid-template-columns:280px 1fr;max-width:1280px;margin:0 auto}
+nav{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;padding:26px 18px;border-right:1px solid var(--line)}
+nav .tt{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+nav a{display:block;color:var(--dim);text-decoration:none;padding:5px 10px;border-radius:7px;font-size:13.5px}
+nav a:hover{color:var(--txt);background:var(--card)}
+nav a.lv1{font-weight:700;color:var(--txt);margin-top:8px}
+nav a.lv2{padding-left:20px}
+main{padding:34px 46px;min-width:0}
+h1{font-size:27px;margin:.2em 0 .5em;line-height:1.25}
+h2{font-size:20px;margin:1.5em 0 .5em;padding-top:.5em;border-top:1px solid var(--line)}
+h3{font-size:16px;margin:1.3em 0 .4em;color:#cfd2ff}
+h4{font-size:14px;margin:1.1em 0 .3em;color:var(--dim);text-transform:uppercase;letter-spacing:.4px}
+p{margin:.6em 0}a{color:var(--acc)}
+code{background:#20202a;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font:13px/1.5 ui-monospace,Menlo,monospace}
+pre{background:#0a0a0f;border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow:auto}
+pre code{background:none;border:none;padding:0;font-size:12.5px;color:#bfe3d2;white-space:pre}
+blockquote{margin:.8em 0;padding:10px 16px;border-left:3px solid var(--acc);background:#161824;border-radius:0 8px 8px 0;color:#cfd0e6}
+hr{border:none;border-top:1px solid var(--line);margin:1.8em 0}
+ul,ol{margin:.5em 0;padding-left:22px}li{margin:.25em 0}
+strong{color:#fff}em{color:#cfd2ff;font-style:normal;background:#1c1c28;padding:0 4px;border-radius:4px}
+.tw{overflow:auto;margin:1em 0;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:#1b1b24;color:#cfd2ff;font-weight:700}
+tbody tr:hover{background:#15151d}
+td code{font-size:12px}
+@media(max-width:880px){.layout{grid-template-columns:1fr}nav{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}}
+</style></head>
+<body><div class="layout">
+<nav><div class="tt">Зміст</div><a class="lv1" href="#h1">Backlog — Pipeline v1</a><a class="lv2" href="#h2">Правила ведення</a></nav>
+<main><h1 id="h1">Backlog — Pipeline v1</h1>
+<p>Живий беклог. <strong>Оновлюй <code>Статус</code> коли береш/закриваєш.</strong> План: <a href="build-plan.md" target="_blank" rel="noopener">build-plan.md</a> · лог: <a href="BUILD-LOG.md" target="_blank" rel="noopener">BUILD-LOG.md</a>.</p>
+<p><strong>Статус:</strong> <code>todo</code> · <code>wip</code> · <code>done</code> · <code>blocked</code> · <code>review</code> (чекає human-checkpoint)</p>
+<div class="tw"><table><thead><tr><th>ID</th><th>Фаза</th><th>Задача</th><th>Acceptance</th><th>Залежить</th><th>Статус</th></tr></thead><tbody><tr><td>P0-1</td><td>0</td><td>додати <code>zod</code> у deps</td><td>zod у package.json</td><td>—</td><td>todo</td></tr><tr><td>P0-2</td><td>0</td><td><code>pipeline/types.ts</code> — схеми Envelope/RunState/Stage/RunContext</td><td>AC0.1</td><td>P0-1</td><td>todo</td></tr><tr><td>P0-3</td><td>0</td><td><code>pipeline/runDir.ts</code> — <code>out/runs/{runId}/</code>, run.json I/O</td><td>tsc</td><td>P0-2</td><td>todo</td></tr><tr><td>P0-4</td><td>0</td><td><code>types.test.ts</code> — valid/invalid parse</td><td>AC0.1, AC0.3</td><td>P0-2</td><td>todo</td></tr><tr><td>—</td><td>0</td><td>🛑 CHECKPOINT A</td><td>контракт підтверджено</td><td>P0-*</td><td>review</td></tr><tr><td>P1-1</td><td>1</td><td><code>pipeline/runner.ts</code> — runStages + run.json після кожної</td><td>AC1.2</td><td>P0-*</td><td>blocked</td></tr><tr><td>P1-2</td><td>1</td><td>переходи статусів + resume (skip done)</td><td>AC1.2</td><td>P1-1</td><td>blocked</td></tr><tr><td>P1-3</td><td>1</td><td>Validator як <code>Stage</code></td><td>AC1.1</td><td>P1-1</td><td>blocked</td></tr><tr><td>—</td><td>1</td><td>🛑 CHECKPOINT B</td><td>run.json + resume ок</td><td>P1-*</td><td>review</td></tr><tr><td>P2-1</td><td>2</td><td><code>runAssetGen</code> → emit <code>envelope.json</code></td><td>AC2.3</td><td>P1-*</td><td>blocked</td></tr><tr><td>P2-2</td><td>2</td><td><code>buildKitPlayable</code> читає Envelope; прибрати хардкод</td><td>AC2.1</td><td>P2-1</td><td>blocked</td></tr><tr><td>P2-3</td><td>2</td><td><code>cmdMenu</code> через раннер (assetgen→build стадії)</td><td>AC2.2</td><td>P2-2</td><td>blocked</td></tr><tr><td>—</td><td>2</td><td>🛑 CHECKPOINT C</td><td>before/after ідентичні</td><td>P2-*</td><td>review</td></tr><tr><td>P3-1</td><td>3</td><td><code>forge run &lt;style&gt;</code></td><td>AC3.1</td><td>P2-*</td><td>blocked</td></tr><tr><td>P3-2</td><td>3</td><td><code>forge resume &lt;runId&gt;</code></td><td>AC3.2</td><td>P3-1</td><td>blocked</td></tr><tr><td>P3-3</td><td>3</td><td><code>forge inspect &lt;runId&gt;</code></td><td>AC3.3</td><td>P3-1</td><td>blocked</td></tr><tr><td>—</td><td>3</td><td>🛑 CHECKPOINT D</td><td>3 команди працюють</td><td>P3-*</td><td>review</td></tr><tr><td>P4-1</td><td>4</td><td><code>gate:true</code> → status needs-approval</td><td>AC4.1</td><td>P3-*</td><td>blocked</td></tr><tr><td>P4-2</td><td>4</td><td><code>forge approve &lt;runId&gt;</code> (+ overpush)</td><td>AC4.2, AC4.3</td><td>P4-1</td><td>blocked</td></tr><tr><td>P4-3</td><td>4</td><td>cost-preview gate перед asset-gen</td><td>AC4.1</td><td>P4-1</td><td>blocked</td></tr><tr><td>—</td><td>4</td><td>🛑 CHECKPOINT E</td><td>cost-preview підтверджено</td><td>P4-*</td><td>review</td></tr><tr><td>P5-1</td><td>5</td><td>Planner-стадія: намір → plan.screens + assetKeys</td><td>AC5.1</td><td>P4-*</td><td>blocked</td></tr><tr><td>P5-2</td><td>5</td><td>план редагований ДО asset-gen</td><td>AC5.2</td><td>P5-1</td><td>blocked</td></tr><tr><td>P5-3</td><td>5</td><td>downstream споживає <code>plan</code></td><td>AC5.3</td><td>P5-1</td><td>blocked</td></tr><tr><td>—</td><td>5</td><td>🛑 CHECKPOINT F</td><td>план перед asset-gen</td><td>P5-*</td><td>review</td></tr></tbody></table></div>
+<h2 id="h2">Правила ведення</h2>
+<ul><li>Беремо задачу → <code>wip</code>; закрили за AC + тести → <code>done</code>; чекпойнт → <code>review</code> поки користувач не підтвердить.</li><li>Після кожної ФАЗИ — обовʼязковий запис у <code>BUILD-LOG.md</code> (це HARD-правило, див. <code>CLAUDE.md</code>).</li><li>Не починаємо наступну фазу, поки не пройдено human-checkpoint попередньої.</li></ul></main>
+</div></body></html>

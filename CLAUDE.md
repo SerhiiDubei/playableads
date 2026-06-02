@@ -3,6 +3,14 @@
 CLI toolchain that builds Meta playable ads from `templates × styles × briefs` (TS/ESM, PixiJS + GSAP).
 AI asset-generation lives in `src/assetgen/`. Full experiment journal: `test/EXPERIMENT-LOG.md`.
 
+## Project documentation discipline (HARD — обовʼязково)
+
+Після **КОЖНОГО** стейджу/фази роботи — обовʼязковий запис у `docs/audit-2026-06-02/BUILD-LOG.md`:
+*що зроблено · що перевірено (typecheck/test/visual/golden — з результатами) · які AC закрито · що відкрито/борг · статус чекпойнта.*
+Працюємо **через беклог** (`docs/audit-2026-06-02/backlog.md`): беремо задачу → `wip`, закрили за acceptance + тести → `done`, перед human-checkpoint → `review`.
+**Не починаємо наступну фазу, поки не пройдено human-checkpoint попередньої.** Документація — частина Definition of Done, не «потім».
+План істини: [`docs/audit-2026-06-02/build-plan.md`](docs/audit-2026-06-02/build-plan.md).
+
 ## Skills (зафіксовані workflows)
 
 - **Build a Playable Menu** → `npm run forge -- <style-id> [--layout <id>]`. Один command робить Phase 1 (AI gen) + Phase 2 (HTML build) + HTML log report. Повний опис: [`docs/playable-menu-skill.md`](docs/playable-menu-skill.md). Базовий cost ~$0.24-$1.13 за playable залежно від quality в брифі.
