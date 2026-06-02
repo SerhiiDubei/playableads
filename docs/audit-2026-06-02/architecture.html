@@ -1,0 +1,75 @@
+<!doctype html><html lang="uk"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Architecture v1 — pipeline з рішеннями</title>
+<style>
+:root{--bg:#0e0e12;--card:#16161d;--line:#262631;--txt:#e7e7f0;--dim:#9a9ab0;--acc:#5b8cff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.7 system-ui,"Segoe UI",Roboto,sans-serif}
+.layout{display:grid;grid-template-columns:280px 1fr;max-width:1280px;margin:0 auto}
+nav{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;padding:26px 18px;border-right:1px solid var(--line)}
+nav .tt{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+nav a{display:block;color:var(--dim);text-decoration:none;padding:5px 10px;border-radius:7px;font-size:13.5px}
+nav a:hover{color:var(--txt);background:var(--card)}
+nav a.lv1{font-weight:700;color:var(--txt);margin-top:8px}
+nav a.lv2{padding-left:20px}
+main{padding:34px 46px;min-width:0}
+h1{font-size:27px;margin:.2em 0 .5em;line-height:1.25}
+h2{font-size:20px;margin:1.5em 0 .5em;padding-top:.5em;border-top:1px solid var(--line)}
+h3{font-size:16px;margin:1.3em 0 .4em;color:#cfd2ff}
+h4{font-size:14px;margin:1.1em 0 .3em;color:var(--dim);text-transform:uppercase;letter-spacing:.4px}
+p{margin:.6em 0}a{color:var(--acc)}
+code{background:#20202a;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font:13px/1.5 ui-monospace,Menlo,monospace}
+pre{background:#0a0a0f;border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow:auto}
+pre code{background:none;border:none;padding:0;font-size:12.5px;color:#bfe3d2;white-space:pre}
+blockquote{margin:.8em 0;padding:10px 16px;border-left:3px solid var(--acc);background:#161824;border-radius:0 8px 8px 0;color:#cfd0e6}
+hr{border:none;border-top:1px solid var(--line);margin:1.8em 0}
+ul,ol{margin:.5em 0;padding-left:22px}li{margin:.25em 0}
+strong{color:#fff}em{color:#cfd2ff;font-style:normal;background:#1c1c28;padding:0 4px;border-radius:4px}
+.tw{overflow:auto;margin:1em 0;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:#1b1b24;color:#cfd2ff;font-weight:700}
+tbody tr:hover{background:#15151d}
+td code{font-size:12px}
+@media(max-width:880px){.layout{grid-template-columns:1fr}nav{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}}
+</style></head>
+<body><div class="layout">
+<nav><div class="tt">Зміст</div><a class="lv1" href="#h1">Architecture v1 — цільовий pipeline з вшитими рішеннями (2026-06-02)</a><a class="lv2" href="#h2">Наскрізні шари (діють на всіх кроках)</a><a class="lv2" href="#h3">Кроки pipeline</a><a class="lv2" href="#h15">Метрики й цілі</a><a class="lv2" href="#h16">Відкриті архітектурні рішення</a></nav>
+<main><h1 id="h1">Architecture v1 — цільовий pipeline з вшитими рішеннями (2026-06-02)</h1>
+<p>Глибше/ширше за <code>audit.md</code>: бере 10-кроковий маніфест-pipeline і <strong>вшиває рішення сесії</strong> (посилання <code>Qxx</code> → <code>brief-decisions.md</code>). Статус коду: ✅ є · 🟨 частково · 🟥 нема.</p>
+<pre><code>[0 Brief] → [1 Context-fill] → [2 Plan: screen+flow] → [✋ approve plan]
+   → [3 Component breakdown] → [4 Asset-gen (+cost gate)] → [5 Compose] → [6 Zones]
+   → [7 Build single-file] → [8 Validate: zones+Meta] → [9 Visual tests] → файл
+        ▲ human-in-the-loop на кожному майлстоуні; перебити будь-коли; overpush ▲</code></pre>
+<hr>
+<h2 id="h2">Наскрізні шари (діють на всіх кроках)</h2>
+<div class="tw"><table><thead><tr><th>Шар</th><th>Рішення</th><th>Код</th></tr></thead><tbody><tr><td><strong>Два режими</strong> <code>dev</code> / <code>user</code></td><td>dev = код+довчання+порушення правил; user(дизайнер) = без коду, інпут+правки в межах конструктора (Q14)</td><td>🟥</td></tr><tr><td><strong>Human-in-the-loop</strong></td><td>майлстоуни з approve; перебити будь-коли (Q10); невпевненість→питати (Q30); червона <strong>overpush</strong> «роби з того що маєш»</td><td>🟥</td></tr><tr><td><strong>Інтерактивний viewport / мокап</strong></td><td>грейбокс-перегляд: агент показує що додав, об'єкти рухомі/масштабовані без зміни механіки (Q14,Q29; S1)</td><td>🟨 (є fixed-stage 400×860, нема редактора)</td></tr><tr><td><strong>Версіонування + відкат</strong></td><td>усе версіюється; нетригерний відкат до попередньої версії (Q25)</td><td>🟨 (версія лише в <code>StyleBrief</code>)</td></tr><tr><td><strong>Cost-awareness</strong></td><td>prediction вартості перед asset-gen, свідоме підтвердження (Q32); зберігати невдачі для debug (Q35)</td><td>🟨 (є cost-tracking post-factum)</td></tr><tr><td><strong>Critics — відкладені</strong></td><td>style/semantic critic НЕ зараз, щоб не роздувати pipeline; можливо паралельні агенти потім (Q20,Q43)</td><td>🟥 (свідомо)</td></tr></tbody></table></div>
+<hr>
+<h2 id="h3">Кроки pipeline</h2>
+<h3 id="h4">0. Brief stage 🟥 (Епік B, P0)</h3>
+<p>Вхід дизайнера: продукт+куди ведемо / теза / ідеї+файли / опц.референс (Q06). <strong>fast-flow vs deep-flow</strong> (Q21). Поле-інпут <strong>на всіх етапах</strong> + перетяг референсів (Q24). Обов'язкові: <strong>промт + реферальні зображення</strong>; «жовті» поля з ворнінгом (Q09,Q22). Фінал: <strong>summarize-agent</strong> → топ-3 рішення + поле-інпут + <strong>«суперкнопка» фіналізації</strong> + розкладка механік (Q06). User-brief версіонується (Q25). <em>Гап:</em> немає User-Brief як сутності; є лише <code>StyleBrief</code>. Спершу зняти дубль онтології «Brief».</p>
+<h3 id="h5">1. Context-fill agent 🟥 (Епік I, P1)</h3>
+<p>Дозаповнює відсутнє (ЦА/ніша/tone/конкуренти) — «збігати почитати про нішу» (Q08).</p>
+<h3 id="h6">2. Planning: screen + flow 🟥 (Епік C, P0)</h3>
+<p><strong>Механіка диктує базу екранів</strong> + код (Q28); довжина — тільки час, 30с не фіксуємо, базово 10-15с + поле експериментів (Q27); 1-екран…15-екран (Q26). Planner невпевнений → питає (Q30). <em>Звʼязок із кодом:</em> у нас уже є <code>kit/flow.ts</code> (на session-гілці) — purpose/scene/mechanic/transitions + <code>validateFlow</code>. Кандидат на ядро цього кроку.</p>
+<h3 id="h7">✋ Approve plan 🟥 (Епік C)</h3>
+<p>Plan <strong>редагований ДО asset-gen</strong> через UI — показати що саме згенерується (прототипний підхід, Q29).</p>
+<h3 id="h8">3. Component breakdown 🟨 (Епік D, P0)</h3>
+<p>Динамічна розбивка (зараз — фіксовані 13 kit-ключів). Механіки = <strong>методи/функції</strong>, комбінуються (Q13). Опис — <strong>гібрид scaffold+AI-fill</strong> (Q14). Каталог поповнює розробник кодом + <strong>bucket із сесій</strong> (Q15). 10 механік у v1, необмежено архітектурно (Q11).</p>
+<h3 id="h9">4. Asset generation ✅🟨 (Епік F, P1)</h3>
+<p><strong>gpt-image-1.5</strong> лишаємо (Q31). <strong>Cost-prediction gate</strong> перед gen (Q32). Fail ×3 → <strong>перерендер з модифікованим промтом</strong> (Q33). Невдачі → debug-сховище (Q35). Редагування — повний toolkit (Q34). <em>Є:</em> <code>run.ts</code> (retry/skip/cost), <code>compose.ts</code> (IP-anchor+isolation). <em>Гап:</em> cost-gate UI, retry-modified-prompt, edit-toolkit, fail-store.</p>
+<h3 id="h10">5. Composition ✅ (Епік D/E)</h3>
+<p>kit (single source) + groups/recipes (session-гілка). Стиль ↔ механіка <strong>незалежні</strong> (Q19); guard-tips механіки докидаються параметрами.</p>
+<h3 id="h11">6. Zones ✅🟨 (Епік G, P1)</h3>
+<p><code>BASE ⊕ ARCHETYPE</code> (<code>ZoneSpec</code>), primary CTA → thumb-зона, overlay. Прапор <strong><code>experimental</code></strong> для порушень (Q37). <strong>Variability:</strong> 1 асет → 20 варіацій → human-feedback → база знань (Q39). Непорушні правила — <strong>з тестів</strong> (Q36 🟥).</p>
+<h3 id="h12">7. Build single-file ✅</h3>
+<p>Інлайн усього, base64, <code>FbPlayableAd.onCTAClick()</code>. (<code>build/inliner</code>, <code>bundler</code>).</p>
+<h3 id="h13">8. Validate ✅ (Епік H, P2)</h3>
+<p><strong>Meta-gate лишаємо:</strong> розмір + CTA + no-redirect/no-external (Q41). <strong>No fail-with-warning</strong> (Q44). Lint зон (6 hard + 6 soft) — <code>layouts/lint.ts</code>. Animation: GSAP + AI-SVG, тест ваги (Q38).</p>
+<h3 id="h14">9. Visual regression ✅🟥</h3>
+<p>8 viewports + zone-assertions (<code>visual-test.ts</code>, на session-гілці — авто-визначення екранів). <strong>Коли запускати — Q42 відкрито</strong> (треба пояснити політику: always-before-output vs CI).</p>
+<hr>
+<h2 id="h15">Метрики й цілі</h2>
+<ul><li><strong>Головна метрика — автономна якість</strong> (Q04); вторинні: час ідея→файл, install-rate, варіації.</li><li><strong>Пропускна:</strong> 20-100 playable/тиждень (Q03).</li><li><strong>Через рік:</strong> майже 100% автономна 0→файл (Q01,Q50).</li></ul>
+<h2 id="h16">Відкриті архітектурні рішення</h2>
+<ul><li>Multi-agent vs single-model оркестрація (Q47).</li><li>UI-пріоритет (Q48), open vs closed (Q49).</li><li>Точна семантика visual-regression / semantic-critic (Q42,Q43).</li><li>Зняти напругу «фабрика vs інструмент» (Q01 vs Q05): v1 = інструмент із сильними defaults.</li></ul></main>
+</div></body></html>
