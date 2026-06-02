@@ -1,0 +1,15 @@
+{
+  "id": "mad-mage-tower",
+  "name": "Mad Mage Tower",
+  "description": "Crane-stacking tower builder (Tower Bloxx / Stack). A floor swings on a crane; tap to drop it onto the tower. Overhang is sliced off; a perfect drop keeps full width + combo. Each floor: faster crane, narrower margin. Score per floor, camera rises, claymation fantasy floors. Menu START screen + game-over endcard with CTA. Procedural clay visuals by default; swaps to generated sprites when present in assets/.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "params": {
+    "spawnWidth": 190,
+    "blockHeight": 54,
+    "baseSwingDur": 1.6,
+    "minSwingDur": 0.62,
+    "perfectTol": 11,
+    "swingPad": 26
+  }
+}

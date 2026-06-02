@@ -1,0 +1,14 @@
+{
+  "id": "mad-mage-tower",
+  "name": "Mad Mage Clay",
+  "colors": {
+    "background": "#f6d8a8",
+    "primary": "#b86b3a",
+    "accent": "#ffcf4d",
+    "text": "#3a2418"
+  },
+  "font": {
+    "family": "Georgia, 'Times New Roman', serif",
+    "weight": 700
+  }
+}

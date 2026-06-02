@@ -1,0 +1,66 @@
+{
+  "id": "mad-mage-tower",
+  "name": "Mad Mage Tower Clay",
+  "version": "1.0.0",
+  "derivedFrom": "reference: claymation / plasticine stop-motion fantasy (Tower Bloxx meets a cozy wizard tower)",
+
+  "artDirection": {
+    "artStyle": "claymation",
+    "mood": ["casual-cute", "playful"],
+    "theme": "cozy fantasy wizard tower built from handmade clay storeys"
+  },
+
+  "palette": {
+    "source": "manual",
+    "background": "#f6d8a8",
+    "primary": "#b86b3a",
+    "secondary": "#7a3fb0",
+    "accent": "#ffcf4d",
+    "text": "#3a2418",
+    "extra": ["#6fbf8b", "#59a9d6", "#e2553f"]
+  },
+
+  "rendering": {
+    "outline": { "style": "thin", "color": "#3a2418" },
+    "material": "matte",
+    "lighting": "soft-top",
+    "shading": "smooth-gradient",
+    "perspective": "slight-3d",
+    "shapeLanguage": "rounded-friendly",
+    "cornerRadius": "rounded"
+  },
+
+  "negative": [
+    "no text",
+    "no letters",
+    "no photorealism",
+    "no harsh shadows",
+    "no busy background",
+    "no white halo",
+    "no glossy plastic glare"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1536x1024",
+    "quality": "medium",
+    "transparent": true
+  },
+
+  "assets": [
+    { "key": "floor-0", "kind": "sprite", "subject": "a single wide horizontal rectangular CLAY building storey block, the stone foundation base of a fantasy wizard tower, hand-sculpted plasticine texture, warm sandy-stone color, a small rounded wooden arched door centered at the bottom, soft rounded corners, flat front-on view, centered, isolated" },
+    { "key": "floor-1", "kind": "sprite", "subject": "a single wide horizontal rectangular CLAY building storey block, a mage's study floor of a fantasy tower, soft blue plasticine walls, one warm glowing arched window centered, tiny candle, hand-sculpted clay texture, soft rounded corners, flat front-on view, centered, isolated" },
+    { "key": "floor-2", "kind": "sprite", "subject": "a single wide horizontal rectangular CLAY building storey block, a potion laboratory floor, soft purple plasticine walls, two little glowing potion bottles (pink and green) on a shelf, hand-sculpted clay texture, soft rounded corners, flat front-on view, centered, isolated" },
+    { "key": "floor-3", "kind": "sprite", "subject": "a single wide horizontal rectangular CLAY building storey block, a mushroom room floor, soft green plasticine walls with a big cute red-cap mushroom with white dots in the center, hand-sculpted clay texture, soft rounded corners, flat front-on view, centered, isolated" },
+    { "key": "floor-4", "kind": "sprite", "subject": "a single wide horizontal rectangular CLAY building storey block, a crystal hall floor, soft teal-blue plasticine walls with a glowing cyan gem crystal in the center, hand-sculpted clay texture, soft rounded corners, flat front-on view, centered, isolated" },
+    { "key": "floor-5", "kind": "sprite", "subject": "a single wide horizontal rectangular CLAY building storey block, a library floor, warm terracotta plasticine walls with a row of colorful little clay books on a shelf, hand-sculpted clay texture, soft rounded corners, flat front-on view, centered, isolated" },
+    { "key": "floor-6", "kind": "sprite", "subject": "a single wide horizontal rectangular CLAY building storey block, a greenhouse balcony floor, warm golden plasticine walls with a little railing and a green potted plant, hand-sculpted clay texture, soft rounded corners, flat front-on view, centered, isolated" },
+    { "key": "spire", "kind": "sprite", "subject": "a cute pointed CLAY rooftop spire crown for the top of a fantasy wizard tower, soft purple plasticine cone roof with a tiny golden flag on top, hand-sculpted plasticine texture, soft rounded shapes, flat front-on view, centered, isolated", "overrides": { "defaults": { "size": "1024x1024" } } },
+    { "key": "mage-idle", "kind": "sprite", "subject": "a cute chubby CLAY wizard mascot character, full body, tall pointed purple wizard hat with a gold star, long white beard, friendly happy smile, purple robe, hand-sculpted plasticine claymation character, standing idle, front-facing, isolated", "overrides": { "defaults": { "size": "1024x1536", "quality": "high" } } },
+    { "key": "mage-sad", "kind": "sprite", "subject": "the SAME cute chubby CLAY wizard mascot character (tall pointed purple hat with gold star, long white beard, purple robe), full body, now with a sad disappointed facepalm expression, hand-sculpted plasticine claymation character, front-facing, isolated", "overrides": { "defaults": { "size": "1024x1536", "quality": "high" } } },
+    { "key": "cloud", "kind": "sprite", "subject": "a single fluffy soft CLAY cloud, hand-sculpted white plasticine puff, rounded cute shape, soft top lighting, isolated", "overrides": { "defaults": { "size": "1024x1024" } } },
+    { "key": "ground", "kind": "sprite", "subject": "a wide rounded CLAY grassy hill mound, hand-sculpted green plasticine grass on top of brown clay soil, cute rounded shape, soft top lighting, flat front-on view, centered, isolated" },
+    { "key": "sky-bg", "kind": "background", "subject": "a soft dreamy claymation sky backdrop for a vertical mobile game, gentle gradient from warm sandy peach at the bottom to soft blue at the top, a few faint fluffy clay clouds, very soft and clean, empty center for gameplay, no characters, no text", "overrides": { "defaults": { "size": "1024x1536", "quality": "medium", "transparent": false } } }
+  ]
+}

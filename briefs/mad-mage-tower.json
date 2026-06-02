@@ -1,0 +1,22 @@
+{
+  "name": "mad-mage-tower",
+  "mechanic": "mad-mage-tower",
+  "style": "mad-mage-tower",
+  "store": {
+    "ios": "https://apps.apple.com/app/id000000000",
+    "android": "https://play.google.com/store/apps/details?id=com.example.madmagetower"
+  },
+  "copy": {
+    "title": "Башня Йобнутого Мага",
+    "cta": "Встановити"
+  },
+  "lang": "uk",
+  "params": {
+    "spawnWidth": 190,
+    "blockHeight": 54,
+    "baseSwingDur": 1.6,
+    "minSwingDur": 0.62,
+    "perfectTol": 11,
+    "swingPad": 26
+  }
+}
