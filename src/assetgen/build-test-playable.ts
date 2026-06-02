@@ -58,6 +58,9 @@ export async function buildKitPlayable(styleId = "heroes3", opts: BuildKitOpts =
       extra: [
         { key: "bg-castle", src: bgSrc, size: 680 },
         { key: "knight", src: heroSrc, size: 520 },
+        // 2 додаткові герої з інших стилів — щоб multi-screen showcase мав 3 різні візуали
+        { key: "hero2", src: existsSync("out/diablo2/hero.png") ? "out/diablo2/hero.png" : heroSrc, size: 520 },
+        { key: "hero3", src: existsSync("out/pixelart/hero.png") ? "out/pixelart/hero.png" : heroSrc, size: 520 },
       ],
       writeDir: ASSET_DIR,
       pixelated,

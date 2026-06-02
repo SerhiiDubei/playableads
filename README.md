@@ -31,11 +31,26 @@ Two reference styles ship end-to-end: **Heroes III** (painterly) and **Pixel Que
 npm run playable -- list             # list mechanics + styles
 npm run playable -- menu heroes3     # build kit playable -> out/menu-heroes3.html (validated)
 npm run playable -- menu pixelart    # 16-bit variant
-npm run menu                         # build the test playable (heroes3)
+npm run menu                         # 10-screen test playable (heroes3)
+npm run experiments                  # 5 art-direction layouts on one zone system
+npm run recipes                      # screens composed purely from group@zone recipes
+npm run game                         # tap-to-attack interactive playable
+npm run connect                      # drag-to-connect game (3 levels, scene bg, juice)
+npm run catalog                      # regenerate docs/KIT.md (component + group bible)
 npm run components                   # component-kit showcase
-npm run visual                       # visual regression across viewports
+npm run visual                       # visual regression across viewports (auto-discovers screens)
 npm run typecheck
 ```
+
+## Layered architecture
+
+Screens (and whole games) are assembled from validated data layers — see [`docs/KIT.md`](docs/KIT.md):
+
+- **Catalog** (`kit/catalog.ts`) — *what* each component is + how to generate it.
+- **Groups** (`kit/groups.ts`) — semantic families with rules (`composeScreen` + `validateRecipe`).
+- **Zones** (`kit/layout.ts`) — *where* on screen (archetypes + debug overlay).
+- **Flow** (`kit/flow.ts`) — *function* + *how screens connect* (`validateFlow`).
+- **Scene** — background mood per beat (`world`/`focus`/`celebration`), one bg + CSS.
 
 ## Recent work
 
@@ -51,5 +66,5 @@ npm run typecheck
 ## Notes
 
 - Engineering insights & rules live in [`CLAUDE.md`](CLAUDE.md); the full experiment journal is in
-  [`test/EXPERIMENT-LOG.md`](test/EXPERIMENT-LOG.md).
+  [`test/EXPERIMENT-LOG.md`](test/EXPERIMENT-LOG.md). Session logs in [`docs/`](docs/) (e.g. [2026-06-01](docs/SESSION-2026-06-01.md)).
 - Generated assets (`out/`) and secrets (`.env`) are git-ignored. Copy `.env.example` → `.env` and add your `OPENAI_API_KEY`.

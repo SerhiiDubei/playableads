@@ -9,10 +9,12 @@ import { progressReveal } from "./progress-reveal.js";
 import { twoChoice } from "./two-choice.js";
 import { matchCluster } from "./match-cluster.js";
 import { featureList } from "./feature-list.js";
+import { showcase } from "./showcase.js";
 
 export const LAYOUTS: Record<string, Layout> = {
   [menu5.id]: menu5,
   [endcard.id]: endcard,
+  [showcase.id]: showcase,
   [tutorial.id]: tutorial,
   [featureGrid.id]: featureGrid,
   [tapReveal.id]: tapReveal,

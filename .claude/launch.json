@@ -18,6 +18,30 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["-y", "serve", "test/components", "-l", "5057"],
       "port": 5057
+    },
+    {
+      "name": "experiments",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "test/experiments", "-l", "5058"],
+      "port": 5058
+    },
+    {
+      "name": "recipes",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "test/recipes", "-l", "5059"],
+      "port": 5059
+    },
+    {
+      "name": "game",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "test/game", "-l", "5060"],
+      "port": 5060
+    },
+    {
+      "name": "connect",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "test/connect", "-l", "5061"],
+      "port": 5061
     }
   ]
 }
