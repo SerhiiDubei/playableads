@@ -1,0 +1,1521 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>BRIEF QUEST · Path of the Forge Agent</title>
+<style>
+:root {
+  --bg: #0a1612;
+  --bg-2: #122318;
+  --bg-3: #1a3023;
+  --bg-4: #234634;
+  --ink: #8be04e;
+  --ink-bright: #c8f774;
+  --ink-pale: #e8ffb0;
+  --amber: #ffb04a;
+  --gold: #ffd166;
+  --magenta: #ff5fbd;
+  --cyan: #5fe3ff;
+  --red: #ff3a4d;
+  --shadow: #051208;
+  --line: #2f5a3c;
+  --line-dim: #1f3a28;
+}
+
+* {
+  box-sizing: border-box;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Lucida Console", "Courier New", "Consolas", monospace;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  line-height: 1.55;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── CRT overlays ───────────────────────────────────── */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0.18) 0px,
+    rgba(0,0,0,0.18) 1px,
+    transparent 2px,
+    transparent 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+body::after {
+  content: "";
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 30%, transparent 35%, rgba(0,0,0,0.55) 95%),
+    radial-gradient(ellipse at 50% 50%, rgba(139,224,78,0.04) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* ── Layout ─────────────────────────────────────────── */
+.wrapper {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── HUD ───────────────────────────────────────────── */
+.hud {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 12px;
+  margin-bottom: 24px;
+  align-items: stretch;
+  border: 4px solid var(--ink);
+  background: var(--bg-2);
+  padding: 10px 14px;
+  box-shadow: 6px 6px 0 var(--shadow);
+}
+.hud-tile {
+  display: flex; flex-direction: column; justify-content: center;
+  font-size: 10px; text-transform: uppercase; padding: 0 8px;
+  border-right: 2px dashed var(--line);
+}
+.hud-tile:last-child { border-right: none; }
+.hud-tile .lbl { color: var(--line); font-size: 9px; margin-bottom: 2px; letter-spacing: 0.1em; }
+.hud-tile .val { color: var(--ink-pale); font-size: 13px; letter-spacing: 0.05em; }
+.hud-tile .val.gold { color: var(--gold); }
+.hud-tile .val.cyan { color: var(--cyan); }
+.hud-tile .val.magenta { color: var(--magenta); }
+
+.progress-wrap { display: flex; flex-direction: column; justify-content: center; padding: 0 8px; }
+.progress {
+  position: relative; height: 14px;
+  background: var(--bg-4); border: 2px solid var(--ink); margin-bottom: 4px;
+}
+.progress-fill {
+  height: 100%;
+  background: repeating-linear-gradient(90deg, var(--ink) 0 6px, var(--ink-bright) 6px 8px);
+  width: 0%;
+  transition: width 0.4s steps(20);
+}
+.progress-text {
+  font-size: 9px; text-transform: uppercase; color: var(--ink);
+  letter-spacing: 0.12em; text-align: center;
+}
+
+/* ── Title ─────────────────────────────────────────── */
+.title-block { text-align: center; margin-bottom: 28px; }
+h1 {
+  font-size: clamp(22px, 4vw, 32px);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-shadow: 3px 3px 0 var(--shadow), -2px -2px 0 var(--amber), 0 0 12px rgba(255,209,102,0.25);
+  margin: 0 0 6px;
+}
+.subtitle {
+  font-size: 11px; color: var(--magenta);
+  letter-spacing: 0.25em; text-transform: uppercase;
+}
+
+/* ── Panels ─────────────────────────────────────────── */
+.panel {
+  background: var(--bg-2);
+  border: 4px solid var(--ink);
+  padding: 20px 22px;
+  box-shadow: inset 0 0 0 2px var(--bg-3), 6px 6px 0 var(--shadow);
+  position: relative;
+}
+.panel + .panel { margin-top: 18px; }
+.panel::before, .panel::after {
+  content: ""; position: absolute; width: 8px; height: 8px; background: var(--amber);
+}
+.panel::before { top: -4px; left: -4px; }
+.panel::after { top: -4px; right: -4px; }
+.panel .panel-corners::before, .panel .panel-corners::after {
+  content: ""; position: absolute; width: 8px; height: 8px; background: var(--amber);
+}
+.panel .panel-corners::before { bottom: -4px; left: -4px; }
+.panel .panel-corners::after { bottom: -4px; right: -4px; }
+
+/* ── Start screen ──────────────────────────────────── */
+.start { text-align: center; padding: 40px 24px; }
+.start .sprite-hero {
+  width: 96px; height: 96px; margin: 0 auto 20px;
+  background: var(--bg-3);
+  border: 4px solid var(--ink-bright);
+  box-shadow: inset 0 0 0 4px var(--bg);
+  position: relative;
+}
+.sprite-hero::before {
+  content: "";
+  position: absolute;
+  left: 18px; right: 18px;
+  top: 38px; bottom: 22px;
+  background: linear-gradient(180deg, var(--amber) 0 40%, var(--gold) 40% 100%);
+  box-shadow: 0 -8px 0 var(--amber) inset, 0 -10px 0 var(--shadow);
+}
+.sprite-hero::after {
+  content: "★";
+  position: absolute; top: 12px; left: 50%;
+  transform: translateX(-50%);
+  color: var(--gold); font-size: 16px;
+  text-shadow: 2px 2px 0 var(--shadow);
+}
+.start h2 {
+  font-size: 18px; color: var(--ink-pale);
+  text-transform: uppercase; letter-spacing: 0.15em;
+  margin: 0 0 16px;
+}
+.start p {
+  color: var(--ink); font-size: 12px;
+  text-transform: none; letter-spacing: 0;
+  max-width: 540px; margin: 0 auto 12px;
+  line-height: 1.7; font-weight: normal;
+}
+.start p strong { color: var(--gold); font-weight: bold; }
+.start .meta-list {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px; max-width: 600px; margin: 22px auto;
+}
+.start .meta-card {
+  border: 3px solid var(--line); background: var(--bg-3);
+  padding: 10px; text-align: left;
+}
+.start .meta-card .lbl {
+  font-size: 9px; color: var(--magenta);
+  text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 4px;
+}
+.start .meta-card .val { font-size: 11px; color: var(--ink-pale); text-transform: uppercase; }
+
+/* ── Chapter banner ────────────────────────────────── */
+.chapter-banner {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 14px; background: var(--bg-3);
+  border: 3px solid var(--ink); margin-bottom: 16px;
+  box-shadow: 4px 4px 0 var(--shadow);
+}
+.chapter-banner .ch-num {
+  background: var(--magenta); color: var(--bg);
+  padding: 4px 8px; font-size: 10px; letter-spacing: 0.1em;
+}
+.chapter-banner .ch-name {
+  font-size: 12px; color: var(--gold);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+.chapter-banner .ch-progress {
+  margin-left: auto; font-size: 10px;
+  color: var(--ink); letter-spacing: 0.1em;
+}
+
+/* ── Question ───────────────────────────────────────── */
+.qnum-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.qnum {
+  font-size: 11px; color: var(--amber);
+  letter-spacing: 0.12em; text-transform: uppercase;
+}
+.qnum .total { color: var(--line); }
+.q-title {
+  font-size: 17px; color: var(--ink-pale);
+  text-transform: uppercase; line-height: 1.5;
+  letter-spacing: 0.04em; margin: 4px 0 16px;
+  text-shadow: 2px 2px 0 var(--shadow);
+}
+.q-context {
+  background: var(--bg-3); border-left: 5px solid var(--cyan);
+  padding: 12px 14px; margin-bottom: 18px;
+  font-size: 12px; color: var(--ink);
+  text-transform: none; font-weight: normal;
+  letter-spacing: 0; line-height: 1.7;
+}
+.q-context .why {
+  font-size: 10px; color: var(--cyan);
+  text-transform: uppercase; letter-spacing: 0.15em;
+  margin-bottom: 6px; font-weight: bold;
+}
+.q-context code {
+  color: var(--magenta); background: var(--bg-2);
+  padding: 1px 5px; border: 1px solid var(--line); font-size: 11px;
+}
+
+/* ── Options ────────────────────────────────────────── */
+.options { display: grid; gap: 8px; margin-bottom: 16px; }
+.opt {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: var(--bg-3); border: 3px solid var(--line);
+  padding: 11px 14px; cursor: pointer;
+  font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.04em; user-select: none;
+  color: var(--ink); line-height: 1.5;
+}
+.opt:hover { border-color: var(--ink); background: var(--bg-2); color: var(--ink-bright); }
+.opt input {
+  appearance: none; -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border: 3px solid var(--ink); background: var(--bg);
+  flex-shrink: 0; position: relative;
+  cursor: pointer; margin-top: 2px;
+}
+.opt input:checked::after {
+  content: ""; position: absolute; inset: 2px; background: var(--amber);
+}
+.opt.selected {
+  border-color: var(--amber); background: var(--bg-4); color: var(--ink-pale);
+}
+.opt .opt-key {
+  color: var(--cyan); font-size: 10px;
+  margin-right: 6px; letter-spacing: 0.05em;
+}
+.opt.selected .opt-key { color: var(--gold); }
+
+/* ── Free text ──────────────────────────────────────── */
+.freetext-block {
+  margin-top: 12px; background: var(--bg-3);
+  border: 3px dashed var(--line); padding: 12px;
+}
+.freetext-label {
+  display: block; font-size: 10px; color: var(--magenta);
+  text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 8px;
+}
+.freetext-label::before { content: "▸ "; color: var(--cyan); }
+.freetext {
+  width: 100%; background: var(--bg);
+  border: 2px solid var(--ink); color: var(--ink-pale);
+  font-family: inherit; font-size: 12px;
+  font-weight: normal; padding: 10px;
+  resize: vertical; min-height: 60px; outline: none;
+  letter-spacing: 0.02em; line-height: 1.6;
+}
+.freetext:focus { border-color: var(--amber); background: var(--bg-2); }
+.freetext::placeholder { color: var(--line); font-style: italic; }
+
+/* ── Nav ────────────────────────────────────────────── */
+.nav {
+  display: flex; gap: 10px; margin-top: 22px;
+  align-items: center; flex-wrap: wrap;
+}
+.nav .spacer { flex: 1; }
+.btn {
+  font-family: inherit; font-weight: bold;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+  background: var(--bg-3); color: var(--ink-bright);
+  border: 3px solid var(--ink); padding: 10px 18px;
+  cursor: pointer; box-shadow: 4px 4px 0 var(--shadow);
+  transition: none; position: relative;
+}
+.btn:hover { background: var(--ink); color: var(--bg); }
+.btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--shadow); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn.primary {
+  background: var(--amber); color: var(--bg); border-color: var(--gold);
+}
+.btn.primary:hover { background: var(--gold); }
+.btn.danger {
+  background: var(--bg-3); color: var(--red); border-color: var(--red);
+}
+.btn.ghost {
+  background: transparent; border-color: var(--line);
+  color: var(--line); box-shadow: none;
+}
+.btn.ghost:hover { color: var(--ink); border-color: var(--ink); }
+
+/* ── Quest log ──────────────────────────────────────── */
+.questlog {
+  margin-top: 20px; padding: 14px;
+  background: var(--bg-2); border: 3px solid var(--line);
+}
+.questlog-title {
+  font-size: 10px; color: var(--cyan);
+  text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 10px;
+}
+.questlog ul {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 4px;
+}
+.questlog li {
+  font-size: 10px; color: var(--ink);
+  padding: 4px 8px; border-left: 3px solid var(--line);
+  cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.questlog li:hover { background: var(--bg-3); color: var(--ink-bright); }
+.questlog li.done { color: var(--line); border-color: var(--ink); }
+.questlog li.done::before { content: "✓ "; color: var(--ink); }
+.questlog li.active { border-color: var(--amber); color: var(--gold); background: var(--bg-3); }
+.questlog li.active::before { content: "▶ "; color: var(--amber); }
+
+/* ── Toast ──────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--bg-2); border: 4px solid var(--gold);
+  box-shadow: 4px 4px 0 var(--shadow); padding: 14px 20px;
+  z-index: 10000;
+  transform: translateX(120%);
+  transition: transform 0.3s steps(8);
+}
+.toast.show { transform: translateX(0); }
+.toast .ach-lbl {
+  font-size: 9px; color: var(--magenta);
+  text-transform: uppercase; letter-spacing: 0.15em;
+}
+.toast .ach-name {
+  font-size: 14px; color: var(--gold);
+  text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px;
+}
+.toast::before {
+  content: "★"; position: absolute;
+  top: -12px; left: -12px;
+  background: var(--magenta); color: var(--bg);
+  width: 24px; height: 24px;
+  display: grid; place-items: center;
+  border: 3px solid var(--gold); font-size: 12px;
+}
+
+/* ── End screen ─────────────────────────────────────── */
+.victory { text-align: center; padding: 40px 20px; }
+.victory h2 {
+  font-size: 32px; color: var(--gold);
+  text-transform: uppercase; letter-spacing: 0.18em;
+  text-shadow: 4px 4px 0 var(--shadow), -2px -2px 0 var(--amber);
+  margin: 0 0 16px;
+}
+.victory h2::before, .victory h2::after { content: " ★ "; color: var(--magenta); }
+.victory .stats-end {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px; max-width: 640px; margin: 24px auto;
+}
+.victory .stat-end {
+  background: var(--bg-3); border: 3px solid var(--ink); padding: 14px;
+}
+.victory .stat-end .lbl {
+  font-size: 9px; color: var(--line);
+  text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 4px;
+}
+.victory .stat-end .val { font-size: 20px; color: var(--ink-pale); }
+.victory .actions {
+  display: flex; gap: 12px; justify-content: center;
+  flex-wrap: wrap; margin-top: 28px;
+}
+.final-message {
+  background: var(--bg-3); border: 3px solid var(--magenta);
+  padding: 18px; margin: 20px 0;
+}
+.final-message .lbl {
+  font-size: 11px; color: var(--magenta);
+  text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 10px;
+}
+
+kbd {
+  background: var(--bg); border: 2px solid var(--ink);
+  padding: 1px 6px; font-size: 10px;
+  color: var(--ink-pale); font-family: inherit;
+}
+
+@media (max-width: 640px) {
+  .wrapper { padding: 14px 12px 60px; }
+  .hud { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .hud-tile { border-right: none; padding: 4px; }
+  .panel { padding: 14px; box-shadow: 4px 4px 0 var(--shadow); }
+  h1 { font-size: 20px; }
+  .q-title { font-size: 14px; }
+  .opt { font-size: 11px; padding: 9px 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+<div class="hud" id="hud">
+  <div class="hud-tile">
+    <span class="lbl">XP</span>
+    <span class="val gold" id="hud-xp">0</span>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="progress-text" id="progress-text">0 / 50 QUESTIONS</div>
+  </div>
+  <div class="hud-tile">
+    <span class="lbl">CHAPTER</span>
+    <span class="val cyan" id="hud-chapter">0/10</span>
+  </div>
+  <div class="hud-tile">
+    <span class="lbl">SAVED</span>
+    <span class="val magenta" id="hud-saved">●</span>
+  </div>
+</div>
+
+<div class="title-block">
+  <h1>BRIEF QUEST</h1>
+  <div class="subtitle">▸ Path of the Forge Agent ◂</div>
+</div>
+
+<main id="app"></main>
+
+<div class="toast" id="toast">
+  <div class="ach-lbl">ACHIEVEMENT UNLOCKED</div>
+  <div class="ach-name" id="toast-name">—</div>
+</div>
+
+</div>
+
+<script>
+"use strict";
+
+// ════════════════════════════════════════════════════════════════════════════
+//  DOM helper — parse via DOMParser (safe, inert, no script execution)
+// ════════════════════════════════════════════════════════════════════════════
+function parseFragment(htmlString) {
+  const doc = new DOMParser().parseFromString("<body>" + htmlString + "</body>", "text/html");
+  const frag = document.createDocumentFragment();
+  while (doc.body.firstChild) frag.appendChild(doc.body.firstChild);
+  return frag;
+}
+function mount(el, htmlString) {
+  el.replaceChildren(parseFragment(htmlString));
+}
+
+function escapeHtml(s) {
+  if (s == null) return "";
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  QUESTION BANK · 10 CHAPTERS · 50 QUESTIONS
+// ════════════════════════════════════════════════════════════════════════════
+
+const CHAPTERS = [
+  { id: 1, name: "Vision & Identity",       lore: "Хто ти і навіщо тобі цей агент" },
+  { id: 2, name: "User & Entry Point",      lore: "Хто і як починає сесію" },
+  { id: 3, name: "Mechanics Catalog",       lore: "Які ігрові механіки в основі" },
+  { id: 4, name: "Style System",            lore: "Як стиль живе і трансформується" },
+  { id: 5, name: "Brief Stage",             lore: "Що на вході — формат і обовʼязкове" },
+  { id: 6, name: "Planning Layer",          lore: "Як план перетворює бриф на скрипт" },
+  { id: 7, name: "Asset Generation",        lore: "Модель, ціна, retry, варіативність" },
+  { id: 8, name: "Composition & Zones",     lore: "Як розкладка тримає правила гнучко" },
+  { id: 9, name: "Validation & Quality",    lore: "Що блокує випуск і хто це вирішує" },
+  { id: 10, name: "Orchestration & Future", lore: "Агенти, UI, рік уперед" },
+];
+
+const QUESTIONS = [
+// ─── Chapter 1 · Vision & Identity ─────────────────────────────────────────
+{ id: "Q01", ch: 1, type: "single", title: "Цей агент — більше \"AI-помічник\" чи \"автономна фабрика\"?",
+  context: "Це найфундаментальніше рішення. Помічник — людина у петлі на кожному кроці, агент пропонує. Фабрика — людина схвалила бриф, далі агент сам. Це впливає на UI, на критики, на retry-логіку, на швидкість.",
+  options: [
+    { k:"A", v:"100% помічник — людина приймає кожне рішення" },
+    { k:"B", v:"Більше помічник, але з автоматизацією рутини" },
+    { k:"C", v:"Точно 50/50 — людина і агент партнери" },
+    { k:"D", v:"Більше фабрика, людина схвалює ключові точки" },
+    { k:"E", v:"100% автономна — людина дає бриф, отримує результат" },
+  ], freetext: false },
+
+{ id: "Q02", ch: 1, type: "single", title: "Хто головний користувач у v1?",
+  context: "Аудиторія диктує defaults. Indie студія = простота + economy. Agency = throughput + варіативність. In-house UA = глибока кастомізація + аналітика. Користувач-одинак = мінімум кнопок.",
+  options: [
+    { k:"A", v:"Я сам — одна людина (solo)" },
+    { k:"B", v:"Мала команда дизайнерів (2-5)" },
+    { k:"C", v:"Indie ігрова студія" },
+    { k:"D", v:"Performance-marketing агенція" },
+    { k:"E", v:"UA-команда у великій студії" },
+  ], freetext: true, freetextPlaceholder: "Опиши користувача в одному реченні..." },
+
+{ id: "Q03", ch: 1, type: "single", title: "Скільки playable агент має робити в типовий тиждень?",
+  context: "Пропускна здатність визначає батч-логіку, кешування, паралелізм, бюджет. 5 на тиждень = на одну playable можна витратити час і гроші. 500 — потрібен throughput і дешеві defaults.",
+  options: [
+    { k:"A", v:"1–5 (одиничні висококоштовні)" },
+    { k:"B", v:"5–20 (середня щільність)" },
+    { k:"C", v:"20–100 (поточний потік)" },
+    { k:"D", v:"100–500 (масовий тестинг)" },
+    { k:"E", v:"500+ (фабрика A/B)" },
+  ], freetext: false },
+
+{ id: "Q04", ch: 1, type: "single", title: "Якщо обрати ОДНУ метрику успіху — це...",
+  context: "Метрика формує trade-offs. Install-rate → пушимо семантичну якість і critic-loops. $ за playable → економимо токени, шукаємо дешеві провайдери. Час → менше етапів, агресивніші defaults. Pass-rate валідації → жорсткий gate перед видачею.",
+  options: [
+    { k:"A", v:"Час від ідеї до файла" },
+    { k:"B", v:"Install-rate у живій кампанії" },
+    { k:"C", v:"$ за playable" },
+    { k:"D", v:"Кількість унікальних варіацій" },
+    { k:"E", v:"Pass-rate Meta validation" },
+  ], freetext: true, freetextPlaceholder: "Інша метрика, яку ти насправді відстежуєш..." },
+
+{ id: "Q05", ch: 1, type: "text", title: "Опиши агента ОДНИМ РЕЧЕННЯМ другу-розробнику",
+  context: "Ця фраза стане базою для system prompt оркестратора і для маркетингу. Якщо тут плутаєшся — це сигнал, що ще нема ясності у тебе самого. Тоді гірше: чим краще тут — тим краще все наступне.",
+  freetext: true, freetextRequired: true, freetextPlaceholder: "Це інструмент, який ..." },
+
+// ─── Chapter 2 · User & Entry Point ─────────────────────────────────────────
+{ id: "Q06", ch: 2, type: "single", title: "З ЧОГО починається типова сесія?",
+  context: "Перший touchpoint формує всю онбординг-архітектуру. Пусте поле = AI-планувальник з нуля. Завантаження референсу = vision-stage (OCR/image-analysis). URL конкурента = scraping + reverse-engineering.",
+  options: [
+    { k:"A", v:"Пусте поле + натуральний промт" },
+    { k:"B", v:"Завантажує бриф-документ" },
+    { k:"C", v:"Завантажує референс-зображення" },
+    { k:"D", v:"Обирає з пресетів механіка/стиль" },
+    { k:"E", v:"Pastes URL/скрін конкурента" },
+  ], freetext: true, freetextPlaceholder: "Інший вхід..." },
+
+{ id: "Q07", ch: 2, type: "single", title: "Скільки часу типовий користувач витрачає на формування запиту?",
+  context: "Швидкі сесії потребують агресивних defaults і вгадування контексту. Повільні сесії = більше уточнюючих питань, кращі результати. Це впливає на агента-планувальника поведінку.",
+  options: [
+    { k:"A", v:"<10 секунд (фастуйм)" },
+    { k:"B", v:"10–60 секунд" },
+    { k:"C", v:"1–5 хвилин" },
+    { k:"D", v:"5–15 хвилин" },
+    { k:"E", v:"15+ хвилин (детальний бриф)" },
+  ], freetext: false },
+
+{ id: "Q08", ch: 2, type: "multi", title: "Що користувач ТОЧНО знає, заходячи в агента?",
+  context: "Те, що НЕ позначено — агент має зʼясувати сам або взяти defaults. Тобто кожна не-позначена опція = окрема стадія в planner-агенті.",
+  options: [
+    { k:"A", v:"Цільова ніша" },
+    { k:"B", v:"Цільова аудиторія" },
+    { k:"C", v:"Стиль/візуал" },
+    { k:"D", v:"Механіка" },
+    { k:"E", v:"KPI / метрика" },
+    { k:"F", v:"Бюджет" },
+    { k:"G", v:"Конкуренти-референси" },
+    { k:"H", v:"Tone of voice" },
+    { k:"I", v:"Майже нічого — ідея ще не сформована" },
+  ], freetext: true, freetextPlaceholder: "Що ще ти зазвичай знаєш, що тут не перераховано..." },
+
+{ id: "Q09", ch: 2, type: "single", title: "Якщо запит занадто короткий (зроби дейтинг playable) — агент має...",
+  context: "Це визначає рівень адаптивності. Мовчазний агент швидкий, але непередбачуваний. Запитуючий — повільний, але точний. Multiple variants дорогий, але вибір користувача = найкращий навчальний сигнал для майбутнього.",
+  options: [
+    { k:"A", v:"Зробити з повними defaults, мовчки" },
+    { k:"B", v:"Поставити 2–3 уточнюючі питання" },
+    { k:"C", v:"Згенерувати 3 варіанти — юзер обирає" },
+    { k:"D", v:"Reject і попросити деталей" },
+    { k:"E", v:"Adaptive — залежно від довіри юзера" },
+  ], freetext: false },
+
+{ id: "Q10", ch: 2, type: "single", title: "Чи може користувач перебити агент посеред пайплайну і змінити запит?",
+  context: "Архітектура state management. Якщо так — потрібно зберігати checkpoints, мати soft-abort, мерджити нові вимоги в готову частину плану. Якщо ні — sequential commit, простіше реалізувати.",
+  options: [
+    { k:"A", v:"Так — soft-abort, новий план" },
+    { k:"B", v:"Так — але лише ДО asset-gen" },
+    { k:"C", v:"Ні — sequential commit, тільки наступний запуск" },
+    { k:"D", v:"Так — і агент мерджить зі станом" },
+  ], freetext: false },
+
+// ─── Chapter 3 · Mechanics Catalog ──────────────────────────────────────────
+{ id: "Q11", ch: 3, type: "single", title: "Скільки механік потрібно в v1?",
+  context: "Малий каталог можна hand-build з якістю. Великий вимагає meta-pattern (генератор механік або параметризовані шаблони). Зараз у репо 2 stub-механіки і 10 layouts — layouts це фактично теж механіки, але рівнем нижче.",
+  options: [
+    { k:"A", v:"1–3 (hand-built premium)" },
+    { k:"B", v:"5–10 (curated)" },
+    { k:"C", v:"10–20 (broad catalog)" },
+    { k:"D", v:"20+ (massive)" },
+    { k:"E", v:"Будь-яка, AI генерує під запит" },
+  ], freetext: false },
+
+{ id: "Q12", ch: 3, type: "multi", title: "Які механіки must-have у v1?",
+  context: "Це формує бэклог фази 1 розробки. Якщо обираєш багато — кожна має lower fidelity. Якщо мало — кожна вилизана. Не лякайся обрати багато: відповідь — це сигнал про напрямок, не контракт.",
+  options: [
+    { k:"A", v:"Tower Defense" },
+    { k:"B", v:"Match-3" },
+    { k:"C", v:"Tap-the-X (taps to win)" },
+    { k:"D", v:"Swipe-to-slice" },
+    { k:"E", v:"Pick-hero / picker" },
+    { k:"F", v:"Tutorial-first (3 steps)" },
+    { k:"G", v:"Endcard-only (1 screen)" },
+    { k:"H", v:"Bubble shooter" },
+    { k:"I", v:"Runner" },
+    { k:"J", v:"Spin / Roulette" },
+    { k:"K", v:"Puzzle (logic)" },
+    { k:"L", v:"Plug-in-socket" },
+    { k:"M", v:"Drag-and-drop" },
+    { k:"N", v:"Builder / management" },
+  ], freetext: true, freetextPlaceholder: "Інші механіки, які важливі саме для твоєї ніші..." },
+
+{ id: "Q13", ch: 3, type: "single", title: "Чи має агент комбінувати ДВІ механіки в одній playable?",
+  context: "Ти сам згадав цю ідею у голосовому брифі. Це нетривіально архітектурно: треба узгоджувати таймінг, зони, hook. Дає унікальність, але збільшує простір помилок.",
+  options: [
+    { k:"A", v:"Ні — одна механіка, один playable" },
+    { k:"B", v:"Опційно — advanced-mode" },
+    { k:"C", v:"Так — за бажанням користувача" },
+    { k:"D", v:"Так — це наша фіча проти конкурентів" },
+  ], freetext: false },
+
+{ id: "Q14", ch: 3, type: "single", title: "Як описуються механіки технічно?",
+  context: "Найважливіший архітектурний вибір цього розділу. Hand-built TS = повний контроль, повільне розширення. JSON-схема + темплейт = баланс. AI код-ген = масштаб але непередбачуваність. Hybrid (scaffold + AI fill) — кращий з світу але складніший.",
+  options: [
+    { k:"A", v:"TS-код, hand-built кожна механіка" },
+    { k:"B", v:"JSON-схема параметрів + базовий шаблон" },
+    { k:"C", v:"AI генерує код кожен раз" },
+    { k:"D", v:"Hybrid: код-скелет + AI-fill логіки" },
+  ], freetext: false },
+
+{ id: "Q15", ch: 3, type: "single", title: "Хто додає нову механіку в каталог?",
+  context: "Цикл росту каталогу. Розробник = повільно, якісно. Користувач через UI = швидко, потрібен no-code-конструктор. AI = миттєво, потрібен сильний контракт і тести.",
+  options: [
+    { k:"A", v:"Лише розробник, через код" },
+    { k:"B", v:"Користувач через UI (no-code)" },
+    { k:"C", v:"AI-агент за описом" },
+    { k:"D", v:"Mix: розробник створює scaffold, AI заповнює" },
+  ], freetext: false },
+
+// ─── Chapter 4 · Style System ──────────────────────────────────────────────
+{ id: "Q16", ch: 4, type: "single", title: "Скільки стилів у v1?",
+  context: "Зараз у репо 9 style-брифів. Це уже посередині. Куди йти? Куратований набір = пише агент якісно. Безмежний = потрібен auto-style-gen зі зображень.",
+  options: [
+    { k:"A", v:"5 hand-curated" },
+    { k:"B", v:"10–20 (broad curated)" },
+    { k:"C", v:"50+ (with auto-gen)" },
+    { k:"D", v:"Unlimited — AI з референсу" },
+  ], freetext: false },
+
+{ id: "Q17", ch: 4, type: "single", title: "Стиль — це...",
+  context: "Зараз у репо стиль = JSON-бриф зі схемою (palette + artDirection + rendering + assets). Це працює, але можливо обмежує. Референси картинок дають кращу точність, але важче параметризувати.",
+  options: [
+    { k:"A", v:"Фіксований JSON-бриф (як зараз)" },
+    { k:"B", v:"Палітра + правила рендеру" },
+    { k:"C", v:"Референс-зображення" },
+    { k:"D", v:"Mix усіх трьох" },
+  ], freetext: false },
+
+{ id: "Q18", ch: 4, type: "single", title: "Чи створює агент НОВІ стилі автоматично?",
+  context: "Ця фіча відкриває величезний простір варіативності. Image2style = найточніше. Text2style = найгнучкіше. Обидві = найкраще, але дорожче в розробці.",
+  options: [
+    { k:"A", v:"Ні — тільки ручний бриф" },
+    { k:"B", v:"З референс-картинки" },
+    { k:"C", v:"З опису-тексту (weatherbeaten pirate noir)" },
+    { k:"D", v:"З обох — image+text" },
+  ], freetext: false },
+
+{ id: "Q19", ch: 4, type: "single", title: "Стиль переноситься між механіками?",
+  context: "Глибокий архітектурний вибір. Якщо стиль = pure design (TD у pixel-art працює) — стиль і механіка живуть незалежно. Якщо ні (spin у hand-painted виглядає дивно) — потрібен matrix сумісностей.",
+  options: [
+    { k:"A", v:"Завжди — будь-який стиль × будь-яка механіка" },
+    { k:"B", v:"Деякі поєднання заборонені (matrix)" },
+    { k:"C", v:"Користувач явно обирає сумісність" },
+    { k:"D", v:"AI рекомендує сумісні комбінації" },
+  ], freetext: false },
+
+{ id: "Q20", ch: 4, type: "single", title: "Що робить агент, коли стиль і механіка погано пасують?",
+  context: "Edge case, що визначає, наскільки агент opinionated. Warn-and-do = поваги до користувача. Block = жорсткі правила. Suggest alternative = найкращий UX, але дорожче.",
+  options: [
+    { k:"A", v:"Warn, але робить" },
+    { k:"B", v:"Block, і пропонує альтернативу" },
+    { k:"C", v:"Робить мовчки" },
+    { k:"D", v:"Викликає style-critic для рішення" },
+  ], freetext: false },
+
+// ─── Chapter 5 · Brief Stage ───────────────────────────────────────────────
+{ id: "Q21", ch: 5, type: "single", title: "Скільки полів МАКСИМУМ у вхідному бріфі?",
+  context: "Менше полів = простіше для юзера, більше defaults в агенті. Більше полів = точніше управління, але втомлює юзера. Сладкий спот залежить від аудиторії з Q02.",
+  options: [
+    { k:"A", v:"3–5 (minimal)" },
+    { k:"B", v:"7–12 (compact)" },
+    { k:"C", v:"15–25 (rich)" },
+    { k:"D", v:"25+ (якомога повніше)" },
+  ], freetext: false },
+
+{ id: "Q22", ch: 5, type: "multi", title: "Які поля бріфу обовʼязкові (без них агент не стартує)?",
+  context: "Обовʼязкові = НЕ ВГАДУЄ. Решта = має defaults або уточнення. Це список — контракт першого етапу.",
+  options: [
+    { k:"A", v:"Ніша (whats being sold)" },
+    { k:"B", v:"Механіка" },
+    { k:"C", v:"Стиль" },
+    { k:"D", v:"Hook ідея" },
+    { k:"E", v:"CTA copy" },
+    { k:"F", v:"Target country/lang" },
+    { k:"G", v:"Reference URLs" },
+    { k:"H", v:"Constraints (no-go)" },
+    { k:"I", v:"Brand colors" },
+    { k:"J", v:"Tone of voice" },
+    { k:"K", v:"Competitor refs" },
+    { k:"L", v:"Budget cap" },
+  ], freetext: false },
+
+{ id: "Q23", ch: 5, type: "single", title: "Чи має бриф містити приклад успіху (інший playable, що зайшов)?",
+  context: "Reference-driven generation — сильний прийом. Один хороший приклад подає більше сигналу моделі, ніж 10 правил.",
+  options: [
+    { k:"A", v:"Опційно — якщо є" },
+    { k:"B", v:"Обовʼязково з v2+" },
+    { k:"C", v:"Якщо є — використати, нема — взяти з банку" },
+    { k:"D", v:"Не потрібно — стиль і так задає" },
+  ], freetext: false },
+
+{ id: "Q24", ch: 5, type: "single", title: "Формат вхідного бріфу:",
+  context: "JSON = строго, для машин. Markdown = людяніше, гнучкіше. Natural text + парсер = найдружніше, але потребує LLM-стадії на вході. Multi-format = найкраще для всіх, але дорожче.",
+  options: [
+    { k:"A", v:"JSON (strict)" },
+    { k:"B", v:"Markdown human-readable" },
+    { k:"C", v:"YAML" },
+    { k:"D", v:"Натуральний текст + LLM-парсинг" },
+    { k:"E", v:"Multi-format input" },
+  ], freetext: false },
+
+{ id: "Q25", ch: 5, type: "single", title: "Версіонування бріфу:",
+  context: "Зараз у style-brief.json є поле version (1.0.0). Питання — чи поширювати це на User Brief і як.",
+  options: [
+    { k:"A", v:"Жорсткий semver (1.0.0)" },
+    { k:"B", v:"Тільки timestamp" },
+    { k:"C", v:"Content hash" },
+    { k:"D", v:"git history достатньо" },
+    { k:"E", v:"Не треба зовсім" },
+  ], freetext: false },
+
+// ─── Chapter 6 · Planning Layer ────────────────────────────────────────────
+{ id: "Q26", ch: 6, type: "single", title: "Чи може плейбл бути 1-екранний (тільки endcard)?",
+  context: "У repo вже є endcard layout — тільки CTA. Це legit формат для retention-кампаній. Але якщо завжди вимагати багатоекранний, втрачаємо use-case.",
+  options: [
+    { k:"A", v:"Так — endcard-only це legit" },
+    { k:"B", v:"Ні — мінімум 2 екрани" },
+    { k:"C", v:"Ні — мінімум 3 екрани" },
+    { k:"D", v:"Adaptive — залежить від механіки" },
+  ], freetext: false },
+
+{ id: "Q27", ch: 6, type: "single", title: "Максимальна довжина playable (екранів)?",
+  context: "Meta рекомендує до 30 секунд інтеракції. На екран ~5 секунд → ~6 екранів реалістично. Tutorial-only може мати більше. Більше 7 — drop-off зростає.",
+  options: [
+    { k:"A", v:"3" },
+    { k:"B", v:"5" },
+    { k:"C", v:"7" },
+    { k:"D", v:"10" },
+    { k:"E", v:"Unbounded — обмежено лише часом" },
+  ], freetext: true, freetextPlaceholder: "Інше число або правило..." },
+
+{ id: "Q28", ch: 6, type: "single", title: "Хто вирішує кількість екранів?",
+  context: "Це визначає, де живе flow logic. Якщо механіка диктує — каталог механік містить шаблон екранів. Якщо planner — він має модель того, як працює engagement.",
+  options: [
+    { k:"A", v:"Користувач бачить рекомендацію і вирішує" },
+    { k:"B", v:"Planner-agent автоматично" },
+    { k:"C", v:"Механіка диктує (TD = 3, Match-3 = 5)" },
+    { k:"D", v:"Довжина hook диктує" },
+  ], freetext: false },
+
+{ id: "Q29", ch: 6, type: "single", title: "Чи може користувач відредагувати plan ДО asset-gen?",
+  context: "Це найдешевший gate перед дорогою фазою ($0.30–1 за asset-gen). Дозволити editing — підвищує якість і довіру. Не дозволити — швидше pipeline.",
+  options: [
+    { k:"A", v:"Ні — повна автоматизація" },
+    { k:"B", v:"Так — JSON-edit вручну" },
+    { k:"C", v:"Так — UI з формою" },
+    { k:"D", v:"Так — повторний натуральний промт (change screen 3)" },
+  ], freetext: false },
+
+{ id: "Q30", ch: 6, type: "single", title: "Якщо planner-agent невпевнений у плані...",
+  context: "Невпевненість = модель повертає низький score або суперечливі частини. Це найважливіша точка людської допомоги в усьому пайплайні.",
+  options: [
+    { k:"A", v:"Запитує користувача" },
+    { k:"B", v:"Генерує 2–3 варіанти, user обирає" },
+    { k:"C", v:"Бере найбезпечніший шаблон" },
+    { k:"D", v:"Викликає critic-агент перед commit" },
+  ], freetext: false },
+
+// ─── Chapter 7 · Asset Generation ──────────────────────────────────────────
+{ id: "Q31", ch: 7, type: "single", title: "Основний провайдер генерації картинок:",
+  context: "Зараз hardcoded gpt-image-1.5. Recraft сильний у UI/vector. fal.ai (flux) — найгнучкіший. Gemini — найдешевший. Multi-provider adapter дає вибір але додає 30–50 рядків коду на провайдер.",
+  options: [
+    { k:"A", v:"OpenAI gpt-image-1.5 (status quo)" },
+    { k:"B", v:"Recraft (UI/vector strong)" },
+    { k:"C", v:"fal.ai (flux family)" },
+    { k:"D", v:"Gemini (cheapest)" },
+    { k:"E", v:"Mix через adapter-layer" },
+  ], freetext: true, freetextPlaceholder: "Інший провайдер..." },
+
+{ id: "Q32", ch: 7, type: "single", title: "Бюджет на одну playable у середньому:",
+  context: "Зараз reference runs: $0.24–$1.13. Стелі бюджету визначає quality-knob. <$0.10 — все на low+gemini. >$5 — кожен ассет high quality.",
+  options: [
+    { k:"A", v:"<$0.10 (масовий A/B)" },
+    { k:"B", v:"$0.10–0.50 (sweet spot)" },
+    { k:"C", v:"$0.50–1.50 (production)" },
+    { k:"D", v:"$1.50–5 (premium)" },
+    { k:"E", v:"$5+ (hero campaigns)" },
+  ], freetext: false },
+
+{ id: "Q33", ch: 7, type: "single", title: "Якщо ассет НЕ вдається з 3 спроб — агент...",
+  context: "Edge case, що визначає resilience. Skip = playable виходить з пропуском. Fallback на простіший = деградація якості. Прохання людини = блокує pipeline. Перерендерити з модифікованим промтом = найкраще, але потребує critic-loop.",
+  options: [
+    { k:"A", v:"Skip і продовжує" },
+    { k:"B", v:"Fallback на простішу версію (text-only)" },
+    { k:"C", v:"Запитує юзера" },
+    { k:"D", v:"Перерендерити з модифікованим промтом" },
+  ], freetext: false },
+
+{ id: "Q34", ch: 7, type: "single", title: "Чи редагує агент свої ассети після першої генерації?",
+  context: "Fresh-only = чисто, дорого. images.edit = варіації persona через master. sharp ops = crop/recolor/compose. Всі три = максимум контролю, але складніша архітектура.",
+  options: [
+    { k:"A", v:"Ні — fresh generation завжди" },
+    { k:"B", v:"Так — variation через images.edit" },
+    { k:"C", v:"Так — sharp ops (crop/recolor)" },
+    { k:"D", v:"Усі три (повний toolkit)" },
+  ], freetext: false },
+
+{ id: "Q35", ch: 7, type: "single", title: "Чи зберігати неуспішні спроби генерації?",
+  context: "Debug-friendly. Але диск росте швидко. Compromise — лише з expensive providers.",
+  options: [
+    { k:"A", v:"Так — усі, для debug" },
+    { k:"B", v:"Ні — економія диска" },
+    { k:"C", v:"Лише останню failed" },
+    { k:"D", v:"Лише з expensive providers" },
+  ], freetext: false },
+
+// ─── Chapter 8 · Composition & Zones ───────────────────────────────────────
+{ id: "Q36", ch: 8, type: "multi", title: "Які правила зон НЕПОРУШНІ в будь-якому шаблоні?",
+  context: "Це майбутній RULE_HARD список. Те що тут — буде стопити випуск. Решта = soft, попередження. Зараз PDS має 6 hard rules — це базис.",
+  options: [
+    { k:"A", v:"Safe-area margins (~6% sides)" },
+    { k:"B", v:"Thumb-zone CTA (bottom band)" },
+    { k:"C", v:"≥44×44px tap targets" },
+    { k:"D", v:"HUD лише у верхніх кутах" },
+    { k:"E", v:"Primary CTA — обовʼязково" },
+    { k:"F", v:"Hero не перевищує zone-limit" },
+    { k:"G", v:"Жодного overflow за canvas" },
+    { k:"H", v:"Контраст тексту на busy bg" },
+    { k:"I", v:"Один primary action на екран" },
+  ], freetext: false },
+
+{ id: "Q37", ch: 8, type: "single", title: "Чи дозволити experimental layouts, що порушують правила?",
+  context: "Жорсткі правила = передбачуваний продукт. Дозволити порушення = простір для нестандартних форматів і A/B-тестів. Прапор --experimental = безпечно для production, дозволяє dev-експерименти.",
+  options: [
+    { k:"A", v:"Так — за прапором --experimental" },
+    { k:"B", v:"Ні ніколи" },
+    { k:"C", v:"Так — для A/B-тестів з аналітикою" },
+    { k:"D", v:"Лише у dev mode" },
+  ], freetext: false },
+
+{ id: "Q38", ch: 8, type: "single", title: "Animation strategy:",
+  context: "Зараз GSAP пакет є у dependencies. Без анімацій = найшвидше, найменший файл. Bank з GSAP = стабільно, переносимо. AI-генеровані SVG-анімації = найунікальніше, найризикованіше. Per-mechanic = механіка приносить свій варіант.",
+  options: [
+    { k:"A", v:"Без анімацій (static)" },
+    { k:"B", v:"GSAP-патерни з банку" },
+    { k:"C", v:"AI генерує SVG-анімації" },
+    { k:"D", v:"Per-mechanic — кожна гра приносить" },
+  ], freetext: false },
+
+{ id: "Q39", ch: 8, type: "single", title: "Variability в межах правил (range, про який ти говорив):",
+  context: "Ти явно проговорив, що правила мають бути в range, не жорсткі. Питання — який саме range. Жорсткий детермінізм = передбачувано, нудно. ±5% = ледь варіація. ±20% = помітна варіативність, можливі регресії. Random within zone = максимум варіацій, потребує сильний critic.",
+  options: [
+    { k:"A", v:"Жорсткий детермінізм (no variability)" },
+    { k:"B", v:"Range ±5%" },
+    { k:"C", v:"Range ±20%" },
+    { k:"D", v:"Random within zone bounds" },
+  ], freetext: true, freetextPlaceholder: "Опиши, де хочеш варіацію, а де — точність..." },
+
+{ id: "Q40", ch: 8, type: "single", title: "Localization підтримка:",
+  context: "Зараз brief має поле lang, але UI компонентів не локалізує. Auto-translation працює нерівно для CTA-копії. Post-edit-only = безпечно, повільно.",
+  options: [
+    { k:"A", v:"En-only у v1" },
+    { k:"B", v:"3–5 langs auto-translate" },
+    { k:"C", v:"Unlimited (LLM на копію)" },
+    { k:"D", v:"Post-edit only (manual)" },
+  ], freetext: false },
+
+// ─── Chapter 9 · Validation & Quality ──────────────────────────────────────
+{ id: "Q41", ch: 9, type: "multi", title: "Що БЛОКУЄ випуск playable?",
+  context: "Кожна позначка = hard fail gate. Решта = warning. Зараз меtа-валідатор блокує тільки розмір + CTA + redirects. Решта поки лише warn або не перевіряється.",
+  options: [
+    { k:"A", v:"Файл >2MB (Meta hard limit)" },
+    { k:"B", v:"CTA відсутній або не wired" },
+    { k:"C", v:"Zone violation" },
+    { k:"D", v:"Visual regression fail" },
+    { k:"E", v:"Semantic critic fail" },
+    { k:"F", v:"Hook оцінено як weak" },
+    { k:"G", v:"Бюджет asset-gen перевищено" },
+    { k:"H", v:"Localization incomplete" },
+  ], freetext: false },
+
+{ id: "Q42", ch: 9, type: "single", title: "Visual regression запускається:",
+  context: "Зараз — manually через npm run visual. Always-before-output = найбезпечніше, додає ~30s до pipeline. CI only = швидко локально, але можливі сюрпризи при merge.",
+  options: [
+    { k:"A", v:"Завжди перед видачею" },
+    { k:"B", v:"On-demand" },
+    { k:"C", v:"Pre-commit hook" },
+    { k:"D", v:"CI only" },
+    { k:"E", v:"За прапором --visual" },
+  ], freetext: false },
+
+{ id: "Q43", ch: 9, type: "single", title: "Semantic critic дає:",
+  context: "Будь-що крім PASS/FAIL вимагає LLM call. Score 0-100 = легко агрегувати. Free-text = людиномовний, але важко auto-act на нього. Multi-verdict = найбагатший сигнал.",
+  options: [
+    { k:"A", v:"PASS/FAIL — бінарно" },
+    { k:"B", v:"Score 0–100" },
+    { k:"C", v:"Free-text feedback" },
+    { k:"D", v:"Both — score + text" },
+    { k:"E", v:"Multi-verdict (UX, brand, conversion)" },
+  ], freetext: false },
+
+{ id: "Q44", ch: 9, type: "single", title: "Чи може агент випустити fail with warning?",
+  context: "Жорсткий strict = чистий продукт. Дозволити з warning = пропускає більше A/B матеріалу. Severity-aware = найкраще, але треба класифікація проблем.",
+  options: [
+    { k:"A", v:"Ні — strict pass-only" },
+    { k:"B", v:"Так — з позначкою у файлі" },
+    { k:"C", v:"Так, з поясненням чому warning" },
+    { k:"D", v:"Залежить від severity (low warn, high block)" },
+  ], freetext: false },
+
+{ id: "Q45", ch: 9, type: "single", title: "Скільки прогонів на одну playable за замовчуванням?",
+  context: "Single shot = найдешевше. Best-of-N + critic = надійніше, дорожче × N. Adaptive за бюджетом = розумно балансує.",
+  options: [
+    { k:"A", v:"1 (single shot)" },
+    { k:"B", v:"3 (best of 3)" },
+    { k:"C", v:"5 + critic chooses" },
+    { k:"D", v:"Adaptive за бюджетом" },
+  ], freetext: false },
+
+// ─── Chapter 10 · Orchestration & Future ───────────────────────────────────
+{ id: "Q46", ch: 10, type: "single", title: "Як часто будуть переписуватись промти агентів?",
+  context: "Це підказує, наскільки складною має бути система версіонування. Раз на місяць — semver і CHANGELOG. Постійно A/B — потрібна метрична петля, dashboard.",
+  options: [
+    { k:"A", v:"Стабільні — рідкі зміни" },
+    { k:"B", v:"Раз на місяць" },
+    { k:"C", v:"Постійні A/B експерименти" },
+    { k:"D", v:"User-customizable (кожен юзер свій промт)" },
+  ], freetext: false },
+
+{ id: "Q47", ch: 10, type: "single", title: "Multi-agent vs single-model оркестрація:",
+  context: "DAG агентів = модульно, debug-friendly, але overhead. Single big model = простіше, але втрачає specialization. Hybrid = практичний компроміс.",
+  options: [
+    { k:"A", v:"DAG спеціалізованих агентів" },
+    { k:"B", v:"Одна модель робить усе" },
+    { k:"C", v:"Hybrid (1 модель + spec critics)" },
+    { k:"D", v:"Поки не вирішено" },
+  ], freetext: false },
+
+{ id: "Q48", ch: 10, type: "single", title: "UI пріоритет:",
+  context: "CLI зараз достатньо для тебе соло. Local web app = краще для команди. Hosted SaaS = продукт. Ads Manager plugin = найглибша інтеграція з Meta workflow.",
+  options: [
+    { k:"A", v:"CLI достатньо у v1" },
+    { k:"B", v:"Local web app у v1" },
+    { k:"C", v:"Hosted SaaS" },
+    { k:"D", v:"Plugin до Meta Ads Manager" },
+  ], freetext: false },
+
+{ id: "Q49", ch: 10, type: "single", title: "Open source vs closed:",
+  context: "Open all = community може помогти, але втрачаєш edge. Open kit + closed agents = баланс. Closed all = повний контроль над цінністю.",
+  options: [
+    { k:"A", v:"Open all" },
+    { k:"B", v:"Open kit + closed agents" },
+    { k:"C", v:"Closed all" },
+    { k:"D", v:"Per-component decision" },
+  ], freetext: false },
+
+{ id: "Q50", ch: 10, type: "single", title: "Через 1 рік агент має робити:",
+  context: "Цей вибір задає DNA expansion. Лише краще playable — фокус на якість. Більше типів реклами — multi-format. Не лише ads — design assistant. Це фінальне питання, і відповідь на нього диктує, у який бік розвивати архітектуру з самого початку.",
+  options: [
+    { k:"A", v:"Те саме, але краще (deeper)" },
+    { k:"B", v:"Більше типів рекламних форматів (video, banner)" },
+    { k:"C", v:"Не лише playable — всі ads" },
+    { k:"D", v:"Бути асистентом дизайну загалом" },
+    { k:"E", v:"Інше" },
+  ], freetext: true, freetextRequired: true, freetextPlaceholder: "Опиши візію року — ця відповідь найважливіша..." },
+];
+
+// ════════════════════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════════════════════
+
+const STORAGE_KEY = "forge-brief-quest-v1";
+
+function initialState() {
+  return {
+    startedAt: null,
+    currentIdx: -1,
+    answers: {},
+    finalNote: "",
+    xp: 0,
+    achievements: [],
+  };
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return initialState();
+    return Object.assign(initialState(), JSON.parse(raw));
+  } catch { return initialState(); }
+}
+function saveState(s) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+  setSavedIndicator();
+}
+function resetState() {
+  localStorage.removeItem(STORAGE_KEY);
+  state = initialState();
+  render();
+}
+
+let state = loadState();
+
+// ════════════════════════════════════════════════════════════════════════════
+//  ACHIEVEMENTS
+// ════════════════════════════════════════════════════════════════════════════
+
+const ACHIEVEMENTS = [
+  { id:"FIRST_BLOOD",   name:"First Answer",          cond:s => Object.keys(s.answers).length >= 1 },
+  { id:"QUARTER",       name:"Quarter Master",        cond:s => answeredCount(s) >= 13 },
+  { id:"HALF",          name:"Halfway Hero",          cond:s => answeredCount(s) >= 25 },
+  { id:"LORE_KEEPER",   name:"Lore Keeper (5x text)", cond:s => freeTextCount(s) >= 5 },
+  { id:"PERFECTIONIST", name:"Perfectionist (10x)",   cond:s => freeTextCount(s) >= 10 },
+  { id:"BOSS_KILLER",   name:"Chapter Boss x 5",      cond:s => chaptersCompleted(s) >= 5 },
+  { id:"ARCHMAGE",      name:"Archmage of Forge",     cond:s => answeredCount(s) >= 50 },
+];
+
+function isAnswered(a) {
+  if (!a) return false;
+  if (Array.isArray(a.value)) return a.value.length > 0 || (a.free && a.free.trim());
+  return (a.value !== undefined && a.value !== null && a.value !== "") || (a.free && a.free.trim());
+}
+function answeredCount(s) { return Object.values(s.answers).filter(a => isAnswered(a)).length; }
+function freeTextCount(s) { return Object.values(s.answers).filter(a => a && a.free && a.free.trim().length > 0).length; }
+function chaptersCompleted(s) {
+  return CHAPTERS.filter(ch => {
+    const qs = QUESTIONS.filter(q => q.ch === ch.id);
+    return qs.every(q => isAnswered(s.answers[q.id]));
+  }).length;
+}
+function checkAchievements() {
+  for (const ach of ACHIEVEMENTS) {
+    if (!state.achievements.includes(ach.id) && ach.cond(state)) {
+      state.achievements.push(ach.id);
+      showToast(ach.name);
+    }
+  }
+}
+function showToast(name) {
+  const el = document.getElementById("toast");
+  document.getElementById("toast-name").textContent = name;
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 2800);
+}
+let savedTimer;
+function setSavedIndicator() {
+  const el = document.getElementById("hud-saved");
+  if (!el) return;
+  el.textContent = "● SAVED";
+  clearTimeout(savedTimer);
+  savedTimer = setTimeout(() => { el.textContent = "●"; }, 1400);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════════════════════════════════
+
+const app = document.getElementById("app");
+
+function render() {
+  updateHud();
+  if (state.currentIdx === -1) return renderStart();
+  if (state.currentIdx >= QUESTIONS.length) return renderEnd();
+  return renderQuestion(state.currentIdx);
+}
+
+function updateHud() {
+  const total = QUESTIONS.length;
+  const answered = answeredCount(state);
+  const xp = answered * 10 + freeTextCount(state) * 5;
+  state.xp = xp;
+  document.getElementById("hud-xp").textContent = xp;
+  document.getElementById("progress-fill").style.width = (answered / total * 100) + "%";
+  document.getElementById("progress-text").textContent = answered + " / " + total + " QUESTIONS";
+  const currentCh = state.currentIdx >= 0 && state.currentIdx < QUESTIONS.length
+    ? QUESTIONS[state.currentIdx].ch
+    : Math.min(10, chaptersCompleted(state) + 1);
+  document.getElementById("hud-chapter").textContent = currentCh + "/10";
+}
+
+function findFirstUnanswered() {
+  for (let i = 0; i < QUESTIONS.length; i++) {
+    if (!isAnswered(state.answers[QUESTIONS[i].id])) return i;
+  }
+  return 0;
+}
+
+function renderStart() {
+  const answered = answeredCount(state);
+  const continueAvailable = state.startedAt && answered > 0 && answered < QUESTIONS.length;
+  const completed = answered >= QUESTIONS.length;
+
+  const cta = completed
+    ? '<button class="btn primary" data-action="view-result">VIEW RESULT</button>'
+    : continueAvailable
+      ? '<button class="btn primary" data-action="continue">CONTINUE QUEST</button>'
+      : '<button class="btn primary" data-action="start">START QUEST</button>';
+  const resetBtn = (continueAvailable || completed)
+    ? '<button class="btn danger" data-action="reset">RESET ALL</button>' : "";
+
+  mount(app, `
+    <div class="panel">
+      <div class="panel-corners"></div>
+      <div class="start">
+        <div class="sprite-hero"></div>
+        <h2>Quest accepted?</h2>
+        <p>
+          Це <strong>50 запитань × 10 розділів</strong>, які детально проб'ють те, що ти хочеш від
+          агента <strong>FORGE</strong>. Кожне запитання має <strong>context-блок</strong> з поясненням,
+          чому ми це питаємо і що твій вибір змінить у архітектурі.
+        </p>
+        <p>
+          Більшість — <strong>один вибір</strong>, частина — <strong>багатий вибір</strong>,
+          кілька — <strong>вільне поле</strong>. Майже всюди є додаткове <strong>"опиши деталь"</strong>.
+        </p>
+        <p>
+          Можеш закрити вкладку — прогрес <strong>зберігається</strong> у браузер.
+          Наприкінці — <strong>експорт</strong> у <code>brief.md</code> і <code>brief.json</code>.
+        </p>
+        <div class="meta-list">
+          <div class="meta-card"><div class="lbl">Розділів</div><div class="val">10</div></div>
+          <div class="meta-card"><div class="lbl">Запитань</div><div class="val">50</div></div>
+          <div class="meta-card"><div class="lbl">Час</div><div class="val">~30 хв</div></div>
+          <div class="meta-card"><div class="lbl">Save</div><div class="val">localStorage</div></div>
+        </div>
+        <div class="nav" style="justify-content:center">
+          ${cta}
+          ${resetBtn}
+        </div>
+      </div>
+    </div>
+    ${renderQuestLog()}
+  `);
+}
+
+function startQuest() {
+  state.startedAt = Date.now();
+  state.currentIdx = 0;
+  saveState(state);
+  render();
+}
+function confirmReset() {
+  if (confirm("RESET ALL PROGRESS?\nЦе видалить усі твої відповіді.")) resetState();
+}
+
+function renderQuestion(idx) {
+  const q = QUESTIONS[idx];
+  const chapter = CHAPTERS.find(c => c.id === q.ch);
+  const chQuestions = QUESTIONS.filter(x => x.ch === q.ch);
+  const chIdx = chQuestions.indexOf(q) + 1;
+  const ans = state.answers[q.id] || {};
+
+  const optionsHtml = (q.options || []).map(opt => {
+    let selected = false;
+    if (q.type === "multi") selected = Array.isArray(ans.value) && ans.value.includes(opt.k);
+    else if (q.type === "single") selected = ans.value === opt.k;
+    const inputType = q.type === "multi" ? "checkbox" : "radio";
+    return `
+      <label class="opt ${selected ? "selected" : ""}" data-action="toggle" data-qid="${q.id}" data-k="${opt.k}" data-type="${q.type}">
+        <input type="${inputType}" ${selected ? "checked" : ""} readonly>
+        <span><span class="opt-key">[${opt.k}]</span>${escapeHtml(opt.v)}</span>
+      </label>
+    `;
+  }).join("");
+
+  const freetextHtml = (q.freetext || q.type === "text") ? `
+    <div class="freetext-block">
+      <label class="freetext-label">${q.type === "text" ? "Твоя відповідь" : "Деталь / опис (опційно)"}${q.freetextRequired ? " *" : ""}</label>
+      <textarea class="freetext" data-action="freetext" data-qid="${q.id}" rows="3"
+        placeholder="${escapeHtml(q.freetextPlaceholder || "Розгорни думку...")}">${escapeHtml(ans.free || "")}</textarea>
+    </div>
+  ` : "";
+
+  const isLast = idx === QUESTIONS.length - 1;
+  const isFirst = idx === 0;
+  const total = QUESTIONS.length;
+
+  const contextHtml = q.context
+    ? `<div class="q-context"><div class="why">Why this question</div>${escapeHtml(q.context).replace(/`([^`]+)`/g, "<code>$1</code>")}</div>`
+    : "";
+
+  const finishBtn = isLast
+    ? `<button class="btn primary" data-action="finish">FINISH ★</button>`
+    : `<button class="btn primary" data-action="next" data-idx="${idx + 1}">NEXT →</button>`;
+
+  mount(app, `
+    <div class="chapter-banner">
+      <span class="ch-num">CH ${String(q.ch).padStart(2,"0")}</span>
+      <span class="ch-name">${escapeHtml(chapter.name)}</span>
+      <span class="ch-progress">Q ${chIdx} / ${chQuestions.length}</span>
+    </div>
+    <div class="panel">
+      <div class="panel-corners"></div>
+      <div class="qnum-row">
+        <span class="qnum">QUEST ${q.id}<span class="total"> / ${total}</span></span>
+      </div>
+      <div class="q-title">${escapeHtml(q.title)}</div>
+      ${contextHtml}
+      ${optionsHtml ? `<div class="options">${optionsHtml}</div>` : ""}
+      ${freetextHtml}
+      <div class="nav">
+        <button class="btn" data-action="prev" data-idx="${idx - 1}" ${isFirst ? "disabled" : ""}>← PREV</button>
+        <button class="btn ghost" data-action="skip" data-idx="${idx + 1}">SKIP →</button>
+        <div class="spacer"></div>
+        ${finishBtn}
+      </div>
+    </div>
+    ${renderQuestLog()}
+  `);
+}
+
+function renderQuestLog() {
+  const items = CHAPTERS.map(ch => {
+    const qs = QUESTIONS.filter(q => q.ch === ch.id);
+    const done = qs.every(q => isAnswered(state.answers[q.id]));
+    const active = state.currentIdx >= 0 && state.currentIdx < QUESTIONS.length && QUESTIONS[state.currentIdx].ch === ch.id;
+    const firstIdx = QUESTIONS.findIndex(q => q.ch === ch.id);
+    return `<li class="${done ? "done" : ""} ${active ? "active" : ""}" data-action="jump" data-idx="${firstIdx}">CH${String(ch.id).padStart(2,"0")} · ${escapeHtml(ch.name)}</li>`;
+  }).join("");
+  return `
+    <div class="questlog">
+      <div class="questlog-title">▸ Quest Log</div>
+      <ul>${items}</ul>
+    </div>
+  `;
+}
+
+function renderEnd() {
+  const answered = answeredCount(state);
+  const totalQ = QUESTIONS.length;
+  const freeTexts = freeTextCount(state);
+  const elapsed = state.startedAt ? Math.round((Date.now() - state.startedAt) / 60000) : 0;
+  const note = state.finalNote || "";
+
+  mount(app, `
+    <div class="panel">
+      <div class="panel-corners"></div>
+      <div class="victory">
+        <h2>BRIEF FORGED</h2>
+        <p style="font-weight:normal;text-transform:none;font-size:13px;color:var(--ink);max-width:560px;margin:0 auto 12px;line-height:1.7;">
+          Ти пройшов <strong>${answered}/${totalQ}</strong> запитань. Якщо щось пропущено —
+          вертайся через Quest Log нижче. Інакше — забери бриф.
+        </p>
+        <div class="stats-end">
+          <div class="stat-end"><div class="lbl">Answered</div><div class="val">${answered}/${totalQ}</div></div>
+          <div class="stat-end"><div class="lbl">XP</div><div class="val">${state.xp}</div></div>
+          <div class="stat-end"><div class="lbl">Free Texts</div><div class="val">${freeTexts}</div></div>
+          <div class="stat-end"><div class="lbl">Achievements</div><div class="val">${state.achievements.length}/${ACHIEVEMENTS.length}</div></div>
+          <div class="stat-end"><div class="lbl">Time</div><div class="val">${elapsed}m</div></div>
+        </div>
+      </div>
+
+      <div class="final-message">
+        <div class="lbl">▸ FINAL TRANSMISSION (anything else for the agent?)</div>
+        <textarea class="freetext" data-action="final-note" rows="5"
+          placeholder="Будь-що, що не вписалось у питання — мрії, болі, дедлайни, обмеження, інспірації...">${escapeHtml(note)}</textarea>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" data-action="dl-md">⬇ DOWNLOAD brief.md</button>
+        <button class="btn" data-action="dl-json">⬇ DOWNLOAD brief.json</button>
+        <button class="btn" data-action="copy">⎘ COPY TO CLIPBOARD</button>
+        <button class="btn ghost" data-action="review">↩ REVIEW ANSWERS</button>
+        <button class="btn danger" data-action="reset">RESET</button>
+      </div>
+    </div>
+    ${renderQuestLog()}
+  `);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  ACTIONS — delegated event handling
+// ════════════════════════════════════════════════════════════════════════════
+
+function goTo(idx) {
+  if (state.startedAt === null) state.startedAt = Date.now();
+  state.currentIdx = idx;
+  saveState(state);
+  window.scrollTo({ top: 0, behavior: "instant" });
+  render();
+}
+function toggleOption(qid, key, type) {
+  const ans = state.answers[qid] || {};
+  if (type === "multi") {
+    const arr = Array.isArray(ans.value) ? ans.value.slice() : [];
+    const at = arr.indexOf(key);
+    if (at === -1) arr.push(key); else arr.splice(at, 1);
+    ans.value = arr;
+  } else {
+    ans.value = key;
+  }
+  state.answers[qid] = ans;
+  saveState(state);
+  checkAchievements();
+  render();
+}
+
+document.addEventListener("click", (e) => {
+  const target = e.target.closest("[data-action]");
+  if (!target) return;
+  const action = target.dataset.action;
+  switch (action) {
+    case "start":         startQuest(); break;
+    case "continue":      goTo(findFirstUnanswered()); break;
+    case "view-result":   goTo(QUESTIONS.length); break;
+    case "reset":         confirmReset(); break;
+    case "prev":
+    case "next":
+    case "skip":
+    case "jump":          goTo(parseInt(target.dataset.idx, 10)); break;
+    case "finish":        goTo(QUESTIONS.length); break;
+    case "review":        goTo(0); break;
+    case "toggle":        toggleOption(target.dataset.qid, target.dataset.k, target.dataset.type); break;
+    case "dl-md":         downloadMd(); break;
+    case "dl-json":       downloadJson(); break;
+    case "copy":          copyAll(); break;
+  }
+});
+document.addEventListener("input", (e) => {
+  const target = e.target;
+  if (!target || !target.dataset || !target.dataset.action) return;
+  if (target.dataset.action === "freetext") {
+    const qid = target.dataset.qid;
+    const ans = state.answers[qid] || {};
+    ans.free = target.value;
+    state.answers[qid] = ans;
+    saveState(state);
+    checkAchievements();
+  } else if (target.dataset.action === "final-note") {
+    state.finalNote = target.value;
+    saveState(state);
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  EXPORT
+// ════════════════════════════════════════════════════════════════════════════
+
+function buildBriefMd() {
+  const lines = [];
+  lines.push("# FORGE Agent · Brief");
+  lines.push("");
+  lines.push("> Згенеровано: " + new Date().toISOString());
+  lines.push("> Готовність: **" + answeredCount(state) + "/" + QUESTIONS.length + "** питань · " + state.xp + " XP");
+  lines.push("");
+  for (const ch of CHAPTERS) {
+    lines.push("## " + String(ch.id).padStart(2,"0") + " · " + ch.name);
+    lines.push("_" + ch.lore + "_");
+    lines.push("");
+    const qs = QUESTIONS.filter(q => q.ch === ch.id);
+    for (const q of qs) {
+      const a = state.answers[q.id] || {};
+      lines.push("### " + q.id + " — " + q.title);
+      if (q.context && q.context.trim()) {
+        lines.push("_Why:_ " + q.context.trim());
+        lines.push("");
+      }
+      const chosen = answerToText(q, a);
+      if (chosen) {
+        lines.push("**Answer:**");
+        lines.push(chosen);
+      } else {
+        lines.push("_(no answer)_");
+      }
+      if (a.free && a.free.trim()) {
+        lines.push("");
+        lines.push("**Note:**");
+        lines.push("> " + a.free.replace(/\n/g, "\n> "));
+      }
+      lines.push("");
+    }
+  }
+  if (state.finalNote && state.finalNote.trim()) {
+    lines.push("## Final transmission");
+    lines.push("");
+    lines.push("> " + state.finalNote.replace(/\n/g, "\n> "));
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+function answerToText(q, a) {
+  if (q.type === "text") return a.free && a.free.trim() ? "> " + a.free.replace(/\n/g, "\n> ") : "";
+  if (q.type === "multi" && Array.isArray(a.value)) {
+    return a.value.map(k => {
+      const opt = (q.options || []).find(o => o.k === k);
+      return opt ? "- **[" + k + "]** " + opt.v : "- [" + k + "]";
+    }).join("\n");
+  }
+  if (q.type === "single" && a.value) {
+    const opt = (q.options || []).find(o => o.k === a.value);
+    return opt ? "**[" + a.value + "]** " + opt.v : "**[" + a.value + "]**";
+  }
+  return "";
+}
+function buildBriefJson() {
+  return {
+    schema: "forge-brief-quest/v1",
+    generatedAt: new Date().toISOString(),
+    elapsedMinutes: state.startedAt ? Math.round((Date.now() - state.startedAt) / 60000) : null,
+    progress: {
+      answered: answeredCount(state),
+      total: QUESTIONS.length,
+      xp: state.xp,
+      achievements: state.achievements,
+    },
+    chapters: CHAPTERS.map(ch => ({
+      id: ch.id, name: ch.name,
+      questions: QUESTIONS.filter(q => q.ch === ch.id).map(q => {
+        const a = state.answers[q.id] || {};
+        return {
+          id: q.id, title: q.title, type: q.type,
+          answer: q.type === "text" ? null : (a.value !== undefined ? a.value : null),
+          freeText: a.free || null,
+        };
+      })
+    })),
+    finalNote: state.finalNote || null,
+  };
+}
+function downloadFile(name, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+function downloadMd() { downloadFile("forge-brief.md", buildBriefMd(), "text/markdown;charset=utf-8"); }
+function downloadJson() { downloadFile("forge-brief.json", JSON.stringify(buildBriefJson(), null, 2), "application/json"); }
+async function copyAll() {
+  try {
+    await navigator.clipboard.writeText(buildBriefMd());
+    showToast("Copied to clipboard");
+  } catch {
+    alert("Copy failed — use download buttons instead.");
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  KEYBOARD NAV
+// ════════════════════════════════════════════════════════════════════════════
+document.addEventListener("keydown", (e) => {
+  if (e.target && (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT")) return;
+  if (state.currentIdx === -1 || state.currentIdx >= QUESTIONS.length) return;
+  if (e.key === "ArrowLeft") goTo(state.currentIdx - 1);
+  if (e.key === "ArrowRight") goTo(state.currentIdx + 1);
+  if (e.key >= "1" && e.key <= "9") {
+    const q = QUESTIONS[state.currentIdx];
+    if (q && q.options) {
+      const idx = parseInt(e.key, 10) - 1;
+      const opt = q.options[idx];
+      if (opt) toggleOption(q.id, opt.k, q.type);
+    }
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════════════════════════════
+render();
+checkAchievements();
+</script>
+
+</body>
+</html>
