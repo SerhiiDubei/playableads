@@ -27,6 +27,11 @@ export const showcase: Layout = {
       daily: "pick-hero", levelup: "pick-hero",
       win: "endcard", lose: "endcard", endcard: "endcard",
     },
+    // 2 додаткові герої з інших стилів — 3 різні візуали на 10 екранах
+    assets: [
+      { key: "hero2", src: "out/diablo2/hero.png", size: 520, fallbackHero: true },
+      { key: "hero3", src: "out/pixelart/hero.png", size: 520, fallbackHero: true },
+    ],
   },
 
   pageCss: () => `

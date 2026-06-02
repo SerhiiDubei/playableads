@@ -59,4 +59,13 @@ export type LayoutMeta = {
    * (lets templates migrate to zones one at a time).
    */
   zoneTypes?: Record<string, string>;
+  /**
+   * Extra assets this template needs beyond the base set (kit frames + banner +
+   * icons + `bg-castle` + `knight`). The builder loads these in addition to the
+   * base, so the asset list lives WITH the template, not hardcoded in the builder.
+   * `src` is a path; if it's missing on disk and `fallbackHero` is set, the builder
+   * substitutes the resolved hero image (lets a template ask for extra heroes that
+   * degrade gracefully when a style doesn't ship them).
+   */
+  assets?: Array<{ key: string; src: string; size?: number; fallbackHero?: boolean }>;
 };
