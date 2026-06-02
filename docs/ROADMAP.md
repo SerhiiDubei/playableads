@@ -23,16 +23,16 @@
 |----|-------|--------|-----|----------|--------|---------|------------|--------|
 | Z-00 | `endcard` → зони (еталон) | P1 | #zones | High | 1.5h | `endcard` (є) | — | **done** |
 | Z-01 | `pick-hero` → зони | P1 | #zones | High | 0.5h | `pick-hero` (є) | — | todo |
-| Z-02 | `menu5` → зони (5 екранів nav) | P1 | #zones | High | 2h | `menu` (є) | портувати з main-демо (git history) | todo |
-| Z-03 | `feature-grid` → зони | P2 | #zones | Med | 1h | новий `feature-grid` | — | todo |
-| Z-04 | `feature-list` → зони | P2 | #zones | Med | 1h | новий `feature-list` (або reuse Z-03) | Z-03 | todo |
-| Z-05 | `tap-reveal` → зони (2 екр.) | P2 | #zones | Med | 1.5h | новий `reveal` | — | todo |
-| Z-06 | `progress-reveal` → зони (2 екр.) | P2 | #zones | Med | 1.5h | reuse `reveal` | Z-05 | todo |
-| Z-07 | `two-choice` → зони (2 екр.) | P2 | #zones | Med | 1.5h | новий `two-choice` | — | todo |
-| Z-08 | `match-cluster` → зони (board+reveal) | P2 | #zones | Med | 2h | новий `board` | Z-05 | todo |
-| Z-09 | `tutorial` → зони (3 екр.) | P3 | #zones | Low | 2h | новий `tutorial` | — | todo |
+| Z-02 | `menu5` → зони (5 екранів nav) | P1 | #zones | High | 1h | `menu` (є) | **`showcase.ts` = готовий 10-екранний референс** | todo |
+| Z-03 | `feature-grid` → зони | P2 | #zones | Med | 0.5h | `grid` (є ✅) | — | todo |
+| Z-04 | `feature-list` → зони | P2 | #zones | Med | 0.5h | `dense`/`grid` (є ✅) | — | todo |
+| Z-05 | `tap-reveal` → зони (2 екр.) | P2 | #zones | Med | 1h | `focal` (є ✅) | — | todo |
+| Z-06 | `progress-reveal` → зони (2 екр.) | P2 | #zones | Med | 1h | `focal` (є ✅) | — | todo |
+| Z-07 | `two-choice` → зони (2 екр.) | P2 | #zones | Med | 1h | `split` (є ✅) | — | todo |
+| Z-08 | `match-cluster` → зони (board+reveal) | P2 | #zones | Med | 1.5h | `puzzle` (є ✅) | — | todo |
+| Z-09 | `tutorial` → зони (3 екр.) | P3 | #zones | Low | 1.5h | `immersive` (є ✅) | — | todo |
 
-**Сума епіку:** ≈ 13h (з них 1.5h done). Дешеві першими: Z-01 (архетип уже є), Z-02 (є код у main-демо).
+**Сума епіку:** ≈ 9.5h (з них 1.5h done). Залежності зняті: усі архетипи вже є (10 шт. після layered-merge), а `showcase.ts` — готовий приклад багатоекранного zone-шаблону. Дешеві першими: Z-01, Z-03, Z-04.
 
 ---
 
@@ -40,13 +40,13 @@
 
 | ID | Назва | Пріор. | Тег | Цінність | Оцінка | Залежності | Статус |
 |----|-------|--------|-----|----------|--------|------------|--------|
-| I-01 | `visual-test.ts` перевіряє зони для **будь-якого** `data-type` (не хардкод menu/game/...) | P1 | #infra | High | 1h | — | todo |
+| I-01 | `visual-test.ts` перевіряє зони для **будь-якого** `data-type` (auto-discover) | P1 | #infra | High | 1h | — | **done** (прийшло з layered-merge) |
 | I-02 | `check:layouts -- all` зелений на всіх мігрованих шаблонах | P1 | #infra | High | 0.5h | епік Z-* | blocked (Z-*) |
-| I-03 | Звірити авто-merge `kit.ts` + `CLAUDE.md` на здоровий глузд (не лише tsc) | P1 | #cleanup | High | 0.5h | — | todo |
+| I-03 | Звірити merge `kit.ts` + `CLAUDE.md` на здоровий глузд (не лише tsc) | P1 | #cleanup | High | 0.5h | — | **done** (tsc+build+visual+lint зелені через усі merge) |
 | I-04 | Прибрати `enforceZones`/`maxHeroPx` дублі після міграції (lint бере з зон) | P2 | #cleanup | Med | 0.5h | епік Z-* | todo |
 | I-05 | (опц.) перейменувати теку `layouts/` → `templates/`? — обережно, багато import-шляхів | P3 | #cleanup | Low | 1h | — | todo |
-| I-06 | Прибрати тимчасові worktrees (`forge-wip`, `forge-integrate`) + гілку `desktop-forge-wip` після merge | P2 | #release | Med | 0.25h | R-01 | todo |
-| R-01 | Змержити PR #2 (`integrate-forge` → `main`) | P1 | #release | High | 0.5h | I-01, I-02, I-03 | blocked |
+| I-06 | Прибрати тимчасові worktrees + зайві гілки після merge | P2 | #release | Med | 0.25h | R-01 | **done** (6 гілок → main+dev+gh-pages) |
+| R-01 | Змержити PR #2 (`integrate-forge` → `main`) | P1 | #release | High | 0.5h | — | **done** (49d4e0b) |
 
 ---
 
@@ -58,15 +58,19 @@
 - **Крок 3 (endcard)** — zone-driven + плюмбінг білдера (`meta.zoneTypes`), backward-compat. ✅
 - **Крок 4** — pipeline-інжект зон на місці. ✅
 - **Крок 5** — endcard: lint PASS + visual no-overflow ×8; `tsc` чистий щокроку. ✅
+- **PR #2 змержено в main** (`49d4e0b`) — уся forge-інтеграція на стовбурі. ✅
+- **brief-decisions консолідовано** — Brief-рішення (50 Q→A) + Phase 0 pipeline (Envelope/RunState) + Mad Mage Tower playable злиті в main. ✅
+- **session/layered влито** — +10 зонових архетипів, `kit/groups`/`flow`/`catalog`, 2 гри (tap/connect), `showcase.ts`; visual auto-discover (I-01). ✅
+- **Гілки консолідовано:** 6 → **3**. ✅
 
-**Гілки:** `integrate-forge` (робоча, PR #2) · `desktop-forge-wip` (сейф) · `main` (зоновий двигун).
+**Гілки:** `main` (ствол — усе тут) · `dev` (робоча гілка) · `gh-pages` (превʼю, незмінна назва).
 
 ## Як продовжити (рекомендований порядок)
-1. **I-03** (0.5h) — переконатись, що merged `kit.ts`/`CLAUDE.md` коректні. Дешево, знімає ризик.
-2. **Z-01 → Z-02** (2.5h) — найдешевші конверсії (архетипи вже є), дають швидкий прогрес.
-3. **I-01** (1h) — generic zone-check у visual, щоб тести ловили мігровані шаблони автоматично.
-4. **Z-03…Z-09** — за пріоритетом, по одному зі скріном на рев'ю.
-5. **I-02 → R-01** — фінальний green + merge у main.
+1. **Z-01 / Z-03 / Z-04** (1.5h разом) — найдешевші конверсії (архетипи `pick-hero`/`grid`/`dense` уже є).
+2. **Z-02** (1h) — `menu5` на зони, взявши `showcase.ts` за зразок.
+3. **Z-05…Z-09** — за пріоритетом, по одному зі скріном на рев'ю (усі архетипи готові).
+4. **I-04** — прибрати дублі прапорів після міграції.
+5. **I-02** — `check:layouts -- all` зелений → епік закрито.
 
 ---
 
