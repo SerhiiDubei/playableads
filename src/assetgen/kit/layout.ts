@@ -1,4 +1,4 @@
-// Layout zoning: BASE (універсальні правила) ⊕ ARCHETYPE (під тип екрану).
+// Zone layout: zoning: BASE (універсальні правила) ⊕ ARCHETYPE (під тип екрану).
 // Екран оголошує screenType -> resolveLayout дає зони -> компоненти лягають у зони, не ad-hoc.
 import { DESIGN } from "./stage.js";
 import { deepMerge } from "../compose.js";
@@ -9,7 +9,7 @@ export type Zone = {
   justify?: "start" | "center" | "end" | "between";
   gap?: number; row?: boolean;
 };
-export type Layout = {
+export type ZoneSpec = {
   type: string;
   safe: { top: number; bottom: number; left: number; right: number };
   zones: Record<string, Zone>;
@@ -17,7 +17,7 @@ export type Layout = {
 };
 
 // Інваріанти — діють на КОЖНОМУ екрані (thumb-зона, safe-поля, HUD у кутах).
-const BASE: Layout = {
+const BASE: ZoneSpec = {
   type: "base",
   safe: { top: 0.05, bottom: 0.04, left: 0.06, right: 0.06 },
   zones: {
@@ -31,7 +31,7 @@ const BASE: Layout = {
 };
 
 // Специфіка під тип екрану (оверрайди зон поверх BASE).
-const ARCHETYPES: Record<string, Partial<Layout>> = {
+const ARCHETYPES: Record<string, Partial<ZoneSpec>> = {
   menu: {
     zones: {
       hud: { top: 0.0, bottom: 0.16, row: true, justify: "between", align: "center" },
@@ -58,8 +58,8 @@ const ARCHETYPES: Record<string, Partial<Layout>> = {
   },
 };
 
-export function resolveLayout(type: string): Layout {
-  const L = deepMerge(BASE, ARCHETYPES[type] ?? {}) as Layout;
+export function resolveLayout(type: string): ZoneSpec {
+  const L = deepMerge(BASE, ARCHETYPES[type] ?? {}) as ZoneSpec;
   L.type = type;
   return L;
 }
@@ -68,7 +68,7 @@ const flex = (v?: string) =>
   v === "start" ? "flex-start" : v === "end" ? "flex-end" : v === "between" ? "space-between" : "center";
 
 /** CSS зон, scoped під `.screen[data-type="<type>"]` (вертикальні safe-поля клампляться). */
-export function zoneCss(L: Layout): string {
+export function zoneCss(L: ZoneSpec): string {
   const { W, H } = DESIGN;
   const left = Math.round(L.safe.left * W), right = Math.round(L.safe.right * W);
   let css = "";
@@ -87,9 +87,44 @@ export function zone(name: string, inner: string, cls = ""): string {
 }
 
 /** Debug-оверлей зон (видно при body.show-zones / ?zones=1). */
-export function zonesOverlay(L: Layout): string {
+export function zonesOverlay(L: ZoneSpec): string {
   return Object.keys(L.zones).map((n) => `<div class="zone zone-${n} zdbg" data-zone="${n}"><span>${n}</span></div>`).join("");
 }
+
+// ── Single source of truth for lint geometry ─────────────────────────────────
+// lint.ts checks playables against the SAME zones the builder places into, so the
+// checker and the placement engine can never drift. The px rects are DERIVED from
+// BASE (above); allow/forbid is lint POLICY (what may live in a zone), kept here
+// next to the geometry it constrains.
+export type LintZone = {
+  id: string;
+  rect: { x: number; y: number; w: number; h: number };
+  allow?: string[];
+  forbid?: string[];
+  hint: string;
+};
+
+function pxRect(topFrac: number, botFrac: number, fullWidth = false) {
+  const { W, H } = DESIGN;
+  const L = fullWidth ? 0 : Math.round(BASE.safe.left * W);
+  const R = fullWidth ? 0 : Math.round(BASE.safe.right * W);
+  return { x: L, y: Math.round(topFrac * H), w: W - L - R, h: Math.round(botFrac * H) - Math.round(topFrac * H) };
+}
+
+export const LINT_ZONES: LintZone[] = [
+  { id: "safe-top", rect: pxRect(0, BASE.safe.top, true), forbid: ["c-btn", "c-pill", "icon"],
+    hint: "iOS status bar / notch — no interactive elements." },
+  { id: "topbar", rect: pxRect(BASE.safe.top, BASE.zones.hud.bottom), allow: ["icon", "c-pill"], forbid: ["c-btn", "c-panel"],
+    hint: "Icons (settings/back), pill counters. No big buttons." },
+  { id: "hero", rect: pxRect(BASE.zones.stage.top, BASE.zones.stage.bottom), forbid: ["c-btn"],
+    hint: "Main visual — hero/product. CTA waits in the cta zone." },
+  { id: "content", rect: pxRect(BASE.zones.title.top, BASE.zones.stage.bottom),
+    hint: "Text, panels, feature grids. Flexible; may overlap hero." },
+  { id: "cta", rect: pxRect(BASE.zones.actions.top, BASE.zones.actions.bottom), allow: ["c-btn"],
+    hint: "Primary CTA — thumb-reachable actions band (same zone the builder places into)." },
+  { id: "safe-bottom", rect: pxRect(1 - BASE.safe.bottom, 1, true), forbid: ["c-btn", "c-pill", "icon"],
+    hint: "iOS home-gesture area — no interactive elements." },
+];
 
 export const OVERLAY_CSS =
   `.zone.zdbg{display:none!important}` +

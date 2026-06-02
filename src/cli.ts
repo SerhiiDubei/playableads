@@ -5,11 +5,23 @@ import { buildFromBriefFile } from "./builder.js";
 import { buildKitPlayable } from "./assetgen/build-test-playable.js";
 import { validate } from "./build/validator.js";
 import { listStyles, listTemplates, TEMPLATES_DIR, OUT_DIR } from "./loader.js";
+import { logStage, timed, summary } from "./assetgen/stage-log.js";
+import { writeHtmlReport } from "./assetgen/log-report.js";
+import { runAssetGen } from "./assetgen/run.js";
+import { listStyles as listStylesFn } from "./loader.js";
+import { writeCatalogHtml } from "./assetgen/catalog.js";
+import { listLayouts, DEFAULT_LAYOUT } from "./assetgen/layouts/index.js";
 
 const RED = "\x1b[31m";
 const GREEN = "\x1b[32m";
 const YELLOW = "\x1b[33m";
 const RESET = "\x1b[0m";
+
+function getFlag(rest: string[], name: string): string | undefined {
+  const idx = rest.indexOf(`--${name}`);
+  if (idx === -1) return undefined;
+  return rest[idx + 1];
+}
 
 async function main(): Promise<void> {
   const [cmd, ...rest] = process.argv.slice(2);
@@ -19,7 +31,15 @@ async function main(): Promise<void> {
     case "build":
       return cmdBuild(rest[0]);
     case "menu":
-      return cmdMenu(rest[0]);
+      return cmdMenu(rest[0], { layout: getFlag(rest, "layout") });
+    case "forge":
+      return cmdForge(rest[0], {
+        force: rest.includes("--force"),
+        open: !rest.includes("--no-open"),
+        layout: getFlag(rest, "layout"),
+      });
+    case "catalog":
+      return cmdCatalog({ open: !rest.includes("--no-open") });
     case "validate":
       return cmdValidate(rest[0]);
     case "new":
@@ -33,11 +53,14 @@ function usage(): void {
   console.log(`playable — Meta playable ad toolchain
 
 Usage:
-  playable list                 List available mechanics and styles
-  playable build <brief.json>   Build a single-file playable from a brief
-  playable menu [styleId]       Build a kit-based menu playable (default: heroes3)
-  playable validate <file.html> Validate an HTML file against Meta requirements
-  playable new <mechanic-id>    Scaffold a new mechanic template
+  playable list                                    List mechanics, styles, layouts
+  playable forge <styleId> [--layout <id>]         Full pipeline: gen assets + build playable
+                            [--force] [--no-open]
+  playable menu  <styleId> [--layout <id>]         Phase 2 only: build playable from existing assets
+  playable build <brief.json>                      Build from a custom brief
+  playable catalog [--no-open]                     Scan all out/<style>/ → out/catalog.html
+  playable validate <file.html>                    Meta requirements check
+  playable new <mechanic-id>                       Scaffold a new mechanic template
 `);
 }
 
@@ -50,6 +73,11 @@ async function cmdList(): Promise<void> {
   console.log(`\nStyles (${styles.length}):`);
   for (const s of styles) {
     console.log(`  ${GREEN}${s.id}${RESET} — ${s.name}`);
+  }
+  const layouts = listLayouts();
+  console.log(`\nLayouts (${layouts.length}):`);
+  for (const l of layouts) {
+    console.log(`  ${GREEN}${l.id}${RESET} — ${l.description}`);
   }
   console.log("");
 }
@@ -77,19 +105,41 @@ async function cmdBuild(briefFile?: string): Promise<void> {
   }
 }
 
-async function cmdMenu(styleId = "heroes3"): Promise<void> {
-  const { html, assetBytes } = await buildKitPlayable(styleId);
-  const v = validate(html);
+async function cmdMenu(styleId = "heroes3", opts: { layout?: string } = {}): Promise<void> {
+  const { html, assetBytes, layoutId } = await buildKitPlayable(styleId, { layout: opts.layout });
+  const v = await timed("validate", "meta.checks", () => validate(html), {
+    note: "size + CTA + no-external + no-redirect",
+  });
   await fs.mkdir(OUT_DIR, { recursive: true });
-  const outPath = path.join(OUT_DIR, `menu-${styleId}.html`);
-  await fs.writeFile(outPath, html, "utf8");
+  const suffix = layoutId === DEFAULT_LAYOUT ? "" : `-${layoutId}`;
+  const outPath = path.join(OUT_DIR, `menu-${styleId}${suffix}.html`);
+  await timed("write", `file.${path.basename(outPath)}`, () => fs.writeFile(outPath, html, "utf8"), {
+    bytesFromResult: () => Buffer.byteLength(html, "utf8"),
+    note: outPath,
+  });
+
+  const s = summary();
+  logStage("summary", "done", {
+    durationMs: s.totalMs,
+    note: `phases: ${Object.entries(s.byPhase).map(([k, v]) => `${k}=${v}ms`).join(" ")}`,
+  });
+
+  const reportPath = path.join(OUT_DIR, `log-${styleId}${suffix}.html`);
+  writeHtmlReport({
+    styleId,
+    outPath: reportPath,
+    playablePath: outPath,
+    validateOk: v.ok,
+    finalBytes: v.bytes,
+  });
 
   console.log(`\nBuilt ${GREEN}${path.relative(process.cwd(), outPath)}${RESET}`);
   console.log(`  assets: ${(assetBytes / 1024).toFixed(1)} KB`);
   console.log(`  size: ${(v.bytes / 1024).toFixed(1)} KB / ${(v.maxBytes / 1024).toFixed(0)} KB`);
   for (const w of v.warnings) console.log(`  ${YELLOW}warn:${RESET} ${w}`);
   for (const e of v.errors) console.log(`  ${RED}fail:${RESET} ${e}`);
-  console.log(v.ok ? `  ${GREEN}PASS${RESET} — meets Meta single-file requirements\n` : `  ${RED}REJECTED${RESET}\n`);
+  console.log(v.ok ? `  ${GREEN}PASS${RESET} — meets Meta single-file requirements` : `  ${RED}REJECTED${RESET}`);
+  console.log(`  log report: ${GREEN}${path.relative(process.cwd(), reportPath)}${RESET}\n`);
   if (!v.ok) process.exit(1);
 }
 
@@ -144,6 +194,65 @@ void main();
 `;
   await fs.writeFile(path.join(dir, "game.ts"), stub);
   console.log(`${GREEN}Created${RESET} templates/${id}/ (manifest.json, game.ts)`);
+}
+
+async function cmdForge(styleId?: string, opts: { force?: boolean; open?: boolean; layout?: string } = {}): Promise<void> {
+  if (!styleId) {
+    console.error(`${RED}error:${RESET} provide a style id, e.g. playable forge cyber-heist`);
+    console.log(`available styles:`);
+    const styles = await listStylesFn();
+    for (const s of styles) console.log(`  ${GREEN}${s.id}${RESET} — ${s.name}`);
+    process.exit(1);
+  }
+  const briefPath = path.resolve(`styles/${styleId}.brief.json`);
+  try {
+    await fs.access(briefPath);
+  } catch {
+    console.error(`${RED}error:${RESET} brief not found at ${briefPath}`);
+    process.exit(1);
+  }
+
+  // ── Phase 1: AI asset generation ───────────────────────────────────────────
+  console.log(`${YELLOW}━━ Phase 1: asset generation ━━${RESET}`);
+  const gen = await runAssetGen({
+    briefPath,
+    force: opts.force,
+    onLog: (msg) => logStage("gen", "openai", { note: msg.trim() }),
+  });
+  console.log(`${GREEN}Phase 1 done:${RESET} ${gen.generated} generated, ${gen.skipped} skipped, ${gen.errors} errors · $${gen.totalCost.toFixed(3)} · ${(gen.wallTimeMs / 1000).toFixed(1)}s`);
+  if (gen.errors > 0) {
+    console.error(`${RED}error:${RESET} Phase 1 had ${gen.errors} failures — aborting before Phase 2`);
+    process.exit(1);
+  }
+
+  // ── Phase 2: HTML playable build ───────────────────────────────────────────
+  console.log(`\n${YELLOW}━━ Phase 2: HTML playable build${opts.layout ? ` (layout=${opts.layout})` : ""} ━━${RESET}`);
+  await cmdMenu(styleId, { layout: opts.layout });
+
+  // ── Open results if requested ──────────────────────────────────────────────
+  if (opts.open) {
+    const suffix = !opts.layout || opts.layout === DEFAULT_LAYOUT ? "" : `-${opts.layout}`;
+    const playablePath = path.join(OUT_DIR, `menu-${styleId}${suffix}.html`);
+    const logPath = path.join(OUT_DIR, `log-${styleId}${suffix}.html`);
+    await openInBrowser([playablePath, logPath]);
+    console.log(`${GREEN}opened:${RESET} ${path.relative(process.cwd(), playablePath)} + log report`);
+  }
+}
+
+async function cmdCatalog(opts: { open?: boolean } = {}): Promise<void> {
+  await fs.mkdir(OUT_DIR, { recursive: true });
+  const r = writeCatalogHtml(path.join(OUT_DIR, "catalog.html"));
+  console.log(`${GREEN}catalog:${RESET} ${r.styles} styles, ${r.assets} assets, $${r.cost.toFixed(2)} total spend`);
+  console.log(`  -> ${path.relative(process.cwd(), r.path)}`);
+  if (opts.open) await openInBrowser([r.path]);
+}
+
+async function openInBrowser(paths: string[]): Promise<void> {
+  const opener = process.platform === "win32" ? "start" : process.platform === "darwin" ? "open" : "xdg-open";
+  const { spawn } = await import("node:child_process");
+  for (const p of paths) {
+    spawn(opener, ["", p], { shell: true, stdio: "ignore", detached: true }).unref();
+  }
 }
 
 main().catch((err: unknown) => {

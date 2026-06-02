@@ -8,6 +8,9 @@
   },
   "scripts": {
     "playable": "tsx src/cli.ts",
+    "forge": "tsx src/cli.ts forge",
+    "catalog": "tsx src/cli.ts catalog",
+    "check:layouts": "tsx src/assetgen/layouts/lint.ts",
     "menu": "tsx src/assetgen/build-test-playable.ts",
     "components": "tsx src/assetgen/build-components.ts",
     "visual": "tsx src/assetgen/visual-test.ts",

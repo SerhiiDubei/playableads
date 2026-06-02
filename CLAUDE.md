@@ -3,6 +3,27 @@
 CLI toolchain that builds Meta playable ads from `templates × styles × briefs` (TS/ESM, PixiJS + GSAP).
 AI asset-generation lives in `src/assetgen/`. Full experiment journal: `test/EXPERIMENT-LOG.md`.
 
+## Skills (зафіксовані workflows)
+
+- **Build a Playable Menu** → `npm run forge -- <style-id> [--layout <id>]`. Один command робить Phase 1 (AI gen) + Phase 2 (HTML build) + HTML log report. Повний опис: [`docs/playable-menu-skill.md`](docs/playable-menu-skill.md). Базовий cost ~$0.24-$1.13 за playable залежно від quality в брифі.
+- **Catalog усіх ассетів** → `npm run catalog`. Сканує `out/`, показує які стилі, скільки ассетів, скільки витрачено. Файл: [`src/assetgen/catalog.ts`](src/assetgen/catalog.ts).
+
+## Playable Design System (PDS)
+
+ДО МЕРЖА будь-якого нового layout: **`npm run check:layouts -- all`**. Перевіряє overflow, CTA visible, touch targets, hero size, install-text present. FAIL = bug, не релізиш.
+
+- Правила з WHY/HOW-FIX: [`docs/playable-design-rules.md`](docs/playable-design-rules.md)
+- Reference патерни (endcard, tutorial, feature-grid, tap-reveal, match-3, ...): [`docs/playable-references.md`](docs/playable-references.md)
+- Lint engine: [`src/assetgen/layouts/lint.ts`](src/assetgen/layouts/lint.ts) — Playwright-based
+
+**Коли пишеш новий layout** (`src/assetgen/layouts/<name>.ts`):
+1. Оголоси `meta: { screenIds, hasCta, primaryCtaTexts, maxHeroPx? }` — це інпут для lint
+2. Зареєструй у `src/assetgen/layouts/index.ts`
+3. Запусти `npm run forge -- <style> --layout <name>` → побачиш на існуючих ассетах за $0
+4. Запусти `npm run check:layouts -- all` → має бути 7/7 PASS перед коммітом
+
+**Sticky CTA pattern** (виправляє R1 overflow): `position:absolute;left:24px;right:24px;bottom:20px`. На screen padding-bottom лиш 100px під цей CTA. Це універсальний паттерн — не вилазить ніколи.
+
 ## Kit / component development rules (HARD — порушення вже ламало білд)
 
 These come from real regressions. Follow them directly when touching UI assets/components.
