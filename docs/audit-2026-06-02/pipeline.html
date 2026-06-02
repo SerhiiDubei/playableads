@@ -1,0 +1,1152 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Playable Forge — Pipeline Audit</title>
+<style>
+:root {
+  --bg-0: #0b0d12;
+  --bg-1: #11141b;
+  --bg-2: #181c25;
+  --bg-3: #20252f;
+  --line: #2a3140;
+  --text: #e9ecf1;
+  --text-dim: #8b94a7;
+  --text-faint: #5a6377;
+
+  --accent: #ffb84d;
+  --accent-soft: rgba(255,184,77,.16);
+  --accent-glow: rgba(255,184,77,.45);
+
+  --st-ready: #38d68b;
+  --st-ready-bg: rgba(56,214,139,.13);
+  --st-partial: #f5b454;
+  --st-partial-bg: rgba(245,180,84,.13);
+  --st-missing: #ff5d6c;
+  --st-missing-bg: rgba(255,93,108,.13);
+  --st-conflict: #b178ff;
+  --st-conflict-bg: rgba(177,120,255,.13);
+  --st-stale: #6e798f;
+  --st-stale-bg: rgba(110,121,143,.13);
+
+  --shadow-card: 0 8px 24px rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.03) inset;
+  --shadow-hover: 0 16px 40px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.05) inset;
+
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+
+  --mono: ui-monospace, "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--sans);
+  background:
+    radial-gradient(1200px 700px at 10% -10%, rgba(255,184,77,.06), transparent 60%),
+    radial-gradient(900px 600px at 95% 10%, rgba(177,120,255,.06), transparent 60%),
+    radial-gradient(1100px 800px at 50% 110%, rgba(56,214,139,.04), transparent 60%),
+    var(--bg-0);
+  color: var(--text);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+/* ── Top bar ─────────────────────────────────────────────── */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  backdrop-filter: blur(14px) saturate(140%);
+  background: rgba(11,13,18,.72);
+  border-bottom: 1px solid var(--line);
+  padding: 14px 28px;
+  display: flex; align-items: center; gap: 18px;
+}
+.brand {
+  display: flex; align-items: center; gap: 12px;
+  font-weight: 700; letter-spacing: -.01em;
+}
+.brand-dot {
+  width: 24px; height: 24px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), #ff7f5d);
+  box-shadow: 0 0 24px var(--accent-glow), inset 0 0 0 1px rgba(255,255,255,.18);
+}
+.brand-title { font-size: 15px; }
+.brand-sub { color: var(--text-dim); font-size: 13px; font-weight: 500; }
+.topbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.topbar-pill {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .04em;
+  padding: 6px 10px; border-radius: 999px;
+  background: var(--bg-2); color: var(--text-dim);
+  border: 1px solid var(--line);
+}
+
+/* ── Hero ────────────────────────────────────────────────── */
+.hero {
+  max-width: 1280px; margin: 0 auto; padding: 56px 28px 40px;
+}
+.hero h1 {
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.08;
+  letter-spacing: -.025em;
+  margin: 0 0 16px;
+  font-weight: 700;
+}
+.hero h1 .accent { color: var(--accent); }
+.hero p {
+  font-size: 17px;
+  color: var(--text-dim);
+  max-width: 760px;
+  margin: 0 0 32px;
+}
+
+/* ── Summary stats ───────────────────────────────────────── */
+.stats {
+  max-width: 1280px; margin: 0 auto 24px; padding: 0 28px;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+}
+@media (max-width: 880px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+.stat {
+  position: relative;
+  padding: 18px 18px 16px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.stat::before {
+  content:""; position:absolute; left:0; top:0; bottom:0; width:3px;
+  background: var(--accent);
+}
+.stat.s-ready::before    { background: var(--st-ready); }
+.stat.s-partial::before  { background: var(--st-partial); }
+.stat.s-missing::before  { background: var(--st-missing); }
+.stat.s-conflict::before { background: var(--st-conflict); }
+.stat.s-stale::before    { background: var(--st-stale); }
+.stat-label {
+  font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-faint); margin-bottom: 6px;
+}
+.stat-value { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+.stat-meta { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+/* ── Legend ──────────────────────────────────────────────── */
+.legend {
+  max-width: 1280px; margin: 0 auto 32px; padding: 0 28px;
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+}
+.legend-item {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px; background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: 999px; font-size: 12px; color: var(--text-dim);
+}
+.legend-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+.legend-item.ready    .legend-dot { background: var(--st-ready);    color: var(--st-ready); }
+.legend-item.partial  .legend-dot { background: var(--st-partial);  color: var(--st-partial); }
+.legend-item.missing  .legend-dot { background: var(--st-missing);  color: var(--st-missing); }
+.legend-item.conflict .legend-dot { background: var(--st-conflict); color: var(--st-conflict); }
+.legend-item.stale    .legend-dot { background: var(--st-stale);    color: var(--st-stale); }
+
+/* ── Pipeline ────────────────────────────────────────────── */
+.pipeline {
+  max-width: 1280px; margin: 0 auto; padding: 0 28px;
+  display: grid; gap: 28px;
+}
+.phase {
+  position: relative;
+  background: linear-gradient(180deg, rgba(255,255,255,.02), transparent 30%), var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 24px 24px 20px;
+  box-shadow: var(--shadow-card);
+}
+.phase-head {
+  display: flex; align-items: baseline; gap: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed var(--line);
+}
+.phase-num {
+  font-family: var(--mono); font-size: 12px;
+  background: var(--bg-3); color: var(--text-dim);
+  padding: 4px 10px; border-radius: 999px;
+  letter-spacing: .04em;
+  border: 1px solid var(--line);
+}
+.phase-title {
+  font-size: 20px; font-weight: 600; letter-spacing: -.015em; margin: 0;
+}
+.phase-arrow {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-family: var(--mono); font-size: 12px;
+}
+.phase-summary { color: var(--text-dim); font-size: 14px; margin: -8px 0 16px; }
+
+/* nodes grid */
+.nodes {
+  display: grid; gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+.node {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+.node:hover { border-color: rgba(255,255,255,.12); transform: translateY(-1px); box-shadow: var(--shadow-hover); }
+.node summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 16px 16px 14px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.node summary::-webkit-details-marker { display: none; }
+.node-head { display: flex; align-items: flex-start; gap: 10px; }
+.node-status {
+  flex-shrink: 0;
+  width: 10px; height: 10px; margin-top: 7px;
+  border-radius: 50%;
+  box-shadow: 0 0 10px currentColor;
+}
+.node[data-status="ready"]    .node-status { background: var(--st-ready);    color: var(--st-ready); }
+.node[data-status="partial"]  .node-status { background: var(--st-partial);  color: var(--st-partial); }
+.node[data-status="missing"]  .node-status { background: var(--st-missing);  color: var(--st-missing); }
+.node[data-status="conflict"] .node-status { background: var(--st-conflict); color: var(--st-conflict); }
+.node[data-status="stale"]    .node-status { background: var(--st-stale);    color: var(--st-stale); }
+
+.node-title { font-weight: 600; font-size: 15px; letter-spacing: -.005em; flex: 1; }
+.node-sub { color: var(--text-dim); font-size: 13px; }
+
+.node-badge {
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: .08em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px;
+  align-self: flex-start;
+  border: 1px solid currentColor;
+}
+.node[data-status="ready"]    .node-badge { color: var(--st-ready);    background: var(--st-ready-bg); }
+.node[data-status="partial"]  .node-badge { color: var(--st-partial);  background: var(--st-partial-bg); }
+.node[data-status="missing"]  .node-badge { color: var(--st-missing);  background: var(--st-missing-bg); }
+.node[data-status="conflict"] .node-badge { color: var(--st-conflict); background: var(--st-conflict-bg); }
+.node[data-status="stale"]    .node-badge { color: var(--st-stale);    background: var(--st-stale-bg); }
+
+.node-details {
+  padding: 0 16px 16px;
+  border-top: 1px dashed var(--line);
+  margin-top: 4px;
+  padding-top: 14px;
+  animation: revealUp .25s ease;
+}
+@keyframes revealUp { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+.node-details .row {
+  display: grid; grid-template-columns: 96px 1fr; gap: 12px;
+  padding: 6px 0;
+  font-size: 13px;
+}
+.node-details .row + .row { border-top: 1px solid rgba(255,255,255,.04); }
+.node-details .k {
+  color: var(--text-faint); font-family: var(--mono); font-size: 11px;
+  letter-spacing: .05em; text-transform: uppercase;
+  padding-top: 2px;
+}
+.node-details .v { color: var(--text); }
+.node-details .v code {
+  font-family: var(--mono); font-size: 12px;
+  padding: 2px 6px; border-radius: 4px;
+  background: var(--bg-3); color: var(--accent);
+  border: 1px solid var(--line);
+}
+.node-details ul { margin: 0; padding-left: 18px; }
+.node-details ul li { margin: 2px 0; }
+
+/* ── Section: conflicts ──────────────────────────────────── */
+.section {
+  max-width: 1280px; margin: 56px auto 0; padding: 0 28px;
+}
+.section-head {
+  display: flex; align-items: baseline; gap: 14px;
+  margin-bottom: 18px;
+}
+.section-num {
+  font-family: var(--mono); font-size: 13px; color: var(--accent);
+  letter-spacing: .04em;
+}
+.section-title {
+  font-size: 22px; font-weight: 600; letter-spacing: -.015em; margin: 0;
+}
+.section-sub { color: var(--text-dim); font-size: 14px; max-width: 700px; margin: -6px 0 22px; }
+
+.conflicts {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+}
+.conflict {
+  background: linear-gradient(180deg, var(--st-conflict-bg), transparent 100%);
+  border: 1px solid rgba(177,120,255,.28);
+  border-radius: var(--r-md);
+  padding: 16px 18px;
+}
+.conflict-title { font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+.conflict-detail { color: var(--text-dim); font-size: 13px; line-height: 1.55; }
+.conflict-detail code {
+  font-family: var(--mono); font-size: 12px;
+  padding: 1px 6px; border-radius: 4px;
+  background: rgba(255,255,255,.04); color: var(--accent);
+}
+
+/* ── Phase plan ──────────────────────────────────────────── */
+.phases {
+  display: grid; gap: 14px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 880px) { .phases { grid-template-columns: 1fr 1fr; } }
+.fphase {
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 18px 20px 16px;
+  position: relative;
+}
+.fphase-tag {
+  position: absolute; top: -10px; left: 16px;
+  background: var(--bg-0); padding: 0 10px;
+  font-family: var(--mono); font-size: 11px;
+  color: var(--accent); letter-spacing: .06em;
+  border: 1px solid var(--line); border-radius: 999px;
+}
+.fphase h3 { margin: 6px 0 6px; font-size: 17px; letter-spacing: -.01em; font-weight: 600; }
+.fphase .when { color: var(--text-faint); font-size: 12px; font-family: var(--mono); margin-bottom: 10px; }
+.fphase p { color: var(--text-dim); font-size: 13.5px; margin: 0 0 10px; }
+.fphase ul { margin: 4px 0 0 0; padding-left: 18px; color: var(--text-dim); font-size: 13px; }
+.fphase ul li { margin: 3px 0; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+.foot {
+  max-width: 1280px; margin: 64px auto 0; padding: 28px 28px 0;
+  border-top: 1px solid var(--line);
+  display: flex; gap: 20px; flex-wrap: wrap; align-items: baseline;
+  color: var(--text-faint); font-size: 12px;
+}
+.foot a { color: var(--text-dim); text-decoration: none; border-bottom: 1px dashed var(--line); }
+
+/* tiny utils */
+.kicker {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+  color: var(--accent); text-transform: uppercase; margin-bottom: 12px;
+}
+</style>
+</head>
+<body>
+
+<!-- ── Top bar ─────────────────────────────────────────────── -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-dot"></div>
+    <div>
+      <div class="brand-title">Playable Forge</div>
+      <div class="brand-sub">Pipeline Audit · 2026-06-02</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="topbar-pill">forge-integrate</span>
+    <span class="topbar-pill">v0.1.0</span>
+  </div>
+</header>
+
+<!-- ── Hero ─────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="kicker">Onto-drift audit</div>
+  <h1>
+    Від <span class="accent">бріфу</span> до <span class="accent">валідованої playable</span>.<br/>
+    Що ми вже зібрали, чого бракує, що в конфлікті.
+  </h1>
+  <p>
+    Карта пайплайну, який задумав користувач: 0–9 етапів від
+    ніші користувача до Meta-валідованого single-file HTML.
+    Кожен вузол відкривається кліком — там файли, статус, ризики.
+  </p>
+</section>
+
+<!-- ── Summary stats ───────────────────────────────────────── -->
+<section class="stats">
+  <div class="stat s-ready">
+    <div class="stat-label">Готово</div>
+    <div class="stat-value">7</div>
+    <div class="stat-meta">вузлів пайплайну</div>
+  </div>
+  <div class="stat s-partial">
+    <div class="stat-label">Частково</div>
+    <div class="stat-value">3</div>
+    <div class="stat-meta">є фундамент, бракує плану</div>
+  </div>
+  <div class="stat s-missing">
+    <div class="stat-label">Відсутнє</div>
+    <div class="stat-value">8</div>
+    <div class="stat-meta">верхній шар маніфесту</div>
+  </div>
+  <div class="stat s-conflict">
+    <div class="stat-label">Конфлікти</div>
+    <div class="stat-value">10</div>
+    <div class="stat-meta">онтологічні дублі та дрейф</div>
+  </div>
+  <div class="stat s-stale">
+    <div class="stat-label">Stale</div>
+    <div class="stat-value">3</div>
+    <div class="stat-meta">README, legacy briefs, stubs</div>
+  </div>
+</section>
+
+<!-- ── Legend ──────────────────────────────────────────────── -->
+<section class="legend">
+  <div class="legend-item ready"><span class="legend-dot"></span> Готово</div>
+  <div class="legend-item partial"><span class="legend-dot"></span> Частково</div>
+  <div class="legend-item missing"><span class="legend-dot"></span> Відсутнє</div>
+  <div class="legend-item conflict"><span class="legend-dot"></span> Конфлікт</div>
+  <div class="legend-item stale"><span class="legend-dot"></span> Stale</div>
+</section>
+
+<!-- ── PIPELINE ────────────────────────────────────────────── -->
+<main class="pipeline">
+
+  <!-- PHASE 0 — INPUT -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="phase-num">PHASE 0</span>
+      <h2 class="phase-title">Вхід користувача · бриф</h2>
+      <span class="phase-arrow">→ planner</span>
+    </div>
+    <p class="phase-summary">Користувач описує нішу, бажаний результат, опційну механіку-кандидат та стиль. На виході — структурований Brief.</p>
+    <div class="nodes">
+
+      <details class="node" data-status="missing">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">User Brief input</span>
+          </div>
+          <div class="node-sub">Niche / goal / mechanic-hint / style-hint / references</div>
+          <span class="node-badge">missing</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">expect</div><div class="v">CLI або UI приймає <code>niche</code>, <code>goal</code>, опційно <code>mechanic</code>/<code>style</code></div></div>
+          <div class="row"><div class="k">reality</div><div class="v">Нема. Користувач відразу подає <code>style-id</code> у <code>forge &lt;style&gt;</code></div></div>
+          <div class="row"><div class="k">gap</div><div class="v">Стрибаємо одразу в Phase 2 без розуміння цілі та аудиторії</div></div>
+          <div class="row"><div class="k">fix</div><div class="v">Фаза 1 плану: команда <code>playable brief &lt;niche&gt; …</code></div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="missing">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Mechanics catalog (user-level)</span>
+          </div>
+          <div class="node-sub">Tower Defense, Match-3, Tap-the-X, Swipe-to-slice…</div>
+          <span class="node-badge">missing</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">expect</div><div class="v">Бібліотека "ігрових механік" як вибір користувача</div></div>
+          <div class="row"><div class="k">reality</div><div class="v"><code>templates/</code> містить 2 stubs (<code>tap-the-coin</code>, <code>plug-in-socket</code>), які не використовуються у <code>forge</code></div></div>
+          <div class="row"><div class="k">gap</div><div class="v">Те, що в коді називається "mechanic", — це template-болванка для гри, а не user-level каталог</div></div>
+          <div class="row"><div class="k">fix</div><div class="v">Створити <code>data/mechanics-catalog.json</code> як окрему таблицю + дозволити обирати 1 або 2 механіки (як просив юзер)</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="conflict">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Term collision: "Brief"</span>
+          </div>
+          <div class="node-sub">У репо два різні формати з одним іменем</div>
+          <span class="node-badge">conflict</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">brief A</div><div class="v"><code>briefs/*.json</code> — legacy для <code>playable build</code> (mechanic + style + copy + params)</div></div>
+          <div class="row"><div class="k">brief B</div><div class="v"><code>styles/*.brief.json</code> — поточний AI-gen style brief</div></div>
+          <div class="row"><div class="k">risk</div><div class="v">Розробник/AI читає "brief" і думає одне, а контекст вимагає іншого</div></div>
+          <div class="row"><div class="k">fix</div><div class="v">Фаза 0 плану — видалити legacy briefs + перейменувати style brief у <code>StyleSpec</code> + ввести нове <code>UserBrief</code></div></div>
+        </div>
+      </details>
+
+    </div>
+  </section>
+
+  <!-- PHASE 1 — PLAN -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="phase-num">PHASE 1</span>
+      <h2 class="phase-title">Планування · screen / flow / components</h2>
+      <span class="phase-arrow">→ asset spec</span>
+    </div>
+    <p class="phase-summary">Brief → ScreenPlan + FlowPlan + Hook + список компонентів. Це той самий "screen plan / flow plan / hook", про який говорив юзер.</p>
+    <div class="nodes">
+
+      <details class="node" data-status="missing">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Brief planner</span>
+          </div>
+          <div class="node-sub">UserBrief → ResolvedBrief з підбором стилю та layout-у</div>
+          <span class="node-badge">missing</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">role</div><div class="v">Перший агент. Перетворює натуральний опис на структуру</div></div>
+          <div class="row"><div class="k">file</div><div class="v"><code>src/agents/planner-brief.ts</code> (буде)</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="missing">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Flow planner</span>
+          </div>
+          <div class="node-sub">Граф екранів: hook → onboarding → engagement → endcard</div>
+          <span class="node-badge">missing</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">role</div><div class="v">Обирає форму playable: low-flow (1-2 дії) vs deep-flow (15-30с)</div></div>
+          <div class="row"><div class="k">file</div><div class="v"><code>src/agents/planner-flow.ts</code> (буде)</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="missing">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Screen planner</span>
+          </div>
+          <div class="node-sub">Для кожного вузла графа: archetype + копія + дії</div>
+          <span class="node-badge">missing</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">role</div><div class="v">Обирає zone-archetype для кожного екрана</div></div>
+          <div class="row"><div class="k">downstream</div><div class="v">archetype → <code>kit/layout.ts</code> (вже існує)</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="missing">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Hook / byte design</span>
+          </div>
+          <div class="node-sub">Перший кадр, що чіпляє увагу</div>
+          <span class="node-badge">missing</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">role</div><div class="v">Бібліотека хуків (gold-rush, big-reveal, picker) → застосовується в перший screen</div></div>
+          <div class="row"><div class="k">file</div><div class="v"><code>data/hooks-vault.json</code> (буде)</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="missing">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Component planner</span>
+          </div>
+          <div class="node-sub">Динамічний breakdown: 5 ассетів для endcard, 25 для multi-screen</div>
+          <span class="node-badge">missing</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">replaces</div><div class="v">Хардкоднутий список з 13 ключів у kit-і</div></div>
+          <div class="row"><div class="k">why</div><div class="v">Зараз кожен стиль ВИМАГАЄ всі 13, навіть якщо потрібно 5</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="missing">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Plan critic (рефлексія)</span>
+          </div>
+          <div class="node-sub">Оцінює plan перед дорогою asset-gen фазою</div>
+          <span class="node-badge">missing</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">role</div><div class="v">Early gate: чи logіка плану зрозуміла? Чи hook сильний? Чи екранів не забагато?</div></div>
+          <div class="row"><div class="k">why</div><div class="v">Дешевий чек до того, як спалити $0.5–1 на ассети</div></div>
+        </div>
+      </details>
+
+    </div>
+  </section>
+
+  <!-- PHASE 2 — ASSETS -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="phase-num">PHASE 2</span>
+      <h2 class="phase-title">Генерація ассетів</h2>
+      <span class="phase-arrow">→ kit</span>
+    </div>
+    <p class="phase-summary">Style spec → composePrompt → OpenAI gpt-image-1.5. Це найзріліша частина системи: retry, skip-existing, cost tracking, sidecar JSON.</p>
+    <div class="nodes">
+
+      <details class="node" data-status="ready">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Style brief schema</span>
+          </div>
+          <div class="node-sub">Канонічний JSON-Schema (artDirection / palette / rendering / assets)</div>
+          <span class="node-badge">ready</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">file</div><div class="v"><code>src/assetgen/brief.schema.json</code></div></div>
+          <div class="row"><div class="k">styles</div><div class="v">9: heroes3, pixelart, cyber-heist (+cheap), urban-runner, diablo2, bold-arcade, plug-test, default</div></div>
+          <div class="row"><div class="k">trick</div><div class="v">"IP-anchor" (назва гри-референсу) + isolation-clause — winning recipe</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="ready">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Prompt composer</span>
+          </div>
+          <div class="node-sub">Brief → готовий промт з deep-merge overrides</div>
+          <span class="node-badge">ready</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">file</div><div class="v"><code>src/assetgen/compose.ts</code></div></div>
+          <div class="row"><div class="k">lab</div><div class="v"><code>src/assetgen/prompt-lab.ts</code> — A/B експерименти</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="ready">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Asset gen runner</span>
+          </div>
+          <div class="node-sub">Парал. pool · retry · skip-existing · cost tracker · sidecar</div>
+          <span class="node-badge">ready</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">file</div><div class="v"><code>src/assetgen/run.ts</code></div></div>
+          <div class="row"><div class="k">model</div><div class="v"><code>gpt-image-1.5</code> (transparent PNG)</div></div>
+          <div class="row"><div class="k">cost</div><div class="v">$0.24 – $1.13 за playable (залежно від quality)</div></div>
+          <div class="row"><div class="k">сидекари</div><div class="v">Кожен <code>.png</code> має пару <code>.json</code> з промтом і версією брифу</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="partial">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Asset list (13 keys)</span>
+          </div>
+          <div class="node-sub">Хардкоднутий список очікуваних ключів</div>
+          <span class="node-badge">partial</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">why partial</div><div class="v">Кожен стиль ВИМАГАЄ всі 13: 9-slice × 3, fixed × 2, icons × 6, cover × 2</div></div>
+          <div class="row"><div class="k">пов'язано</div><div class="v">Фаза 3 плану перетворить це на динамічний breakdown</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="partial">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Prompt versioning</span>
+          </div>
+          <div class="node-sub">Версіонуються тільки бріфи, не промти агентів</div>
+          <span class="node-badge">partial</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">є</div><div class="v"><code>brief.version: "1.0.0"</code> у кожному style.brief.json</div></div>
+          <div class="row"><div class="k">нема</div><div class="v">Версіонування промтів самих агентів (про що говорив юзер)</div></div>
+          <div class="row"><div class="k">fix</div><div class="v">Фаза 4: <code>prompts/&lt;agent&gt;/vN.txt</code> + rollback CLI</div></div>
+        </div>
+      </details>
+
+    </div>
+  </section>
+
+  <!-- PHASE 3 — COMPOSE -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="phase-num">PHASE 3</span>
+      <h2 class="phase-title">Композиція в kit-компоненти</h2>
+      <span class="phase-arrow">→ layout</span>
+    </div>
+    <p class="phase-summary">Згенеровані ассети упаковуються в kit-компоненти (9-slice, panels, bars) — єдине джерело правди для UI.</p>
+    <div class="nodes">
+
+      <details class="node" data-status="ready">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Kit (single source of truth)</span>
+          </div>
+          <div class="node-sub">9-slice button / panel / bar / pill / avatar / banner + embedded font</div>
+          <span class="node-badge">ready</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">file</div><div class="v"><code>src/assetgen/kit/kit.ts</code></div></div>
+          <div class="row"><div class="k">правило</div><div class="v">Жодний builder НЕ дублює CSS — все через <code>loadKit()</code> + <code>makeKit()</code></div></div>
+          <div class="row"><div class="k">hierarchy</div><div class="v"><code>primary</code> (glow+pulse) / <code>default</code> / <code>tertiary</code></div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="ready">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Responsive stage</span>
+          </div>
+          <div class="node-sub">Fixed 400×860 design canvas + contain-scale</div>
+          <span class="node-badge">ready</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">file</div><div class="v"><code>src/assetgen/kit/stage.ts</code></div></div>
+          <div class="row"><div class="k">правило</div><div class="v">Жодного fluid CSS у компонентах. Тільки fixed px.</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="ready">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Builder + inliner</span>
+          </div>
+          <div class="node-sub">Bundle TS → JS, base64-інлайн ассетів, single-file HTML</div>
+          <span class="node-badge">ready</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">files</div><div class="v"><code>src/build/bundler.ts</code>, <code>src/build/inliner.ts</code></div></div>
+          <div class="row"><div class="k">оптимізація</div><div class="v">Великі ассети — інлайн ОДИН раз як CSS-class, не на елемент</div></div>
+        </div>
+      </details>
+
+    </div>
+  </section>
+
+  <!-- PHASE 4 — ZONE + BUILD -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="phase-num">PHASE 4</span>
+      <h2 class="phase-title">Зонування · layouts · final build</h2>
+      <span class="phase-arrow">→ validators</span>
+    </div>
+    <p class="phase-summary">Це ТА САМА "зонінг"-фаза, про яку говорив юзер. Реалізована еталонно: BASE ⊕ ARCHETYPE з debug-overlay і автоматичним lint.</p>
+    <div class="nodes">
+
+      <details class="node" data-status="ready">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Zone engine</span>
+          </div>
+          <div class="node-sub">BASE (safe area, thumb-zone, ≥44px taps) ⊕ ARCHETYPE</div>
+          <span class="node-badge">ready</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">file</div><div class="v"><code>src/assetgen/kit/layout.ts</code></div></div>
+          <div class="row"><div class="k">zones</div><div class="v"><code>hud / title / stage / actions / footer</code></div></div>
+          <div class="row"><div class="k">debug</div><div class="v">URL <code>?zones=1</code> → overlay рамок зон</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="ready">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Layouts catalog (10)</span>
+          </div>
+          <div class="node-sub">menu5, endcard, tutorial, feature-grid/list, tap-reveal, pick-hero, progress-reveal, two-choice, match-cluster</div>
+          <span class="node-badge">ready</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">dir</div><div class="v"><code>src/assetgen/layouts/</code></div></div>
+          <div class="row"><div class="k">default</div><div class="v"><code>menu5</code></div></div>
+          <div class="row"><div class="k">eталон</div><div class="v">Тільки <code>endcard</code> повністю мігровано на zones (ROADMAP Z-00). Решта — todo Z-01..Z-09.</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="partial">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Zone migration progress</span>
+          </div>
+          <div class="node-sub">1 з 10 layouts повністю на zones</div>
+          <span class="node-badge">partial</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">done</div><div class="v">Z-00 endcard</div></div>
+          <div class="row"><div class="k">todo</div><div class="v">Z-01..Z-09 — у ROADMAP, ~13h роботи</div></div>
+          <div class="row"><div class="k">tracker</div><div class="v"><code>docs/ROADMAP.md</code></div></div>
+        </div>
+      </details>
+
+    </div>
+  </section>
+
+  <!-- PHASE 5 — CHECKS -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="phase-num">PHASE 5</span>
+      <h2 class="phase-title">Чек + валідація + регресія</h2>
+      <span class="phase-arrow">→ artifact</span>
+    </div>
+    <p class="phase-summary">Три рівні перевірок: PDS (zone rules), Meta (requirements), Visual (regression). Перші два повністю автоматичні.</p>
+    <div class="nodes">
+
+      <details class="node" data-status="ready">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">PDS lint (Playable Design System)</span>
+          </div>
+          <div class="node-sub">6 hard rules + 6 soft rules, Playwright-based</div>
+          <span class="node-badge">ready</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">file</div><div class="v"><code>src/assetgen/layouts/lint.ts</code></div></div>
+          <div class="row"><div class="k">rules</div><div class="v">R1 no-overflow · R2 has-button · R3 one-CTA · R4 ≥44px tap · R5 hero-fits · R6 install-CTA</div></div>
+          <div class="row"><div class="k">cmd</div><div class="v"><code>npm run check:layouts -- all</code></div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="ready">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Meta validator</span>
+          </div>
+          <div class="node-sub">size ≤ 2MB · CTA wired · no redirect · no external load</div>
+          <span class="node-badge">ready</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">file</div><div class="v"><code>src/build/validator.ts</code></div></div>
+          <div class="row"><div class="k">based on</div><div class="v"><code>docs/meta-playable-requirements.md</code> — офіційні вимоги Meta</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="ready">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Visual regression</span>
+          </div>
+          <div class="node-sub">Playwright screenshots × 8 viewports + zone assertions</div>
+          <span class="node-badge">ready</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">file</div><div class="v"><code>src/assetgen/visual-test.ts</code></div></div>
+          <div class="row"><div class="k">cmd</div><div class="v"><code>npm run visual</code></div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="missing">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Semantic critic (build)</span>
+          </div>
+          <div class="node-sub">Модельна оцінка: "hero у центрі, але CTA не домінант"</div>
+          <span class="node-badge">missing</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">role</div><div class="v">Доповнює формальний lint семантичною критикою</div></div>
+          <div class="row"><div class="k">file</div><div class="v"><code>src/agents/critic-build.ts</code> (буде)</div></div>
+        </div>
+      </details>
+
+    </div>
+  </section>
+
+  <!-- PHASE 6 — ORCHESTRATION -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="phase-num">PHASE 6</span>
+      <h2 class="phase-title">Orchestration · agents · UI</h2>
+      <span class="phase-arrow">→ продукт</span>
+    </div>
+    <p class="phase-summary">Те, що зараз — CLI + 2 фази. Те, що в маніфесті — багатоагентна система з оркестратором, retry, варіативністю, UI.</p>
+    <div class="nodes">
+
+      <details class="node" data-status="partial">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">CLI orchestrator</span>
+          </div>
+          <div class="node-sub">forge = Phase 1 (assets) + Phase 2 (HTML)</div>
+          <span class="node-badge">partial</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">file</div><div class="v"><code>src/cli.ts:cmdForge</code></div></div>
+          <div class="row"><div class="k">gap</div><div class="v">Тільки 2 фази; нема Brief stage, Planner stage, Critic stage</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="missing">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Agent contract</span>
+          </div>
+          <div class="node-sub">Типи Agent&lt;I, O&gt; з prompt-version, input/output schema</div>
+          <span class="node-badge">missing</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">role</div><div class="v">Єдиний інтерфейс для кожного агента</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="missing">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">DAG orchestrator</span>
+          </div>
+          <div class="node-sub">Паралелізм де можливо, retry, budget tracker</div>
+          <span class="node-badge">missing</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">role</div><div class="v">Заміняє hardcoded `cmdForge` на graf-based виконання</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="missing">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">RuleRange + variability</span>
+          </div>
+          <div class="node-sub">Правила як {min,max,target}, не як константи</div>
+          <span class="node-badge">missing</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">why</div><div class="v">Юзер просив "правила в range, від і до"</div></div>
+          <div class="row"><div class="k">приклад</div><div class="v">Tap-zone 44–72px замість strict 44px; hero-height 30–55% canvas</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="missing">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">User-facing UI</span>
+          </div>
+          <div class="node-sub">Web-UI з вибором, превʼю, re-roll, live-лог агентів</div>
+          <span class="node-badge">missing</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">role</div><div class="v">Заміна термінала на дружній frontend</div></div>
+          <div class="row"><div class="k">priority</div><div class="v">P3 — низький, поки CLI достатньо</div></div>
+        </div>
+      </details>
+
+      <details class="node" data-status="ready">
+        <summary>
+          <div class="node-head">
+            <span class="node-status"></span>
+            <span class="node-title">Log report (HTML)</span>
+          </div>
+          <div class="node-sub">Gantt таймлайн фаз, вартість, прев'ю ассетів</div>
+          <span class="node-badge">ready</span>
+        </summary>
+        <div class="node-details">
+          <div class="row"><div class="k">file</div><div class="v"><code>src/assetgen/log-report.ts</code></div></div>
+          <div class="row"><div class="k">output</div><div class="v"><code>out/log-&lt;style&gt;.html</code></div></div>
+        </div>
+      </details>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- ── CONFLICTS ────────────────────────────────────────────── -->
+<section class="section">
+  <div class="section-head">
+    <span class="section-num">02</span>
+    <h2 class="section-title">Конфлікти й дрейф</h2>
+  </div>
+  <p class="section-sub">Місця, де код і документація розповідають різні історії, або один термін означає дві речі. Це найдешевший шар для виправлення з найвищим вкладом у "припинити дрейф".</p>
+  <div class="conflicts">
+    <div class="conflict">
+      <div class="conflict-title">C1 · README ⟂ CLI</div>
+      <div class="conflict-detail">README заявляє 2D-модель <code>templates × styles</code>, але CLI реально 3D з <code>--layout</code>. Реальність ширше за документацію.</div>
+    </div>
+    <div class="conflict">
+      <div class="conflict-title">C2 · README × 2 однакові</div>
+      <div class="conflict-detail"><code>forge-integrate/README.md</code> і <code>repo/README.md</code> ідентичні, але <code>CLAUDE.md</code> у них різні (forge-integrate знає про PDS, Skills, layouts; репо — ні).</div>
+    </div>
+    <div class="conflict">
+      <div class="conflict-title">C3 · "Two styles ship" — насправді 9</div>
+      <div class="conflict-detail">README хвалить "Heroes III + Pixel Quest". У <code>styles/</code> 9 брифів. Декларація вужча за реальність.</div>
+    </div>
+    <div class="conflict">
+      <div class="conflict-title">C4 · Два entrypoint-и</div>
+      <div class="conflict-detail"><code>npm run menu</code> (test-shortcut) у README як головне vs <code>npm run forge</code> (production) у skill-doc.</div>
+    </div>
+    <div class="conflict">
+      <div class="conflict-title">C5 · "Mechanic" перевантажене</div>
+      <div class="conflict-detail">У коді <code>mechanic = templates/&lt;id&gt;</code> (stubs). У маніфесті mechanic = Tower Defense/Match-3. Не сумісно.</div>
+    </div>
+    <div class="conflict">
+      <div class="conflict-title">C6 · "Brief" × 2 формати</div>
+      <div class="conflict-detail"><code>briefs/*.json</code> (legacy) vs <code>styles/*.brief.json</code> (current). Одне слово, дві сутності.</div>
+    </div>
+    <div class="conflict">
+      <div class="conflict-title">C7 · ROADMAP vs Manifest</div>
+      <div class="conflict-detail">ROADMAP — про вилизування існуючих layouts (Z-01..Z-09). Маніфест — про побудову нового верхнього шару. Не суперечать, але не зустрічаються.</div>
+    </div>
+    <div class="conflict">
+      <div class="conflict-title">C8 · Hardcoded 13 keys</div>
+      <div class="conflict-detail">Кожен стиль ВИМАГАЄ всі 13 ассет-ключів. Динамічне планування ассетів зараз архітектурно неможливе.</div>
+    </div>
+    <div class="conflict">
+      <div class="conflict-title">C9 · gh-pages артефакти</div>
+      <div class="conflict-detail">Багато <code>menu-cyber-heist-*.html</code> у gh-pages-deploy без явного відтворюваного процесу. Можливо демо, можливо мертві.</div>
+    </div>
+    <div class="conflict">
+      <div class="conflict-title">C10 · 2 worktrees</div>
+      <div class="conflict-detail"><code>forge-wip/</code> + <code>forge-integrate/</code> + <code>repo/</code>. ROADMAP I-06 каже прибрати перші два після merge.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PLAN — PHASES ──────────────────────────────────────── -->
+<section class="section">
+  <div class="section-head">
+    <span class="section-num">03</span>
+    <h2 class="section-title">План реалізації · фази 0–6</h2>
+  </div>
+  <p class="section-sub">Деталі — у <code>plan.md</code>. Кожна фаза commit-able окремо; жодна не переписує існуюче, всі надбудовують. Сильна частина системи (asset-gen, kit, zones, validator) — недоторкана.</p>
+  <div class="phases">
+
+    <div class="fphase">
+      <span class="fphase-tag">P0 · 1–2 дні</span>
+      <h3>Stop the drift</h3>
+      <div class="when">До будь-якої нової роботи</div>
+      <p>Привести документацію у відповідність до коду. Усунути онтологічні дублі.</p>
+      <ul>
+        <li>Переписати README під 3D-модель і <code>forge</code>-entrypoint</li>
+        <li>Перейменувати <code>npm run menu</code> → <code>npm run dev:smoke</code></li>
+        <li>Видалити legacy <code>briefs/*.json</code> + команду <code>playable build</code></li>
+        <li>Перейменувати <code>mechanic</code> (template-дир) → <code>template</code></li>
+        <li>Прибрати <code>forge-wip/</code> після merge</li>
+      </ul>
+    </div>
+
+    <div class="fphase">
+      <span class="fphase-tag">P1 · 3–5 днів</span>
+      <h3>Brief stage</h3>
+      <div class="when">Після фази 0</div>
+      <p>Додати верхній шар: ніша + хук + механіка-кандидат → структурований Brief.</p>
+      <ul>
+        <li>Тип <code>UserBrief</code></li>
+        <li><code>mechanics-catalog.json</code> як таблиця рішень</li>
+        <li>Агент <code>planner.brief</code></li>
+        <li>Версіонування промтів: <code>prompts/planner-brief/vN.txt</code></li>
+        <li>CLI <code>playable brief &lt;niche&gt; …</code></li>
+      </ul>
+    </div>
+
+    <div class="fphase">
+      <span class="fphase-tag">P2 · 4–6 днів</span>
+      <h3>Screen / Flow planner</h3>
+      <div class="when">Після фази 1</div>
+      <p>Brief → план екранів + флоу + hook. Артефакт <code>_plan.json</code> як early gate перед asset-gen.</p>
+      <ul>
+        <li>Типи <code>ScreenPlan / FlowPlan / Hook</code></li>
+        <li>Агенти <code>planner.flow</code>, <code>planner.screens</code></li>
+        <li><code>hooks-vault.json</code> — бібліотека гачків</li>
+        <li>Інтеграція у <code>forge</code> як Phase 0</li>
+      </ul>
+    </div>
+
+    <div class="fphase">
+      <span class="fphase-tag">P3 · 3–4 дні</span>
+      <h3>Dynamic component breakdown</h3>
+      <div class="when">Паралельно з P2</div>
+      <p>Відмова від хардкоду 13 ключів. Ассети — функція плану.</p>
+      <ul>
+        <li>Тип <code>ComponentSpec</code></li>
+        <li>Агент <code>planner.components</code></li>
+        <li>Розділити universal vs per-archetype rules</li>
+        <li>Адаптувати <code>compose.ts</code> під динамічний breakdown</li>
+      </ul>
+    </div>
+
+    <div class="fphase">
+      <span class="fphase-tag">P4 · 5–7 днів</span>
+      <h3>Multi-agent orchestrator</h3>
+      <div class="when">Після P1–P3</div>
+      <p>Те що є — оформити як систему агентів. Версіонувати промти, додати rollback.</p>
+      <ul>
+        <li>Тип <code>Agent&lt;I, O&gt;</code></li>
+        <li>DAG orchestrator з паралелізмом</li>
+        <li><code>prompts/&lt;agent&gt;/vN.txt</code> + <code>playable prompt diff</code></li>
+        <li>Сидекари результатів агентів</li>
+      </ul>
+    </div>
+
+    <div class="fphase">
+      <span class="fphase-tag">P5 · 3–4 дні</span>
+      <h3>Reflection + variability</h3>
+      <div class="when">Після P4</div>
+      <p>Семантичний критик + правила в "range" (як просив юзер).</p>
+      <ul>
+        <li>Агенти <code>critic.plan</code>, <code>critic.build</code></li>
+        <li>Тип <code>RuleRange {min, max, target}</code></li>
+        <li>Retry-loop з варіативністю</li>
+      </ul>
+    </div>
+
+    <div class="fphase">
+      <span class="fphase-tag">P6 · 5–7 днів · опційно</span>
+      <h3>User-facing UI</h3>
+      <div class="when">Коли CLI стане замалий</div>
+      <p>Веб-UI з вибором, превʼю, re-roll, live-логом агентів.</p>
+      <ul>
+        <li>Vite-based local UI</li>
+        <li>Streaming log агентів (SSE/WS)</li>
+        <li>Preview у iframe</li>
+        <li>Кнопка "re-roll" з тим самим Brief</li>
+      </ul>
+    </div>
+
+    <div class="fphase">
+      <span class="fphase-tag">≈ 25 днів</span>
+      <h3>Підсумок зусиль</h3>
+      <div class="when">Без UI</div>
+      <p>Це план до маніфесту, не до "красиво". Кожен крок дає робочий артефакт. Жоден не блокує наступний на більш ніж 1 фазу.</p>
+      <ul>
+        <li>P0 — must, в першу чергу</li>
+        <li>P1+P2+P3 — нова цінність юзеру</li>
+        <li>P4+P5 — інженерна зрілість</li>
+        <li>P6 — продукт-полиш</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Footer ──────────────────────────────────────────────── -->
+<footer class="foot">
+  <div>Audit · 2026-06-02 · Onto-Drift methodology</div>
+  <div>Артефакти: <a href="audit.md">audit.md</a> · <a href="plan.md">plan.md</a> · pipeline.html (you are here)</div>
+  <div>Натисни на будь-який вузол, щоб розгорнути деталі.</div>
+</footer>
+
+</body>
+</html>
