@@ -1,0 +1,54 @@
+<!doctype html><html lang="uk"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Implementation Plan v1 — звірено по коду</title>
+<style>
+:root{--bg:#0e0e12;--card:#16161d;--line:#262631;--txt:#e7e7f0;--dim:#9a9ab0;--acc:#5b8cff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.7 system-ui,"Segoe UI",Roboto,sans-serif}
+.layout{display:grid;grid-template-columns:280px 1fr;max-width:1280px;margin:0 auto}
+nav{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;padding:26px 18px;border-right:1px solid var(--line)}
+nav .tt{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+nav a{display:block;color:var(--dim);text-decoration:none;padding:5px 10px;border-radius:7px;font-size:13.5px}
+nav a:hover{color:var(--txt);background:var(--card)}
+nav a.lv1{font-weight:700;color:var(--txt);margin-top:8px}
+nav a.lv2{padding-left:20px}
+main{padding:34px 46px;min-width:0}
+h1{font-size:27px;margin:.2em 0 .5em;line-height:1.25}
+h2{font-size:20px;margin:1.5em 0 .5em;padding-top:.5em;border-top:1px solid var(--line)}
+h3{font-size:16px;margin:1.3em 0 .4em;color:#cfd2ff}
+h4{font-size:14px;margin:1.1em 0 .3em;color:var(--dim);text-transform:uppercase;letter-spacing:.4px}
+p{margin:.6em 0}a{color:var(--acc)}
+code{background:#20202a;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font:13px/1.5 ui-monospace,Menlo,monospace}
+pre{background:#0a0a0f;border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow:auto}
+pre code{background:none;border:none;padding:0;font-size:12.5px;color:#bfe3d2;white-space:pre}
+blockquote{margin:.8em 0;padding:10px 16px;border-left:3px solid var(--acc);background:#161824;border-radius:0 8px 8px 0;color:#cfd0e6}
+hr{border:none;border-top:1px solid var(--line);margin:1.8em 0}
+ul,ol{margin:.5em 0;padding-left:22px}li{margin:.25em 0}
+strong{color:#fff}em{color:#cfd2ff;font-style:normal;background:#1c1c28;padding:0 4px;border-radius:4px}
+.tw{overflow:auto;margin:1em 0;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:#1b1b24;color:#cfd2ff;font-weight:700}
+tbody tr:hover{background:#15151d}
+td code{font-size:12px}
+@media(max-width:880px){.layout{grid-template-columns:1fr}nav{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}}
+</style></head>
+<body><div class="layout">
+<nav><div class="tt">Зміст</div><a class="lv1" href="#h1">Implementation Plan v1 — звірено по реальному коду (2026-06-02)</a><a class="lv2" href="#h2">Що уточнено, прочитавши реальний код</a><a class="lv2" href="#h3">Фінальний план</a><a class="lv2" href="#h4">Рішення, яке закрив сам код</a><a class="lv2" href="#h5">Процес далі</a><a class="lv2" href="#h6">Звʼязок з рештою</a></nav>
+<main><h1 id="h1">Implementation Plan v1 — звірено по реальному коду (2026-06-02)</h1>
+<p>Не по переказу, а по фактичному коду. Тут зафіксовано що уточнилось, фінальний план фаз і рішення, які закрив сам код.</p>
+<h2 id="h2">Що уточнено, прочитавши реальний код</h2>
+<p><strong>1. Модулів насправді не 6, а ~3 викличні одиниці.</strong> Логічних ролей 6, але в коді вони злиті:</p>
+<ul><li><code>runAssetGen()</code> (<code>run.ts:99</code>) — це <strong>Composer + AssetGen разом</strong> (<code>resolveAsset()</code> викликається всередині, <code>run.ts:108</code>). Окремого Composer-модуля немає.</li><li><code>buildKitPlayable()</code> (<code>build-test-playable.ts:44</code>) — <strong>Kit + Layout + HTML-композиція разом</strong>.</li><li><code>cmdMenu()</code> — запис файлу + validate + log.</li></ul>
+<p><strong>2. Найважливіше: envelope між Phase 1 і Phase 2 фактично зламаний уже зараз.</strong></p>
+<ul><li>Phase 1 вже пише <code>manifest.json</code> (<code>run.ts:130</code>) і сайдкари <code>{key}.json</code> (<code>run.ts:66</code>) — примітивний envelope <strong>існує</strong>.</li><li>Але Phase 2 його <strong>не читає</strong>. <code>buildKitPlayable</code> лізе на диск по хардкоднутих іменах: <code>ICONS</code>, <code>NINE</code>, <code>"banner"</code>, <code>"bg-castle"</code>, <code>"knight"</code> (<code>build-test-playable.ts:17, 57-61</code>), хардкоднутий fallback <code>KNIGHT_SRC = "out/prompt-lab/heroes3-knight/..."</code> (рядок 18) і хардкоднутий <code>FONT = Cinzel</code> (рядки 20-21).</li><li>Контракт між модулями зараз = «файли існують на диску з такими іменами», причому імена <strong>зашиті в білдер</strong>, а не приходять з брифа. Manifest, який Phase 1 чесно генерує, просто ігнорується.</li><li><strong>Висновок:</strong> уніфікований JSON-envelope лікує не абстракцію, а <strong>реальний баг у коді</strong>.</li></ul>
+<p><strong>3. Немає <code>runId</code> / центрального стану.</strong> Перезапуск = skip-existing по <code>out/{styleId}/</code>. Одна тека на стиль, не на запуск. Паузи / replay / кілька прогонів неможливі.</p>
+<h2 id="h3">Фінальний план</h2>
+<div class="tw"><table><thead><tr><th>Фаза</th><th>Що робимо</th><th>Прив'язка до коду</th></tr></thead><tbody><tr><td><strong>0. Контракти</strong></td><td>Zod-схеми: <code>Envelope</code>, <code>Stage&lt;In,Out&gt;</code>, <code>RunContext</code>; layout <code>out/runs/{runId}/</code>. Поведінка не міняється.</td><td>новий <code>src/assetgen/pipeline/</code></td></tr><tr><td><strong>1. Orchestrator + 1 стадія</strong></td><td>Runner + <code>run.json</code> стейт-машина. Обгорнути <strong>Validator</strong> (найчистіший, pure <code>html→verdict</code>) як перший <code>Stage</code> — довести envelope на безпечному прикладі.</td><td>навколо <code>cmdMenu</code> / <code>validate</code></td></tr><tr><td><strong>2. Розв'язати реальну злодійку</strong></td><td>Обгорнути <code>runAssetGen</code> → emit повний envelope. Переробити <code>buildKitPlayable</code> щоб <strong>читав envelope</strong> замість хардкоду <code>ICONS</code>/<code>KNIGHT_SRC</code>/<code>FONT</code>.</td><td><code>run.ts:130</code> → <code>build-test-playable.ts:17-61</code></td></tr><tr><td><strong>3. CLI</strong></td><td><code>forge run &lt;style&gt;</code>, <code>forge resume &lt;runId&gt;</code>, <code>forge inspect &lt;runId&gt;</code>.</td><td>новий код у <code>cli.ts</code> поряд з <code>cmdForge</code> (<code>cli.ts:199</code>)</td></tr><tr><td><strong>4. Gates (human-in-loop)</strong></td><td>Стоп на milestone зі <code>status:"needs-approval"</code>; <code>forge approve &lt;runId&gt;</code>. Перший gate — <strong>cost-preview перед AssetGen</strong>.</td><td>реалізує Q10 / Q32 з Brief Quest</td></tr><tr><td><strong>5. Planner (новий модуль)</strong></td><td>Відсутня стадія: намір → план екранів + список ассетів (0% коду сьогодні).</td><td>закриває «not built» з <code>audit.md</code></td></tr></tbody></table></div>
+<p><strong>Логіка послідовності:</strong> фази 0-2 = кістяк + лагодження наявного болю. 3-4 = керованість і паузи. 5 = майбутні AI-агенти.</p>
+<h2 id="h4">Рішення, яке закрив сам код</h2>
+<p><strong><code>run.json</code> стейт-машина — так, НЕ stateless.</strong> Обґрунтування тепер не «мені зручно», а конкретно: Phase 1 <strong>вже</strong> пише <code>manifest.json</code>; <code>run.json</code> — його природна еволюція (per-run замість per-style + граф стадій). Stateless змусив би руками тягати <code>runId</code> і реконструювати «що зроблено» — а ми хочемо <strong>паузи й replay</strong>.</p>
+<h2 id="h5">Процес далі</h2>
+<p>Якщо план ок → оформити його в спеку (<code>docs/superpowers/specs/...</code>), прогнати через рев'ю, дати вичитати — <strong>перш ніж</strong> писати імплементаційний код.</p>
+<h2 id="h6">Звʼязок з рештою</h2>
+<ul><li>Закриває «MISSING»-кроки з <a href="audit.md" target="_blank" rel="noopener"><code>audit.md</code></a> (Planner, orchestrator, envelope).</li><li>Реалізує рішення <a href="brief-decisions.md" target="_blank" rel="noopener"><code>brief-decisions.md</code></a>: Q10 (перебивання), Q29 (plan до asset-gen), Q30 (overpush), Q32 (cost-preview), Q35 (зберігати спроби).</li><li>Уточнює крок-карту з <a href="architecture.md" target="_blank" rel="noopener"><code>architecture.md</code></a>: де саме envelope і стейт сідають у наявний код.</li></ul></main>
+</div></body></html>

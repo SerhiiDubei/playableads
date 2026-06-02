@@ -70,6 +70,9 @@ kit (single source) + groups/recipes (session-гілка). Стиль ↔ мех
 - **Пропускна:** 20-100 playable/тиждень (Q03).
 - **Через рік:** майже 100% автономна 0→файл (Q01,Q50).
 
+## Як це будувати
+Покроковий план (звірений по реальному коду, з прив'язкою до рядків) — [`implementation-plan.md`](implementation-plan.md). Ключове: envelope між Phase 1↔2 зараз зламаний (Phase 2 ігнорує `manifest.json` і читає хардкод) — фаза 2 плану це лагодить.
+
 ## Відкриті архітектурні рішення
 - Multi-agent vs single-model оркестрація (Q47).
 - UI-пріоритет (Q48), open vs closed (Q49).
