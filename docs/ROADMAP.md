@@ -58,7 +58,7 @@
 | ID | Назва | Пріор. | Тег | Цінність | Оцінка | Залежності | Статус |
 |----|-------|--------|-----|----------|--------|------------|--------|
 | M-01 | Спільний CSS у `kit` (reset/title/sub/gold/zone/compact-card) — прибрати копіпаст із 7-11 шаблонів | P1 | #modularity | High | 1.5h | — | **done** (kit/screen-css.ts; +знайшов/полагодив endcard banner-баг) |
-| M-02 | Шаблон декларує ассети (`meta.assets`); білдер читає це замість хардкоду knight/hero2/hero3 | P1 | #modularity | High | 1.5h | — | todo |
+| M-02 | Шаблон декларує ассети (`meta.assets`); білдер читає це замість хардкоду knight/hero2/hero3 | P1 | #modularity | High | 1.5h | — | **done** (showcase сам декларує hero2/hero3; інші білди легші) |
 | M-03 | Доля `kit/groups.ts`+`flow.ts`: підключити як шар над шаблонами АБО видалити (прибрати 3-тю паралельну систему) | P2 | #modularity | Med | 2h | M-01 | todo |
 | M-04 | Звести 2 гри (`build-game`/`build-connect`) під контракт шаблонів або оформити окремим типом явно | P2 | #modularity | Med | 2h | M-02 | todo |
 
