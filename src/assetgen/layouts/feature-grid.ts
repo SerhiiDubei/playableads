@@ -22,9 +22,7 @@ export const featureGrid: Layout = {
     zoneTypes: { features: "grid" },
   },
 
-  pageCss: (font) => `
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{font-family:${font}}
+  pageCss: () => `
     .screen{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .35s ease}
     .screen.active{opacity:1;visibility:visible}
     .title{color:#ffe9b0;font-weight:700;letter-spacing:1px;font-size:20px;text-align:center;
@@ -36,7 +34,6 @@ export const featureGrid: Layout = {
     .feat{display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px}
     .feat .label{color:#ffe9b0;font-size:12.5px;font-weight:700;letter-spacing:0.4px;text-align:center;text-shadow:0 1px 2px #0008}
     .feat .desc{color:#d8c49a;font-size:10px;text-align:center;line-height:1.3;opacity:0.85}
-    .zone .c-btn.block{width:100%}
   `,
 
   screens: (k, a) => {

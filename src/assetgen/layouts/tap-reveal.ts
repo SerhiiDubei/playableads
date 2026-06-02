@@ -22,9 +22,7 @@ export const tapReveal: Layout = {
     zoneTypes: { tap: "immersive", reward: "immersive" },
   },
 
-  pageCss: (font) => `
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{font-family:${font}}
+  pageCss: () => `
     .screen{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .35s ease}
     .screen.active{opacity:1;visibility:visible}
     .counter{color:#ffe9b0;font-weight:700;font-size:30px;text-shadow:0 2px 0 #3a2208,0 0 18px #c9962f55}
@@ -43,7 +41,6 @@ export const tapReveal: Layout = {
     .reward-title{color:#ffe9b0;font-weight:700;font-size:26px;text-align:center;
       text-shadow:0 2px 0 #3a2208,0 0 24px #ffd54a}
     .reward-sub{color:#d8c49a;font-size:14px;text-align:center;max-width:300px}
-    .zone .c-btn.block{width:100%}
   `,
 
   screens: (k, a) => {

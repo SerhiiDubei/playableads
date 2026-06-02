@@ -21,9 +21,7 @@ export const twoChoice: Layout = {
     zoneTypes: { choose: "split", outcome: "split" },
   },
 
-  pageCss: (font) => `
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{font-family:${font}}
+  pageCss: () => `
     .screen{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .35s ease}
     .screen.active{opacity:1;visibility:visible}
     .title{color:#ffe9b0;font-weight:700;font-size:20px;text-align:center;
@@ -41,7 +39,6 @@ export const twoChoice: Layout = {
     .outcome-title{color:#ffe9b0;font-weight:700;font-size:24px;text-align:center;
       text-shadow:0 2px 0 #3a2208,0 0 22px #ffd54a}
     .outcome-sub{color:#d8c49a;font-size:13px;text-align:center;max-width:300px}
-    .zone .c-btn.block{width:100%}
   `,
 
   screens: (k, a) => {

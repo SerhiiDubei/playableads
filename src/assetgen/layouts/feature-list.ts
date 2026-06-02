@@ -21,9 +21,7 @@ export const featureList: Layout = {
     zoneTypes: { features: "grid" },
   },
 
-  pageCss: (font) => `
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{font-family:${font}}
+  pageCss: () => `
     .screen{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .35s ease}
     .screen.active{opacity:1;visibility:visible}
     .title{color:#ffe9b0;font-weight:700;letter-spacing:1px;font-size:20px;text-align:center;
@@ -36,7 +34,6 @@ export const featureList: Layout = {
     .feat-row .feat-label{color:#ffe9b0;font-weight:700;font-size:15px;letter-spacing:0.4px;
       text-shadow:0 1px 2px #0008;margin-bottom:2px}
     .feat-row .feat-desc{color:#d8c49a;font-size:12px;line-height:1.4;opacity:0.9}
-    .zone .c-btn.block{width:100%}
   `,
 
   screens: (k, a) => {

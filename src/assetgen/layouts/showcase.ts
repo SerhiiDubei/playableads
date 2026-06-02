@@ -29,9 +29,7 @@ export const showcase: Layout = {
     },
   },
 
-  pageCss: (font) => `
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{font-family:${font}}
+  pageCss: () => `
     .screen{position:absolute;inset:0;opacity:0;visibility:hidden;transform:translateY(16px);
       transition:opacity .28s ease,transform .28s ease}
     .screen.active{opacity:1;visibility:visible;transform:none}
@@ -41,9 +39,6 @@ export const showcase: Layout = {
     .hero-img{width:100%;height:62%;background-position:center bottom;background-repeat:no-repeat;
       background-size:contain;filter:drop-shadow(0 8px 12px #0009)}
     .hero-img.big{height:92%}
-    .gold{color:#f7ead0;text-shadow:0 1px 0 #6b4a1e,0 2px 3px rgba(0,0,0,.55)}
-    .zone .c-btn.block{width:100%}
-    .zone .c-panel{width:100%}
     .stars{color:#ffd54a;font-size:18px;letter-spacing:2px}
   `,
 

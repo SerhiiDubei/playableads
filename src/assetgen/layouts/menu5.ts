@@ -22,9 +22,7 @@ export const menu5: Layout = {
     zoneTypes: { menu: "menu", game: "pick-hero", battle: "pick-hero", shop: "pick-hero", options: "pick-hero" },
   },
 
-  pageCss: (font) => `
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{font-family:${font}}
+  pageCss: () => `
     .screen{position:absolute;inset:0;opacity:0;visibility:hidden;transform:translateY(16px);
       transition:opacity .28s ease,transform .28s ease}
     .screen.active{opacity:1;visibility:visible;transform:none}
@@ -32,8 +30,6 @@ export const menu5: Layout = {
       text-shadow:0 2px 0 #3a2208,0 0 18px #c9962f55}
     .sub{color:#d8c49a;font-size:13px}
     .knight{height:210px;max-width:100%;object-fit:contain;filter:drop-shadow(0 8px 12px #0009)}
-    .zone .c-btn.block{width:100%}
-    .zone .c-panel{width:100%}
   `,
 
   screens: (k, a) => {

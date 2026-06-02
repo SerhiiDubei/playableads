@@ -21,9 +21,7 @@ export const progressReveal: Layout = {
     zoneTypes: { xp: "immersive", levelup: "immersive" },
   },
 
-  pageCss: (font) => `
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{font-family:${font}}
+  pageCss: () => `
     .screen{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .35s ease}
     .screen.active{opacity:1;visibility:visible}
     .xp-gain{color:#ffe9b0;font-weight:700;font-size:20px;text-shadow:0 2px 0 #3a2208,0 0 18px #c9962f55}
@@ -41,7 +39,6 @@ export const progressReveal: Layout = {
     .levelup-title{color:#ffe9b0;font-weight:700;font-size:28px;text-align:center;
       text-shadow:0 2px 0 #3a2208,0 0 28px #ffd54a}
     .reward-row{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
-    .zone .c-btn.block{width:100%}
   `,
 
   screens: (k, a) => {

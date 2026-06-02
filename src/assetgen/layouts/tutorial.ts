@@ -21,9 +21,7 @@ export const tutorial: Layout = {
     zoneTypes: { t1: "immersive", t2: "immersive", t3: "immersive" },
   },
 
-  pageCss: (font) => `
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{font-family:${font}}
+  pageCss: () => `
     .screen{position:absolute;inset:0;opacity:0;visibility:hidden;transform:translateX(40px);
       transition:opacity .35s ease,transform .35s ease}
     .screen.active{opacity:1;visibility:visible;transform:none}
@@ -36,7 +34,6 @@ export const tutorial: Layout = {
     .sub{color:#d8c49a;font-size:13px;text-align:center;max-width:300px;line-height:1.45}
     .hero{height:200px;max-width:100%;object-fit:contain;filter:drop-shadow(0 8px 12px #0009)}
     .hero-sm{height:184px;max-width:100%;object-fit:contain;filter:drop-shadow(0 8px 12px #0009)}
-    .zone .c-btn.block{width:100%}
   `,
 
   screens: (k, a) => {

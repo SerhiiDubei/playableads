@@ -25,8 +25,6 @@ export const pickHero: Layout = {
   },
 
   pageCss: (font) => `
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{font-family:${font}}
     .screen{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .35s ease}
     .screen.active{opacity:1;visibility:visible}
     .hero-wrap{position:relative;width:100%;display:flex;align-items:center;justify-content:center}
@@ -43,7 +41,6 @@ export const pickHero: Layout = {
     .dots{display:flex;gap:8px}
     .dot{width:10px;height:10px;border-radius:50%;background:#3a2e1a;transition:background .3s ease}
     .dot.active{background:#ffe9b0;box-shadow:0 0 10px #ffe9b088}
-    .zone .c-btn.block{width:100%}
     .pick-title{color:#ffe9b0;font-weight:700;font-size:22px;text-align:center;
       text-shadow:0 2px 0 #3a2208,0 0 18px #c9962f55}
   `,

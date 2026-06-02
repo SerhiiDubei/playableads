@@ -22,20 +22,13 @@ export const endcard: Layout = {
     zoneTypes: { endcard: "endcard" },
   },
 
-  pageCss: (font) => `
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{font-family:${font}}
-    .screen{position:absolute;inset:0;opacity:0;visibility:hidden;transform:translateY(16px);
-      transition:opacity .35s ease,transform .35s ease}
-    .screen.active{opacity:1;visibility:visible;transform:none}
+  pageCss: () => `
     .hero{height:300px;max-width:100%;width:auto;object-fit:contain;
       filter:drop-shadow(0 12px 22px #0009);animation:bob 3.4s ease-in-out infinite}
     @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
     .tagline{color:#d8c49a;font-size:14px;text-align:center;max-width:320px;text-shadow:0 1px 2px #0008}
-    .gold{color:#f7ead0;text-shadow:0 1px 0 #6b4a1e,0 2px 3px rgba(0,0,0,.55)}
     .pulse{animation:pulse 1.6s ease-in-out infinite;width:100%}
     @keyframes pulse{0%,100%{filter:drop-shadow(0 0 0 #ffd54a00)}50%{filter:drop-shadow(0 0 18px #ffd54a99)}}
-    .zone .c-btn.block{width:100%}
   `,
 
   screens: (k, a) => {
@@ -43,7 +36,7 @@ export const endcard: Layout = {
     return `
     <section class="screen active" id="endcard" data-type="endcard">
       ${zonesOverlay(L)}
-      ${zone("title", k.banner("Play Now"))}
+      ${zone("title", `<div class="title">Realm of Valor</div>`)}
       ${zone("stage", `<img class="hero" src="${hero}"><div class="tagline gold">Become the legend. Embark on an epic adventure today.</div>`)}
       ${zone("actions", `<div class="pulse">${k.button("Install Free", "cta()", { block: true, level: "primary" })}</div>`)}
     </section>`;
