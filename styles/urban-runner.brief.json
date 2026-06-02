@@ -1,0 +1,74 @@
+{
+  "id": "urban-runner",
+  "name": "Urban Runner",
+  "version": "1.0.0",
+  "derivedFrom": "reference: Subway Surfers / Temple Run-style glossy 3D mobile endless-runner UI",
+
+  "artDirection": {
+    "artStyle": "cartoon-3d-glossy",
+    "mood": ["playful", "neon-arcade", "casual-cute"],
+    "theme": "urban graffiti subway runner"
+  },
+
+  "palette": {
+    "source": "manual",
+    "background": "#1b1f3a",
+    "primary": "#ff4d8d",
+    "secondary": "#00d2ff",
+    "accent": "#ffe93b",
+    "text": "#ffffff",
+    "extra": ["#7cff5a", "#ff7a00"]
+  },
+
+  "rendering": {
+    "outline": { "style": "thick-cartoon", "color": "#1b1f3a" },
+    "material": "glossy",
+    "lighting": "soft-top",
+    "shading": "cel",
+    "perspective": "slight-3d",
+    "shapeLanguage": "rounded-friendly",
+    "cornerRadius": "pill"
+  },
+
+  "typography": {
+    "case": "uppercase",
+    "weight": "black",
+    "textColor": "#ffffff",
+    "textStroke": "#1b1f3a"
+  },
+
+  "negative": [
+    "no realistic photography",
+    "no muted colors",
+    "no text artifacts",
+    "no extra background",
+    "no white halo",
+    "no sticker border padding"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1024x1024",
+    "quality": "medium",
+    "transparent": true
+  },
+
+  "assets": [
+    { "key": "btn-frame", "kind": "icon", "subject": "wide horizontal pill-shaped glossy 3D cartoon button frame, bright hot-pink body with thick clean black outline and soft top highlight, perfectly symmetric top-to-bottom AND left-to-right, blank flat center for label, no rivets no studs, absolutely NO text NO letters", "overrides": { "typography": null } },
+    { "key": "panel-frame", "kind": "icon", "subject": "square glossy 3D cartoon UI panel frame, deep navy body, thick clean black cartoon outline, rounded corners, flat dark center, equal margins all four sides, NO text", "overrides": { "typography": null } },
+    { "key": "bar-track", "kind": "icon", "subject": "horizontal cartoon progress bar groove, dark navy hollow channel inside a glossy pill-shaped cyan frame with thick black outline, perfectly symmetric, empty, NO text", "overrides": { "typography": null } },
+    { "key": "avatar-frame", "kind": "icon", "subject": "round glossy 3D cartoon avatar ring, bright yellow circle with thick black cartoon outline, the entire center is an empty transparent hole with nothing inside, NO text", "overrides": { "typography": null } },
+    { "key": "banner", "kind": "icon", "subject": "glossy 3D cartoon title sticker banner, hot-pink ribbon with thick black outline and yellow drop shadow, blank flat center for a title, NO text", "overrides": { "typography": null } },
+
+    { "key": "ic-settings", "kind": "icon", "subject": "round glossy 3D cartoon icon button with a yellow gear settings symbol, hot-pink rim with thick black outline", "overrides": { "typography": null } },
+    { "key": "ic-close", "kind": "icon", "subject": "round glossy 3D cartoon icon button with a white X close symbol, hot-pink rim with thick black outline", "overrides": { "typography": null } },
+    { "key": "ic-back", "kind": "icon", "subject": "round glossy 3D cartoon icon button with a white left arrow back symbol, cyan rim with thick black outline", "overrides": { "typography": null } },
+    { "key": "ic-sound", "kind": "icon", "subject": "round glossy 3D cartoon icon button with a white speaker sound symbol, cyan rim with thick black outline", "overrides": { "typography": null } },
+    { "key": "ic-plus", "kind": "icon", "subject": "round glossy 3D cartoon icon button with a white plus add symbol, green rim with thick black outline", "overrides": { "typography": null } },
+    { "key": "ic-check", "kind": "icon", "subject": "round glossy 3D cartoon icon button with a white checkmark symbol, green rim with thick black outline", "overrides": { "typography": null } },
+
+    { "key": "bg", "kind": "background", "subject": "vertical mobile-game background, glossy 3D cartoon subway tunnel at sunset, graffiti-covered concrete walls, rails leading to vanishing point, bright cartoon sky in distance, neon signs, empty foreground for UI, very saturated colors, thick cartoon outlines, NO text NO characters NO graffiti letters", "overrides": { "defaults": { "size": "1024x1536", "quality": "high", "transparent": false }, "typography": null } },
+    { "key": "hero", "kind": "sprite", "subject": "glossy 3D cartoon young urban runner character, full body standing heroic pose, red hooded sweatshirt, baseball cap turned backwards, blue jeans, sneakers, headphones around neck, bright friendly cartoon style with thick clean black outlines, no shadow on ground", "overrides": { "defaults": { "size": "1024x1536", "quality": "high" }, "typography": null } }
+  ]
+}

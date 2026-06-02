@@ -37,7 +37,7 @@ export async function stripBackground(src: string | Buffer): Promise<Buffer> {
 /** Оптимізує всі потрібні шаблони + (опційно) додаткові fixed-зображення (напр. портрет cover). */
 export async function loadKit(
   srcDir: string,
-  opts: { keys?: string[]; fixed?: Record<string, number>; extra?: { key: string; src: string; size: number; cover?: boolean; strip?: boolean }[]; writeDir?: string; pixelated?: boolean } = {}
+  opts: { keys?: string[]; fixed?: Record<string, number>; extra?: { key: string; src: string; size: number; cover?: boolean; strip?: boolean }[]; writeDir?: string; pixelated?: boolean; onProgress?: (key: string, ms: number, bytes: number) => void } = {}
 ): Promise<KitAssets> {
   const assets: KitAssets = {};
   const fixed = opts.fixed ?? FIXED_DEFAULT;
@@ -45,26 +45,32 @@ export async function loadKit(
   const rk = opts.pixelated ? { kernel: "nearest" as const } : {}; // nearest для пікс-арту
   if (opts.writeDir) mkdirSync(opts.writeDir, { recursive: true });
   const save = (key: string, data: Buffer) => { if (opts.writeDir) writeFileSync(`${opts.writeDir}/${key}.webp`, data); };
+  const tick = (key: string, t0: number, bytes: number) => opts.onProgress?.(key, Date.now() - t0, bytes);
 
   for (const key of want) {
+    const t0 = Date.now();
     if (NINE[key]) {
       const c = NINE[key];
       const { data, w, h } = await toWebp(sharp(`${srcDir}/${key}.png`).trim().resize({ width: c.size, height: c.size, fit: "inside", withoutEnlargement: true, ...rk }));
       const [t, ri, b, l] = c.frac;
       assets[key] = { dataUri: uri(data), bytes: data.length, w, h, slice: `${Math.round(h * t)} ${Math.round(w * ri)} ${Math.round(h * b)} ${Math.round(w * l)}` };
       save(key, data);
+      tick(key, t0, data.length);
     } else if (fixed[key]) {
       const m = fixed[key];
       const { data, w, h } = await toWebp(sharp(`${srcDir}/${key}.png`).trim().resize({ width: m, height: m, fit: "inside", withoutEnlargement: true, ...rk }));
       assets[key] = { dataUri: uri(data), bytes: data.length, w, h };
       save(key, data);
+      tick(key, t0, data.length);
     }
   }
   for (const e of opts.extra ?? []) {
+    const t0 = Date.now();
     const input = e.strip ? await stripBackground(e.src) : e.src;
     const { data, w, h } = await toWebp(sharp(input).trim().resize({ width: e.size, height: e.size, fit: e.cover ? "cover" : "inside", ...rk }));
     assets[e.key] = { dataUri: uri(data), bytes: data.length, w, h };
     save(e.key, data);
+    tick(e.key, t0, data.length);
   }
   return assets;
 }

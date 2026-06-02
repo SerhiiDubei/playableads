@@ -1,0 +1,74 @@
+{
+  "id": "cyber-heist-cheap",
+  "name": "Cyber Heist (cheap)",
+  "version": "1.0.0",
+  "derivedFrom": "reference: cyberpunk neon-noir mobile UI (Cyberpunk 2077 / Ghostrunner / Shadowrun aesthetic) — quality=low everywhere for cost comparison",
+
+  "artDirection": {
+    "artStyle": "cartoon-3d-glossy",
+    "mood": ["neon-arcade", "premium-shiny", "dark-moody"],
+    "theme": "cyberpunk heist neon-noir tech"
+  },
+
+  "palette": {
+    "source": "manual",
+    "background": "#0a0e1a",
+    "primary": "#ff2bd1",
+    "secondary": "#00f0ff",
+    "accent": "#ffd400",
+    "text": "#e0faff",
+    "extra": ["#7c3aed", "#10b981"]
+  },
+
+  "rendering": {
+    "outline": { "style": "thin", "color": "#00f0ff" },
+    "material": "glossy",
+    "lighting": "rim",
+    "shading": "cel",
+    "perspective": "slight-3d",
+    "shapeLanguage": "geometric",
+    "cornerRadius": "rounded"
+  },
+
+  "typography": {
+    "case": "uppercase",
+    "weight": "black",
+    "textColor": "#00f0ff",
+    "textStroke": "#0a0e1a"
+  },
+
+  "negative": [
+    "no daylight",
+    "no muted colors",
+    "no text artifacts",
+    "no extra background",
+    "no white halo",
+    "no padding around subject"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1024x1024",
+    "quality": "low",
+    "transparent": true
+  },
+
+  "assets": [
+    { "key": "btn-frame", "kind": "icon", "subject": "wide horizontal cyberpunk UI button frame, dark navy body with sharp geometric hot-magenta border and cyan neon rim glow, hexagonal tech corners, perfectly symmetric top-to-bottom AND left-to-right, blank flat dark center for label, absolutely NO text NO letters NO numerals", "overrides": { "typography": null } },
+    { "key": "panel-frame", "kind": "icon", "subject": "square cyberpunk holographic UI panel frame, dark navy translucent body, glowing cyan thin neon border with hexagonal corner brackets, flat dark center, equal margins all four sides, NO text", "overrides": { "typography": null } },
+    { "key": "bar-track", "kind": "icon", "subject": "horizontal cyberpunk progress bar groove, dark navy hollow channel inside a thin glowing magenta neon frame with sharp geometric ends, perfectly symmetric, empty, NO text", "overrides": { "typography": null } },
+    { "key": "avatar-frame", "kind": "icon", "subject": "octagonal cyberpunk avatar holo-frame ring, dark navy body with thin glowing cyan neon border and corner brackets, the entire center is an empty transparent hole with nothing inside, NO text", "overrides": { "typography": null } },
+    { "key": "banner", "kind": "icon", "subject": "horizontal cyberpunk title plate banner, dark navy slate with thin glowing magenta neon edges and tech corner clips, blank flat center for a title, NO text", "overrides": { "typography": null } },
+
+    { "key": "ic-settings", "kind": "icon", "subject": "round cyberpunk icon button with a glowing cyan gear settings symbol on dark navy face, thin magenta neon rim", "overrides": { "typography": null } },
+    { "key": "ic-close", "kind": "icon", "subject": "round cyberpunk icon button with a glowing magenta X close symbol on dark navy face, thin cyan neon rim", "overrides": { "typography": null } },
+    { "key": "ic-back", "kind": "icon", "subject": "round cyberpunk icon button with a glowing cyan left arrow back symbol on dark navy face, thin magenta neon rim", "overrides": { "typography": null } },
+    { "key": "ic-sound", "kind": "icon", "subject": "round cyberpunk icon button with a glowing cyan speaker sound symbol on dark navy face, thin magenta neon rim", "overrides": { "typography": null } },
+    { "key": "ic-plus", "kind": "icon", "subject": "round cyberpunk icon button with a glowing yellow plus add symbol on dark navy face, thin cyan neon rim", "overrides": { "typography": null } },
+    { "key": "ic-check", "kind": "icon", "subject": "round cyberpunk icon button with a glowing green checkmark symbol on dark navy face, thin cyan neon rim", "overrides": { "typography": null } },
+
+    { "key": "bg", "kind": "background", "subject": "vertical mobile-game background, cyberpunk neon-noir city skyline at night seen from rain-wet rooftop, towering skyscrapers with holographic advertisements in magenta and cyan, neon kanji signs glowing through misty rain, flying cars in the distance, dramatic rim lighting, very saturated neon palette on dark navy sky, empty foreground for UI, NO text NO characters NO readable letters", "overrides": { "defaults": { "size": "1024x1536", "quality": "low", "transparent": false }, "typography": null } },
+    { "key": "hero", "kind": "sprite", "subject": "glossy 3D cartoon cyberpunk hacker character, full body standing confident pose, black leather jacket with magenta neon trim, cyan glowing visor over eyes, fingerless tactical gloves holding a translucent holo-tablet emitting cyan light, urban cargo pants, combat boots, short undercut hair with magenta highlights, dramatic rim lighting from behind, no shadow on ground", "overrides": { "defaults": { "size": "1024x1536", "quality": "low" }, "typography": null } }
+  ]
+}
