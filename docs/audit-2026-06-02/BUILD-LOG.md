@@ -148,3 +148,9 @@ Brief → (planner gate) → (cost gate) → assetgen → build → validate, з
 **Зроблено:** `src/assetgen/brief/` — `UserBrief` (zod: prompt+refs обов'язкові, yellow-поля); `store.ts` (версіонування v1/v2 + нетригерний rollback через `current`-вказівник, інжектований root для тестів); `summarize.ts` (топ-3 механік за збігом промту + v1-бонус → суперкнопка); `cli.ts` (`brief new/list/show/rollback`). `npm run brief`. intake → `briefs/user/<id>/` (gitignored).
 **Перевірено:** tsc · 52/52 tests (+5: schema/versioning/rollback/slugify/summarize) · демо: `brief new "tumble slot..."` → 3 yellow-warns + суперкнопка Fruit Bonanza (score 8).
 **AC B ✅:** prompt+refs обов'язкові · валідований user-brief · версіонування+нетригерний rollback · summarize→топ-3+суперкнопка · headless. **Далі:** C (planning поверх planner).
+
+## C — Planning layer (2026-06-03) · TIER 1 complete
+**Зроблено:** `pipeline/plan-edit.ts` (чисті add/rm screen+asset) + `pipeline plan show|add-screen|rm-screen|add-asset|rm-asset <runId>` у CLI — редагування `envelope.plan` ДО asset-gen (поверх planner-gate з Phase 5). +plan-edit.test.ts.
+**Перевірено:** tsc · 55/55 tests · флоу: `run --plan`(пауза)→`plan show`(10 screens/13 keys)→`rm-screen battle`(9)→`rm-asset avatar-frame`(12)→`approve`→assetgen спожив 12 ассетів. «План редагований до asset-gen» (Q29) ✅.
+**AC C ✅** (review/edit + downstream споживає). Майлстоуни/uncertainty→ask — агентні поведінки на потім.
+**🏁 TIER 1 (P0-ядро) ЗАКРИТО:** D (catalog) + B (brief-агент) + C (planning). Ланцюг Brief→Catalog→Plan→Pipeline з'єднаний на CLI.

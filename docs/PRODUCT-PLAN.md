@@ -26,7 +26,7 @@
 |----|------|---------------------|--------|--------|
 | **D** | Mechanics catalog | структура «механіка = scaffold + AI-fill hooks»; CLI лістить механіки; комбінація 2 механік визначена (методи/функції); dev/user режим; ≥10 механік зареєстровано; bucket із сесій | PRE-2, PRE-3 | **done** (v1: catalog+curation+dev/user; combine-2 deferred) |
 | **B** | Brief stage (CLI-агент) | `brief`-команда бере prompt+refs (обов'язкові); валідований user-brief; версіонування + нетригерний відкат; summarize→топ-3 + суперкнопка; працює headless | PRE-1 | **done** (brief new/list/show/rollback + summarize→top-3) |
-| **C** | Planning layer (поверх planner) | план редаговано ДО asset-gen (вже на диску); flow `plan review/edit`; майлстоуни + перебивання будь-коли; невпевненість→питати | (C-core ✅) | blocked |
+| **C** | Planning layer (поверх planner) | план редаговано ДО asset-gen (вже на диску); flow `plan review/edit`; майлстоуни + перебивання будь-коли; невпевненість→питати | (C-core ✅) | **done** (plan show/edit before asset-gen; assetgen consumes edits) |
 
 ## TIER 2 — P1 підсилення
 
