@@ -98,3 +98,8 @@
 **Зроблено:** `pipeline/stages/assetgen.ts` — read-only стадія: сканує `out/<style>/*.png` (+ sidecar для prompt/briefVersion) → `envelope.assets[]`. НЕ генерує (нуль витрат). `assetgen.test.ts` — 3 кейси.
 **Перевірено:** tsc · **39/39 tests** · demo на реальному cyber-heist → 13 ассетів у envelope.json.
 **AC:** AC2.3 ✅. **Далі:** P2-2 (білдер читає envelope.assets замість хардкоду) — РИЗИК CHECKPOINT C (before/after ідентичні).
+
+## Phase 2 / P2-2 — builder reads asset-plan (2026-06-03)
+**Зроблено:** винесено `defaultAssetPlan(src, layout)` (keys+extra) з тіла `buildKitPlayable`; білдер читає план через `opts.plan` (дефолт = ідентичний). Хардкод bg/hero/sizes більше не в потоці білда — резолвер, який зможе постачати pipeline-стадія (P2-3).
+**Перевірено:** tsc · **41/41 tests** (+contract-lock на defaultAssetPlan) · **golden BEFORE==AFTER байт-у-байт** на всіх 11 шаблонах (CHECKPOINT C no-regression витримано об'єктивно).
+**AC:** AC2.1 ✅. **Далі:** P2-3 — `cmdMenu`/menu через раннер (assetgen-стадія постачає план → build-стадія), тоді CHECKPOINT C (твоя фінальна звірка before/after).

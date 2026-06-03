@@ -40,33 +40,52 @@ function html(layout: Layout, k: ReturnType<typeof makeKit>, a: KitAssets, pixel
 <script>${stageJs()}</script></body></html>`;
 }
 
-export type BuildKitOpts = { layout?: string };
+/** Asset plan = which assets a build loads (keys + extra with sizes). It is the
+ *  contract between asset resolution and the build. Extracted out of the build
+ *  flow so the list is no longer hardcoded inline — a pipeline assetgen stage can
+ *  produce a plan and inject it via `opts.plan` (P2-3). The default reproduces the
+ *  exact previous behavior (byte-identical output — verified against .golden). */
+export interface AssetPlan {
+  keys: string[];
+  extra: { key: string; src: string; size: number }[];
+}
+
+export function defaultAssetPlan(src: string, layout: Layout): AssetPlan {
+  const bgSrc = existsSync(`${src}/bg.png`) ? `${src}/bg.png` : `${src}/bg-castle.png`;
+  const heroSrc = existsSync(`${src}/hero.png`) ? `${src}/hero.png` : KNIGHT_SRC;
+  return {
+    keys: [...Object.keys(NINE), "banner", ...ICONS],
+    extra: [
+      // base: every template gets the bg + main hero
+      { key: "bg-castle", src: bgSrc, size: 680 },
+      { key: "knight", src: heroSrc, size: 520 },
+      // template-declared extras (meta.assets) — asset list lives WITH the template
+      ...(layout.meta.assets ?? []).map((as) => ({
+        key: as.key,
+        src: as.fallbackHero && !existsSync(as.src) ? heroSrc : as.src,
+        size: as.size ?? 520,
+      })),
+    ],
+  };
+}
+
+export type BuildKitOpts = { layout?: string; plan?: AssetPlan };
 
 export async function buildKitPlayable(styleId = "heroes3", opts: BuildKitOpts = {}): Promise<{ html: string; assetBytes: number; layoutId: string }> {
   const layout = getLayout(opts.layout ?? DEFAULT_LAYOUT);
   logStage("build", `start.${styleId}.${layout.id}`);
   const src = `out/${styleId}`;
   const pixelated = /pixel/i.test(styleId);
-  const bgSrc = existsSync(`${src}/bg.png`) ? `${src}/bg.png` : `${src}/bg-castle.png`;
-  const heroSrc = existsSync(`${src}/hero.png`) ? `${src}/hero.png` : KNIGHT_SRC;
-  logStage("build", "resolve.paths", { note: `layout=${layout.id} bg=${bgSrc} hero=${heroSrc} pixelated=${pixelated}` });
+  // Build reads an asset plan (injected or default). No hardcoded list in the flow.
+  const plan = opts.plan ?? defaultAssetPlan(src, layout);
+  logStage("build", "resolve.plan", { note: `layout=${layout.id} keys=${plan.keys.length} extra=${plan.extra.length} pixelated=${pixelated}` });
 
   const assets = await timed(
     "build",
     "loadKit",
     () => loadKit(src, {
-      keys: [...Object.keys(NINE), "banner", ...ICONS],
-      extra: [
-        // base: every template gets the bg + main hero
-        { key: "bg-castle", src: bgSrc, size: 680 },
-        { key: "knight", src: heroSrc, size: 520 },
-        // template-declared extras (meta.assets) — asset list lives WITH the template
-        ...(layout.meta.assets ?? []).map((as) => ({
-          key: as.key,
-          src: as.fallbackHero && !existsSync(as.src) ? heroSrc : as.src,
-          size: as.size ?? 520,
-        })),
-      ],
+      keys: plan.keys,
+      extra: plan.extra,
       writeDir: ASSET_DIR,
       pixelated,
       onProgress: (key, ms, bytes) =>
