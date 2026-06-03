@@ -143,3 +143,8 @@ Brief → (planner gate) → (cost gate) → assetgen → build → validate, з
 **Зроблено:** `manifest.catalog: "v1"` додано до fruit-bonanza + mad-mage-tower; `TemplateManifest.catalog?` у типах; `src/assetgen/mechanics.ts` — `listMechanics(mode)` поверх `loader.listTemplates`: user=курований v1, dev=всі. CLI `npm run mechanics [-- --dev]`. Розширюваний (manifest → авто). +mechanics.test.ts.
 **Перевірено:** tsc · 47/47 tests · `mechanics`→2 v1, `--dev`→6. **AC D (v1) ✅** (combine-2 механік + scaffold-AI-fill → беклог/решта епіків).
 **Далі:** B (Brief-агент, CLI) — будується на канонічному `Brief` (PRE-1).
+
+## B — Brief stage (CLI-агент) (2026-06-03)
+**Зроблено:** `src/assetgen/brief/` — `UserBrief` (zod: prompt+refs обов'язкові, yellow-поля); `store.ts` (версіонування v1/v2 + нетригерний rollback через `current`-вказівник, інжектований root для тестів); `summarize.ts` (топ-3 механік за збігом промту + v1-бонус → суперкнопка); `cli.ts` (`brief new/list/show/rollback`). `npm run brief`. intake → `briefs/user/<id>/` (gitignored).
+**Перевірено:** tsc · 52/52 tests (+5: schema/versioning/rollback/slugify/summarize) · демо: `brief new "tumble slot..."` → 3 yellow-warns + суперкнопка Fruit Bonanza (score 8).
+**AC B ✅:** prompt+refs обов'язкові · валідований user-brief · версіонування+нетригерний rollback · summarize→топ-3+суперкнопка · headless. **Далі:** C (planning поверх planner).

@@ -10,3 +10,4 @@ out/
 # generated progress dashboard (source = dashboard.ts + backlogs)
 docs/dashboard.html
 .golden/
+briefs/user/
