@@ -131,3 +131,6 @@ Brief → (planner gate) → (cost gate) → assetgen → build → validate, з
 ## PRE-1 — Brief ontology dedup (2026-06-03)
 **Зроблено:** legacy `Brief` (src/types.ts: build-брифа mechanic+style+copy) → `BuildBrief`; pipeline zod `Brief` лишився канонічним. Оновлено builder.ts/loader.ts/types.ts. Колізія імен прибрана (як Layout→ZoneSpec).
 **Перевірено:** tsc · 45/45 tests · endcard byte-identical vs golden. **AC PRE-1 ✅.** Розблокувало епік B (будуватиметься на канонічному Brief).
+
+## PRE-2 — Template Standard T-01 (2026-06-03)
+**Зроблено:** `docs/TEMPLATE-STANDARD.md` із скелета → чинний: §1 визначення (lab vs template), §2 manifest-поля, §3 структура (zone-driven, declared assets, endcard+CTA, ≤2MB), §4 вигляд по 7 архетипах, §5 якісні ворота, §6 усталені патерни, §7 процес промоції. **AC PRE-2 ✅.** Розблокувало D (catalog) — однозначний критерій «гра→шаблон».
