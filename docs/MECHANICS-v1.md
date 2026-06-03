@@ -1,38 +1,37 @@
-# Must-have mechanics — v1 (PRE-3)
+# Mechanics catalog — v1 (PRE-3, рішення 2026-06-03)
 
-Вхідний список для **Mechanics catalog (епік D)**. v1 = **10+ механік**, архітектурно
-без обмеження (Q11). Статус коду: ✅ готовий zone-шаблон · 🧪 lab-гра (потребує промоції за T-01).
+Вхід для **Mechanics catalog (епік D)**. «Механіка» = **повноцінна гра-playable** (геймплей),
+а НЕ ad-формат екрана (endcard/feature-grid — то System A, `layouts/`, інший каталог).
 
-> «Механіка» = формат playable + його екрани + психологія, чому він конвертить.
+> **Рішення:** v1-каталог стартує МАЛЕНЬКИМ і ЯКІСНИМ — лише ігри, що +- відповідають
+> очікуванням. Розширюємо й допрацьовуємо далі (планка якості = вхід у каталог).
 
-## A. Готові (zone-shipped, 11 шаблонів)
+## v1 каталог — НИНІ (відповідають очікуванням)
 
-| # | Механіка | Що робить | Архетип(и) | Екрани | Чому конвертить |
-|---|----------|-----------|-----------|--------|-----------------|
-| 1 | **endcard** ✅ | BG + hero + домінантний Install | `endcard` | endcard | найпростіший, baseline |
-| 2 | **tap-reveal** ✅ | тапни героя 5× → reward | `immersive` | tap, reward | engagement→install, **CTR 5-10%** |
-| 3 | **pick-hero** ✅ | вибір з 3 героїв (◀▶), персональна CTA | `pick-hero` | pick | ownership-ефект |
-| 4 | **progress-reveal** ✅ | XP-бар наповнюється → level-up | `immersive` | xp, levelup | loss-aversion (вже отримав прогрес) |
-| 5 | **two-choice** ✅ | 2 рівноваги-опції → той самий CTA | `split` | choose, outcome | agency, знижує bounce |
-| 6 | **match-cluster** ✅ | фейк-match-3 (тап плиток) → reveal | `grid`+`immersive` | board, reveal | «я вже граю це» (casual) |
-| 7 | **feature-grid** ✅ | 2×2 фіч-картки + CTA | `grid` | features | для багатих механік, швидкий огляд |
-| 8 | **feature-list** ✅ | 3 рядки фіч (довший опис) + CTA | `grid` | features | strategy/RPG, де фіча потребує пояснення |
-| 9 | **tutorial** ✅ | 3-крокове онбординг із dots | `immersive` | t1, t2, t3 | веде за руку до Install |
-| 10 | **menu5** ✅ | 5-екранне nav-меню гри | `menu`+`pick-hero` | menu/game/battle/shop/options | «справжня гра» feel |
+| Механіка | Що робить | Стан |
+|----------|-----------|------|
+| **fruit-bonanza** | tumble-слот: pays anywhere, каскади, free spins | ✅ задеплоєний, +- ок |
+| **mad-mage-tower** | crane tower-stacking (склади башту) | ✅ +- ок |
 
-## B. Інтерактивні ігри (lab → промоція за T-01)
+## Кандидати — ПОТІМ (додати + допрацювати)
 
-| # | Механіка | Що робить | Стан |
-|---|----------|-----------|------|
-| 11 | **tap-the-coin** 🧪 | тапни монету N разів → ціль → CTA | lab (`templates/tap-the-coin`, до стандарту) |
-| 12 | **connect / plug-in-socket** 🧪 | drag-to-connect, 3 рівні, juice | lab |
-| 13 | **mad-mage-tower** 🧪 | crane tower-stacking | lab |
-| 14 | **fruit-bonanza** 🧪 | tumble-слот, pays anywhere, free spins | lab (задеплоєний) |
+| Механіка | Що | Чому не зараз |
+|----------|-----|---------------|
+| tap-the-coin | тапни монету N разів → CTA | сируватий, потребує полишу |
+| connect / plug-in-socket | drag-to-connect, 3 рівні | те саме |
+| _нові_ | (за потребою) | додаємо ітеративно |
+
+## Окремо: ad-формати екранів (System A — НЕ механіки)
+11 zone-шаблонів (`layouts/`): endcard · menu5 · showcase · tutorial · feature-grid ·
+feature-list · tap-reveal · pick-hero · progress-reveal · two-choice · match-cluster.
+Це **формати подачі** реклами, не ігри. Свій каталог, свій стандарт зон.
 
 ## Для епіку D (catalog)
-- **Реєстр:** A-список (1-10) — це вже `layouts/` (zone-driven, готові). B-список — кандидати на промоцію.
-- **scaffold + AI-fill:** механіка = структура (зони/екрани) + AI наповнює контент/копірайт.
-- **Комбінація 2 механік** (Q13): напр. `tap-reveal` + `feature-grid` = тап→reward з фіч-сіткою.
-- **dev vs user режим** (Q14): dev бачить усі 14 + код; user — куратований топ.
+- **Реєстр v1:** `templates/fruit-bonanza`, `templates/mad-mage-tower` (manifest-driven, читає `loader.ts`).
+- **Розширюваність:** структура каталогу має легко приймати нову гру (кинув теку + manifest → з'явилась).
+- **Планка входу:** гра проходить `TEMPLATE-STANDARD.md` (T-01) → потрапляє в каталог.
+- **scaffold + AI-fill:** механіка = код-каркас гри + AI наповнює контент/копірайт.
+- **dev vs user режим** (Q14): dev бачить кандидати+код; user — лише куратований v1-набір (2).
+- **Комбінація 2 механік** (Q13) — у беклог, не v1.
 
-> Це **чернетка-дефолт** із наявного. Фінальний must-have-набір — твоє рішення (можеш викинути/додати).
+> Список зростатиме. Це жива чернетка — додавай ігри, що дозріли до планки.
