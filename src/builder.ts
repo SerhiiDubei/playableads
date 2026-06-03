@@ -4,12 +4,12 @@ import { bundleTemplate } from "./build/bundler.js";
 import { buildHtml, loadAssets } from "./build/inliner.js";
 import { validate, type ValidationResult } from "./build/validator.js";
 import { loadBrief, loadManifest, loadStyle, TEMPLATES_DIR, OUT_DIR } from "./loader.js";
-import type { Brief, PlayableConfig } from "./types.js";
+import type { BuildBrief, PlayableConfig } from "./types.js";
 
 export interface BuildResult {
   outPath: string;
   validation: ValidationResult;
-  brief: Brief;
+  brief: BuildBrief;
 }
 
 export async function buildFromBriefFile(briefFile: string): Promise<BuildResult> {
@@ -17,7 +17,7 @@ export async function buildFromBriefFile(briefFile: string): Promise<BuildResult
   return buildFromBrief(brief);
 }
 
-export async function buildFromBrief(brief: Brief): Promise<BuildResult> {
+export async function buildFromBrief(brief: BuildBrief): Promise<BuildResult> {
   const manifest = await loadManifest(brief.mechanic);
   const style = await loadStyle(brief.style);
 

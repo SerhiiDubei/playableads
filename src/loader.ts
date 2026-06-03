@@ -1,6 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type { Brief, StyleTokens, TemplateManifest } from "./types.js";
+import type { BuildBrief, StyleTokens, TemplateManifest } from "./types.js";
 
 export const ROOT = path.resolve(import.meta.dirname, "..");
 export const TEMPLATES_DIR = path.join(ROOT, "templates");
@@ -13,13 +13,13 @@ async function readJson<T>(file: string): Promise<T> {
   return JSON.parse(raw) as T;
 }
 
-export async function loadBrief(file: string): Promise<Brief> {
-  const brief = await readJson<Brief>(file);
+export async function loadBrief(file: string): Promise<BuildBrief> {
+  const brief = await readJson<BuildBrief>(file);
   for (const key of ["name", "mechanic", "style", "copy", "lang"] as const) {
-    if (!brief[key]) throw new Error(`Brief is missing required field "${key}".`);
+    if (!brief[key]) throw new Error(`BuildBrief is missing required field "${key}".`);
   }
   if (!brief.copy.title || !brief.copy.cta) {
-    throw new Error('Brief "copy" must include both "title" and "cta".');
+    throw new Error('BuildBrief "copy" must include both "title" and "cta".');
   }
   brief.params ??= {};
   brief.store ??= {};

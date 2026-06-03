@@ -127,3 +127,7 @@
 
 ## 🏁 PIPELINE v1 — END-TO-END (Phases 0-5, checkpoints A-F усі пройдено)
 Brief → (planner gate) → (cost gate) → assetgen → build → validate, з run.json/envelope, resume, gates, CLI (run/resume/inspect/approve). 45/45 tests, byte-identical збережено через увесь рефактор. Наступне — продуктові епіки B-J (Brief UI, Style system, ...) поверх готового хребта.
+
+## PRE-1 — Brief ontology dedup (2026-06-03)
+**Зроблено:** legacy `Brief` (src/types.ts: build-брифа mechanic+style+copy) → `BuildBrief`; pipeline zod `Brief` лишився канонічним. Оновлено builder.ts/loader.ts/types.ts. Колізія імен прибрана (як Layout→ZoneSpec).
+**Перевірено:** tsc · 45/45 tests · endcard byte-identical vs golden. **AC PRE-1 ✅.** Розблокувало епік B (будуватиметься на канонічному Brief).

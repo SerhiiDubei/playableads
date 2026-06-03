@@ -15,7 +15,7 @@ export interface StyleTokens {
   };
 }
 
-export interface Brief {
+export interface BuildBrief {
   // Output file base name (no extension).
   name: string;
   // Mechanic template id, e.g. "tap-the-coin". Must match templates/<id>.
@@ -52,7 +52,7 @@ export interface TemplateManifest {
 
 // The single config object injected into the bundled playable at build time.
 export interface PlayableConfig {
-  copy: Brief["copy"];
+  copy: BuildBrief["copy"];
   lang: string;
   style: StyleTokens;
   params: Record<string, string | number | boolean>;

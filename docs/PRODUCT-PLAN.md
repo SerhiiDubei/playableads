@@ -16,7 +16,7 @@
 
 | ID | Задача | Acceptance Criteria | Залеж. | Статус |
 |----|--------|---------------------|--------|--------|
-| **PRE-1** | Brief-дедуп (legacy `src/types.ts` Brief vs pipeline zod `Brief`) | один канонічний `Brief`; legacy прибрано/аліас; builder+cli+loader компілюються; `tsc`+тести зелені; **byte-identical білд збережено** (golden) | — | **wip** |
+| **PRE-1** | Brief-дедуп (legacy `Brief`→`BuildBrief`, pipeline `Brief` канон) | один канонічний `Brief`; tsc+45/45; byte-identical ✅ | — | **done** |
 | **PRE-2** | T-01 — заповнити стандарт шаблону | `TEMPLATE-STANDARD.md`: визначення, поля manifest, структурні вимоги, **вигляд по архетипах**, ворота промоції; критерій «гра → шаблон» однозначний | — | todo |
 | **PRE-3** | Список must-have механік v1 (Q12) | задокументовано ≥10 механік з 1-рядковими описами + який архетип/екрани; лежить у docs | — | todo |
 
