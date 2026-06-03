@@ -103,3 +103,9 @@
 **Зроблено:** винесено `defaultAssetPlan(src, layout)` (keys+extra) з тіла `buildKitPlayable`; білдер читає план через `opts.plan` (дефолт = ідентичний). Хардкод bg/hero/sizes більше не в потоці білда — резолвер, який зможе постачати pipeline-стадія (P2-3).
 **Перевірено:** tsc · **41/41 tests** (+contract-lock на defaultAssetPlan) · **golden BEFORE==AFTER байт-у-байт** на всіх 11 шаблонах (CHECKPOINT C no-regression витримано об'єктивно).
 **AC:** AC2.1 ✅. **Далі:** P2-3 — `cmdMenu`/menu через раннер (assetgen-стадія постачає план → build-стадія), тоді CHECKPOINT C (твоя фінальна звірка before/after).
+
+## Phase 2 / P2-3 — menu build through the orchestrator (2026-06-03) ✅ Phase 2 done
+**Зроблено:** `pipeline/stages/build.ts` (build-стадія обгортає buildKitPlayable) + `pipeline/menu-run.ts` (`buildMenuViaPipeline`: assetgen→build→validate через runStages → out/runs/<id>/ з run.json+envelope+playable). Скрипт `npm run pipeline:menu <style> <layout>`.
+**Перевірено:** tsc · 41/41 tests · **golden: pipeline-білд == прямий білд байт-у-байт на всіх 11 шаблонах** → CHECKPOINT C (no-regression) витримано об'єктивно.
+**AC:** AC2.2 ✅. Phase 2 (⭐ головна) закрита: assetgen→build тепер ідуть через Envelope+оркестратор, вивід незмінний.
+**Далі:** Phase 3 — CLI (`forge run/resume/inspect`).

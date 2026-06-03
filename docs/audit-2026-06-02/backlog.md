@@ -17,8 +17,8 @@
 | — | 1 | 🛑 CHECKPOINT B | run.json + resume ок (demo: pipeline:demo) | P1-* | **done** (2026-06-03) |
 | P2-1 | 2 | assetgen-стадія → emit `envelope.assets[]` (read-only) | AC2.3 | P1-* | **done** (13 реальних ассетів cyber-heist) |
 | P2-2 | 2 | `buildKitPlayable` читає asset-план; хардкод винесено | AC2.1 | P2-1 | **done** (byte-identical vs golden) |
-| P2-3 | 2 | `cmdMenu` через раннер (assetgen→build стадії) | AC2.2 | P2-2 | **wip** |
-| — | 2 | 🛑 CHECKPOINT C | before/after ідентичні | P2-* | review |
+| P2-3 | 2 | menu-білд через раннер (assetgen→build→validate) | AC2.2 | P2-2 | **done** (`pipeline:menu`) |
+| — | 2 | 🛑 CHECKPOINT C | before/after ідентичні | P2-* | **done** (golden: 11/11 byte-identical) |
 | P3-1 | 3 | `forge run <style>` | AC3.1 | P2-* | blocked |
 | P3-2 | 3 | `forge resume <runId>` | AC3.2 | P3-1 | blocked |
 | P3-3 | 3 | `forge inspect <runId>` | AC3.3 | P3-1 | blocked |
