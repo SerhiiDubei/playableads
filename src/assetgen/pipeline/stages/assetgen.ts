@@ -31,7 +31,12 @@ export function assetgenStage(opts: AssetgenOptions = {}): Stage<Envelope, Envel
         throw new Error(`assetgen: assets dir not found: ${dir} (style "${style}")`);
       }
 
-      const pngs = files.filter((f) => f.toLowerCase().endsWith(".png")).sort();
+      let pngs = files.filter((f) => f.toLowerCase().endsWith(".png")).sort();
+      // P5-3: if a plan exists, generate only the assets it asked for.
+      if (env.plan?.assetKeys?.length) {
+        const want = new Set(env.plan.assetKeys);
+        pngs = pngs.filter((f) => want.has(f.slice(0, -4)));
+      }
       const assets: AssetEntry[] = [];
       for (const file of pngs) {
         const key = file.slice(0, -4);

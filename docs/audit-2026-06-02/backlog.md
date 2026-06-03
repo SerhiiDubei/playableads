@@ -27,10 +27,10 @@
 | P4-2 | 4 | `pipeline approve <runId>` (явний human-override) | AC4.2, AC4.3 | P4-1 | **done** |
 | P4-3 | 4 | cost-preview gate (cost.json + пауза) | AC4.1 | P4-1 | **done** |
 | — | 4 | 🛑 CHECKPOINT E | cost-preview підтверджено | P4-* | **done** (gate→approve→done погнано) |
-| P5-1 | 5 | Planner-стадія: намір → plan.screens + assetKeys | AC5.1 | P4-* | blocked |
-| P5-2 | 5 | план редагований ДО asset-gen | AC5.2 | P5-1 | blocked |
-| P5-3 | 5 | downstream споживає `plan` | AC5.3 | P5-1 | blocked |
-| — | 5 | 🛑 CHECKPOINT F | план перед asset-gen | P5-* | review |
+| P5-1 | 5 | Planner-стадія: намір → plan.screens + assetKeys | AC5.1 | P4-* | **done** |
+| P5-2 | 5 | план редагований ДО asset-gen (gate + envelope.json) | AC5.2 | P5-1 | **done** |
+| P5-3 | 5 | assetgen споживає `plan.assetKeys` | AC5.3 | P5-1 | **done** |
+| — | 5 | 🛑 CHECKPOINT F | план перед asset-gen | P5-* | **done** (planner→approve→done, byte-identical)|
 
 ## Правила ведення
 - Беремо задачу → `wip`; закрили за AC + тести → `done`; чекпойнт → `review` поки користувач не підтвердить.

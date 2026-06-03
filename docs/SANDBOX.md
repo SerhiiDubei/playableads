@@ -15,7 +15,8 @@
 | `npm run pipeline -- inspect <runId>` | 👀 показує стейт прогону | стадії з таймстемпами + envelope (assets/build/validation) |
 | `npm run pipeline -- resume <runId>` | продовжує прогін | пропускає `done`-стадії |
 | `npm run pipeline -- run cyber-heist endcard --gate` | 🆓👀💰 прогін із **cost-preview gate** | стає на `needs-approval` + показує $ |
-| `npm run pipeline -- approve <runId>` | підтвердити суму → продовжити | gate знято, білд доходить до done |
+| `npm run pipeline -- run cyber-heist showcase --plan` | 🆓👀🗺️ прогін із **planner gate** | пауза з планом екранів (редагуй `envelope.json`!) |
+| `npm run pipeline -- approve <runId>` | підтвердити (план/суму) → продовжити | gate знято, білд доходить до done |
 | `npm run pipeline:demo` | 🆓👀 демо з **gate-паузою** | стає на `needs-approval`; resume командою з підказки |
 | `npm run pipeline:demo <runId>` | продовжує demo | `trace.log` доводить: стадія бігла раз |
 

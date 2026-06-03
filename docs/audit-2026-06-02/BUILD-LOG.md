@@ -119,3 +119,11 @@
 **Зроблено:** `pipeline/stages/cost-preview.ts` — gate-стадія: `estimateCost(style)` рахує cached-ассети × $/img, пише `cost.json`, ставить run на `needs-approval`. `menu-run.ts`: опційний gate (`--gate`), resume відновлює gated-стадії з run.json. CLI: `run … --gate` + `approve <runId>` (явний human-override = «overpush»). Envelope-схему не чіпав — cost живе окремим артефактом (CHECKPOINT A frozen).
 **Перевірено:** tsc · 43/43 tests (+estimateCost) · вручну: `run --gate`→needs-approval ($0 now / $1.04 regen / 13 cached)→`approve`→done, validation ok; inspect показує всі 4 стадії + cost. → CHECKPOINT E витримано.
 **AC:** AC4.1/4.2/4.3 ✅. **Далі:** Phase 5 — planner (намір → plan.screens + assetKeys), останній модуль.
+
+## Phase 5 — Planner (2026-06-03) ✅ Phase 5 done · 🏁 PIPELINE COMPLETE
+**Зроблено:** `pipeline/stages/planner.ts` — gate-стадія: screens з template.meta.screenIds + assetKeys зі сканування `out/<style>/` → `envelope.plan`; пауза (`needs-approval`) → план редаговано в `envelope.json` до asset-gen. `assetgen` фільтрує по `plan.assetKeys` (P5-3). CLI: `run … --plan`; inspect показує план.
+**Перевірено:** tsc · 45/45 tests (+planner) · вручну: `run --plan showcase`→needs-approval з планом (10 screens, 13 assetKeys)→approve→done; **byte-identical vs golden** (planner-flow не змінив вивід). → CHECKPOINT F витримано.
+**AC:** AC5.1/5.2/5.3 ✅.
+
+## 🏁 PIPELINE v1 — END-TO-END (Phases 0-5, checkpoints A-F усі пройдено)
+Brief → (planner gate) → (cost gate) → assetgen → build → validate, з run.json/envelope, resume, gates, CLI (run/resume/inspect/approve). 45/45 tests, byte-identical збережено через увесь рефактор. Наступне — продуктові епіки B-J (Brief UI, Style system, ...) поверх готового хребта.

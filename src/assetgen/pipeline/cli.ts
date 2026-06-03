@@ -37,6 +37,9 @@ async function cmdInspect(runId: string): Promise<void> {
     const span = s.startedAt && s.endedAt ? ` ${DIM}${s.startedAt}→${s.endedAt}${X}` : "";
     console.log(`  ${col}●${X} ${s.name.padEnd(12)} ${col}${s.status}${X}${span}${s.error ? ` ${R}${s.error}${X}` : ""}`);
   }
+  if (env?.plan) {
+    console.log(`plan: ${env.plan.screens.length} screens [${env.plan.screens.map((s) => s.id).join(", ")}] · ${env.plan.assetKeys.length} assetKeys`);
+  }
   if (env) {
     console.log(`envelope: ${env.assets.length} assets · build=${env.build ? env.build.bytes + "b" : "—"} · validation=${env.validation ? (env.validation.ok ? "ok" : "FAIL") : "—"}`);
   }
@@ -54,7 +57,7 @@ async function cmdInspect(runId: string): Promise<void> {
 function usage(): void {
   console.log(`pipeline — orchestrated playable runs
 
-  pipeline run <style> [layout] [--gate]   fresh run (--gate = cost-preview pause)
+  pipeline run <style> [layout] [--plan] [--gate]   --plan = plan-review pause, --gate = cost pause
   pipeline approve <runId>                 approve a gated (needs-approval) run → continue
   pipeline resume <runId>                  continue a run (skips done stages)
   pipeline inspect <runId>                 show run.json + envelope + cost summary`);
@@ -63,11 +66,12 @@ function usage(): void {
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const gate = args.includes("--gate");
-  const [cmd, a1, a2] = args.filter((a) => a !== "--gate");
+  const plan = args.includes("--plan");
+  const [cmd, a1, a2] = args.filter((a) => !a.startsWith("--"));
   switch (cmd) {
     case "run": {
       if (!a1) return fail("run needs a <style>");
-      printResult(await buildMenuViaPipeline(a1, a2 ?? "menu5", { gate }));
+      printResult(await buildMenuViaPipeline(a1, a2 ?? "menu5", { gate, plan }));
       return;
     }
     case "approve":
