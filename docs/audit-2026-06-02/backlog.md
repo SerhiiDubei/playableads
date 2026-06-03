@@ -10,11 +10,11 @@
 | P0-2 | 0 | `pipeline/types.ts` — схеми Envelope/RunState/Stage/RunContext | AC0.1 | P0-1 | **done** |
 | P0-3 | 0 | `pipeline/runDir.ts` — `out/runs/{runId}/`, run.json I/O | tsc | P0-2 | **done** |
 | P0-4 | 0 | `types.test.ts` — valid/invalid parse | AC0.1, AC0.3 | P0-2 | **done** |
-| — | 0 | 🛑 CHECKPOINT A | контракт підтверджено | P0-* | **review** |
-| P1-1 | 1 | `pipeline/runner.ts` — runStages + run.json після кожної | AC1.2 | P0-* | blocked |
-| P1-2 | 1 | переходи статусів + resume (skip done) | AC1.2 | P1-1 | blocked |
-| P1-3 | 1 | Validator як `Stage` | AC1.1 | P1-1 | blocked |
-| — | 1 | 🛑 CHECKPOINT B | run.json + resume ок | P1-* | review |
+| — | 0 | 🛑 CHECKPOINT A | контракт підтверджено (2026-06-03) | P0-* | **done** |
+| P1-1 | 1 | `pipeline/runner.ts` — runStages + run.json після кожної | AC1.2 | P0-* | **done** |
+| P1-2 | 1 | переходи статусів + resume (skip done) | AC1.2 | P1-1 | **done** |
+| P1-3 | 1 | Validator як `Stage` | AC1.1 | P1-1 | **done** |
+| — | 1 | 🛑 CHECKPOINT B | run.json + resume ок | P1-* | **review (чекає тебе)** |
 | P2-1 | 2 | `runAssetGen` → emit `envelope.json` | AC2.3 | P1-* | blocked |
 | P2-2 | 2 | `buildKitPlayable` читає Envelope; прибрати хардкод | AC2.1 | P2-1 | blocked |
 | P2-3 | 2 | `cmdMenu` через раннер (assetgen→build стадії) | AC2.2 | P2-2 | blocked |

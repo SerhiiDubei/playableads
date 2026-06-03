@@ -1,0 +1,20 @@
+{
+  "id": "fruit-bonanza-v2-music",
+  "name": "Fruit Bonanza · V2 MUSIC",
+  "description": "AI-AUDIO VARIANT of fruit-bonanza. Identical 6x5 tumble-slot gameplay (Sweet Bonanza style), with the procedural Web-Audio shim replaced by ElevenLabs-generated MP3 samples: 6 SFX (pop / drop / chime / bomb / fanfare / spin) + a 20s ambient casino loop as background music (BGM). Audio buffers decoded once on preload; BGM auto-starts on the first user gesture (browser autoplay policy). Mute button (♪/✕) and the `M` hotkey still work.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1900000,
+  "params": {
+    "cols": 6,
+    "rows": 5,
+    "minMatch": 8,
+    "bombChance": 0.045,
+    "scatterChance": 0.06,
+    "freeSpinsTrigger": 4,
+    "freeSpinsAwarded": 10,
+    "spinReelDuration": 0.75,
+    "popDuration": 0.5,
+    "tumbleDuration": 0.55,
+    "demoSpins": 8
+  }
+}

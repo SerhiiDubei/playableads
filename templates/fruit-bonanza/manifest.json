@@ -1,0 +1,20 @@
+{
+  "id": "fruit-bonanza",
+  "name": "Fruit Bonanza",
+  "description": "Tumble slot in the style of Sweet Bonanza (Pragmatic): 6x5 grid, pays-anywhere — 8+ identical fruits anywhere on the grid pay; winning symbols pop, the column tumbles, new symbols fall in, cascades chain. Multiplier bombs (×2…×100) sum at the end of a spin and multiply the whole-spin win. Scatter (lollipop): 4+ on the grid triggers 10 free spins with persistent bomb multipliers. Procedural Pixi fallback by default; swaps to generated sprites when present in assets/. Menu screen + endcard CTA.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "params": {
+    "cols": 6,
+    "rows": 5,
+    "minMatch": 8,
+    "bombChance": 0.045,
+    "scatterChance": 0.06,
+    "freeSpinsTrigger": 4,
+    "freeSpinsAwarded": 10,
+    "spinReelDuration": 0.75,
+    "popDuration": 0.5,
+    "tumbleDuration": 0.55,
+    "demoSpins": 8
+  }
+}

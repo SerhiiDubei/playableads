@@ -64,3 +64,22 @@
 - `RunContext` поки тільки `{runId, runDir}`. У Phase 1 додамо logger / abort signal.
 
 **Чекпойнт A:** awaiting — користувач підтверджує форму `Envelope` + `RunState` + `Stage`, тоді стартуємо Phase 1.
+
+---
+
+## Phase 1 — Orchestrator + Validator stage (2026-06-03)
+
+**Зроблено:**
+- `pipeline/runner.ts` — `runStages(ctx, stages, seed|null, opts)`: виконує стадії по черзі, пише `run.json` + `envelope.json` після КОЖНОЇ. Fresh-start (seed) або RESUME (читає run.json, пропускає `done`). Gate-стадія ставить run у `needs-approval` і зупиняє; throw → стадія `failed` + run `failed`, решта не виконуються. Інжектований `clock` для детермінізму.
+- `pipeline/stages/validate.ts` — `validateStage` обгортає `src/build/validator.ts` як `Stage<Envelope,Envelope>`; читає `envelope.build.htmlPath`, пише `envelope.validation` (enrich-only, не кидає на ok=false).
+- `pipeline/runner.test.ts` — 8 кейсів.
+
+**Перевірено:** `tsc` чистий · `npm run test` — **36/36 pass** (fresh-order, resume-skip-done, gate-pause, failure-stops-rest, no-seed-throws, validate ok/fail/missing-build).
+
+**AC закрито:** AC1.1 (Validator як Stage), AC1.2 (run.json після кожної + переходи статусів + resume).
+
+**Відкрито/борг:**
+- CHECKPOINT B потребує РЕАЛЬНОГО прогону (run.json з живих стадій) — повноцінний e2e буде після Phase 2 (wire assetgen→build). Зараз resume + run.json доведені юніт-тестами (реальні файли в tmp).
+- `validateStage` enrich-only: політику «fail run on !ok» винесемо в CLI/gate (Phase 3-4).
+
+**Чекпойнт B:** review — користувач перевіряє форму `run.json` + що resume працює, тоді Phase 2.

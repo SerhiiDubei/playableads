@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Fruit Bonanza — labs</title>
+<style>
+  :root {
+    --bg-top: #2a0a4a;
+    --bg-mid: #6a1a8a;
+    --bg-bot: #ff3aa5;
+    --gold: #ffd84d;
+    --gold-deep: #c98a00;
+    --panel: rgba(20, 5, 40, 0.55);
+    --panel-edge: rgba(255, 255, 255, 0.18);
+    --text: #fff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); }
+  body {
+    background:
+      radial-gradient(120% 80% at 50% -10%, #ff7ad6 0%, transparent 60%),
+      radial-gradient(80% 60% at 50% 110%, #ffb84d 0%, transparent 55%),
+      linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 50%, var(--bg-bot) 100%);
+    display: grid; place-items: center; user-select: none;
+  }
+  #stage {
+    width: min(100vw, 480px);
+    height: min(100vh, 860px);
+    position: relative;
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+    gap: 10px;
+    padding: 14px 14px 18px;
+  }
+  .hud { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .pill {
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 14px;
+    padding: 8px 10px;
+    text-align: center;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .pill .k { font-size: 10px; letter-spacing: 1.5px; opacity: 0.7; text-transform: uppercase; }
+  .pill .v {
+    font-size: 22px; font-weight: 800;
+    background: linear-gradient(180deg, #fff7c2 0%, var(--gold) 60%, var(--gold-deep) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.25);
+  }
+  .title { text-align: center; padding: 4px 8px 2px; }
+  .title h1 {
+    font-size: 26px; font-weight: 900; letter-spacing: 0.5px;
+    background: linear-gradient(180deg, #fff 0%, var(--gold) 70%, #ff7e2e 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 2px 0 rgba(0,0,0,0.35));
+  }
+  .title small { display: block; opacity: 0.8; font-size: 11px; letter-spacing: 1px; margin-top: 2px; }
+  .board-wrap { position: relative; display: grid; place-items: center; }
+  .board {
+    --cols: 6; --rows: 5;
+    width: 100%;
+    aspect-ratio: var(--cols) / var(--rows);
+    background: linear-gradient(180deg, rgba(30,10,60,0.7) 0%, rgba(60,20,110,0.7) 100%);
+    border-radius: 22px;
+    border: 2px solid rgba(255,255,255,0.18);
+    box-shadow:
+      inset 0 2px 0 rgba(255,255,255,0.12),
+      inset 0 -8px 24px rgba(0,0,0,0.35),
+      0 14px 30px rgba(0,0,0,0.45);
+    position: relative;
+    overflow: hidden;
+  }
+  .grid {
+    position: absolute; inset: 8px;
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 6), 1fr);
+    grid-template-rows: repeat(var(--rows, 5), 1fr);
+    gap: 4px;
+  }
+  .cell {
+    position: relative;
+    display: grid; place-items: center;
+    font-size: clamp(22px, 6.5vw, 40px);
+    line-height: 1;
+    border-radius: 10px;
+    background: radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,0.10), rgba(255,255,255,0.0) 60%),
+                rgba(255,255,255,0.04);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -2px 6px rgba(0,0,0,0.25);
+    will-change: transform, opacity;
+    transition: transform 220ms cubic-bezier(.2,.8,.2,1), opacity 200ms ease;
+    filter: drop-shadow(0 2px 0 rgba(0,0,0,0.3));
+  }
+  .cell.pop { animation: pop 360ms ease-out forwards; }
+  .cell.bomb { text-shadow: 0 0 14px #fff, 0 0 28px #ffd84d; }
+  .bomb-wrap { position: relative; text-align: center; }
+  .bomb-mult {
+    position: absolute; left: 0; right: 0; bottom: -10px;
+    font-size: 11px; color: #ffd84d; font-weight: 900;
+    text-shadow: 0 1px 0 #000;
+  }
+  @keyframes pop {
+    0%   { transform: scale(1) rotate(0); opacity: 1; }
+    40%  { transform: scale(1.35) rotate(8deg); opacity: 1; }
+    100% { transform: scale(0) rotate(-30deg); opacity: 0; }
+  }
+  .banner {
+    position: absolute; top: 12%; left: 50%; transform: translateX(-50%) scale(0);
+    background: linear-gradient(180deg, #fff 0%, var(--gold) 60%, #ff7e2e 100%);
+    color: #3a0e00; font-weight: 900; font-size: 28px;
+    padding: 8px 18px; border-radius: 18px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.45), 0 0 0 3px rgba(255,255,255,0.4) inset;
+    opacity: 0; pointer-events: none;
+    transition: transform 260ms cubic-bezier(.2,1.4,.4,1), opacity 200ms ease;
+    white-space: nowrap;
+  }
+  .banner.show { transform: translateX(-50%) scale(1); opacity: 1; }
+  .combo {
+    position: absolute; top: 4%; right: 4%;
+    font-weight: 900; font-size: 14px;
+    background: rgba(0,0,0,0.5); padding: 6px 10px; border-radius: 999px;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    opacity: 0; transform: scale(0.6);
+    transition: transform 180ms ease, opacity 180ms ease;
+  }
+  .combo.show { opacity: 1; transform: scale(1); }
+  .actions { display: grid; grid-template-columns: 1fr; gap: 10px; padding: 0 4px; }
+  .spin {
+    appearance: none; border: 0;
+    background: linear-gradient(180deg, #38f06b 0%, #14a83a 60%, #0a6d24 100%);
+    color: #04220c; font-weight: 900; font-size: 22px; letter-spacing: 1px;
+    padding: 16px 18px; border-radius: 18px;
+    box-shadow:
+      0 6px 0 #042c10,
+      0 14px 24px rgba(0,0,0,0.4),
+      inset 0 2px 0 rgba(255,255,255,0.5);
+    cursor: pointer;
+    transition: transform 80ms ease, box-shadow 80ms ease, filter 200ms ease;
+    text-transform: uppercase;
+  }
+  .spin:active { transform: translateY(3px); box-shadow: 0 3px 0 #042c10, 0 8px 16px rgba(0,0,0,0.35), inset 0 2px 0 rgba(255,255,255,0.5); }
+  .spin[disabled] { filter: grayscale(0.5) brightness(0.85); cursor: not-allowed; }
+  .hint { text-align: center; font-size: 11px; opacity: 0.7; margin-top: -2px; }
+  .floater {
+    position: absolute; pointer-events: none;
+    font-weight: 900; font-size: 20px;
+    color: var(--gold); text-shadow: 0 2px 0 #5a2a00, 0 0 16px rgba(255,216,77,0.6);
+    transform: translate(-50%, -50%);
+    animation: floatUp 900ms ease-out forwards;
+  }
+  @keyframes floatUp {
+    0%   { opacity: 0; transform: translate(-50%, -30%) scale(0.6); }
+    20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+    100% { opacity: 0; transform: translate(-50%, -130%) scale(1); }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="title">
+    <h1>FRUIT BONANZA</h1>
+    <small>tumble · pays anywhere · super bombs</small>
+  </div>
+  <div class="hud">
+    <div class="pill"><div class="k">SCORE</div><div class="v" id="score">0</div></div>
+    <div class="pill"><div class="k">LAST WIN</div><div class="v" id="last">0</div></div>
+    <div class="pill"><div class="k">BEST</div><div class="v" id="best">0</div></div>
+  </div>
+  <div class="board-wrap">
+    <div class="board" id="board">
+      <div class="grid" id="grid"></div>
+      <div class="combo" id="combo">COMBO ×1</div>
+      <div class="banner" id="banner">BIG WIN!</div>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="spin" id="spin">SPIN</button>
+    <div class="hint">8+ однакових = виграш · бомба 💣 множить весь спін</div>
+  </div>
+</div>
+<script>
+(() => {
+  const COLS = 6, ROWS = 5;
+  const SYMBOLS = [
+    { id: "grape",  emoji: "🍇", pay: 40 },
+    { id: "melon",  emoji: "🍉", pay: 30 },
+    { id: "plum",   emoji: "🫐", pay: 25 },
+    { id: "apple",  emoji: "🍎", pay: 20 },
+    { id: "banana", emoji: "🍌", pay: 12 },
+    { id: "candy",  emoji: "🍬", pay: 8 },
+    { id: "heart",  emoji: "❤", pay: 6 },
+    { id: "ring",   emoji: "🍭", pay: 5 },
+  ];
+  const WEIGHTS = [3, 4, 5, 6, 8, 10, 11, 12];
+  const BOMB_CHANCE = 0.045;
+  const BOMB_MULTS = [2, 3, 5, 10, 25, 100];
+  const BOMB_WEIGHTS = [40, 28, 18, 8, 5, 1];
+  const MIN_MATCH = 8;
+
+  const grid = document.getElementById("grid");
+  const scoreEl = document.getElementById("score");
+  const lastEl = document.getElementById("last");
+  const bestEl = document.getElementById("best");
+  const comboEl = document.getElementById("combo");
+  const bannerEl = document.getElementById("banner");
+  const spinBtn = document.getElementById("spin");
+  const boardEl = document.getElementById("board");
+
+  grid.style.setProperty("--cols", COLS);
+  grid.style.setProperty("--rows", ROWS);
+
+  let board = [];
+  let score = 0, best = 0;
+  let spinning = false;
+
+  function weightedPick(items, weights) {
+    const total = weights.reduce((a, b) => a + b, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < items.length; i++) {
+      r -= weights[i];
+      if (r <= 0) return items[i];
+    }
+    return items[items.length - 1];
+  }
+
+  function newCell() {
+    if (Math.random() < BOMB_CHANCE) {
+      const mult = weightedPick(BOMB_MULTS, BOMB_WEIGHTS);
+      return { kind: "bomb", mult };
+    }
+    return { kind: "sym", sym: weightedPick(SYMBOLS, WEIGHTS) };
+  }
+
+  function makeCellNode() {
+    const el = document.createElement("div");
+    el.className = "cell";
+    return el;
+  }
+
+  function renderInitial() {
+    while (grid.firstChild) grid.removeChild(grid.firstChild);
+    board = Array.from({ length: ROWS }, () =>
+      Array.from({ length: COLS }, () => newCell())
+    );
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const el = makeCellNode();
+        el.dataset.r = r; el.dataset.c = c;
+        paint(el, board[r][c]);
+        grid.appendChild(el);
+      }
+    }
+  }
+
+  function paint(el, cell) {
+    while (el.firstChild) el.removeChild(el.firstChild);
+    el.classList.remove("bomb");
+    if (!cell) return;
+    if (cell.kind === "bomb") {
+      el.classList.add("bomb");
+      const wrap = document.createElement("div");
+      wrap.className = "bomb-wrap";
+      wrap.appendChild(document.createTextNode("💣"));
+      const m = document.createElement("div");
+      m.className = "bomb-mult";
+      m.textContent = "×" + cell.mult;
+      wrap.appendChild(m);
+      el.appendChild(wrap);
+    } else {
+      el.textContent = cell.sym.emoji;
+    }
+  }
+
+  function cellAt(r, c) { return grid.children[r * COLS + c]; }
+
+  function countSymbols() {
+    const counts = new Map();
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const cell = board[r][c];
+        if (!cell || cell.kind !== "sym") continue;
+        counts.set(cell.sym.id, (counts.get(cell.sym.id) || 0) + 1);
+      }
+    }
+    return counts;
+  }
+
+  function tierMultiplier(count) {
+    if (count >= 12) return 10;
+    if (count >= 10) return 3;
+    return 1;
+  }
+
+  function findWins() {
+    const counts = countSymbols();
+    const wins = [];
+    for (const sym of SYMBOLS) {
+      const n = counts.get(sym.id) || 0;
+      if (n >= MIN_MATCH) {
+        wins.push({ sym, count: n, payout: sym.pay * n * tierMultiplier(n) });
+      }
+    }
+    return wins;
+  }
+
+  function popWinningSymbols(winIds) {
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const cell = board[r][c];
+        if (cell && cell.kind === "sym" && winIds.has(cell.sym.id)) {
+          cellAt(r, c).classList.add("pop");
+          board[r][c] = null;
+        }
+      }
+    }
+  }
+
+  function tumble() {
+    for (let c = 0; c < COLS; c++) {
+      const stack = [];
+      for (let r = ROWS - 1; r >= 0; r--) if (board[r][c]) stack.push(board[r][c]);
+      for (let r = ROWS - 1; r >= 0; r--) {
+        board[r][c] = stack.shift() || newCell();
+      }
+    }
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const el = cellAt(r, c);
+        el.classList.remove("pop");
+        paint(el, board[r][c]);
+        el.style.transform = "translateY(-18%)";
+        void el.offsetHeight;
+        el.style.transform = "translateY(0)";
+      }
+    }
+  }
+
+  function bombMultiplierTotal() {
+    let m = 0;
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const cell = board[r][c];
+        if (cell && cell.kind === "bomb") m += cell.mult;
+      }
+    }
+    return m;
+  }
+
+  function showFloat(text, r, c) {
+    const rect = cellAt(r, c).getBoundingClientRect();
+    const wrap = boardEl.getBoundingClientRect();
+    const f = document.createElement("div");
+    f.className = "floater";
+    f.textContent = text;
+    f.style.left = (rect.left - wrap.left + rect.width / 2) + "px";
+    f.style.top = (rect.top - wrap.top + rect.height / 2) + "px";
+    boardEl.appendChild(f);
+    setTimeout(() => f.remove(), 900);
+  }
+
+  function showBanner(text) {
+    bannerEl.textContent = text;
+    bannerEl.classList.add("show");
+    setTimeout(() => bannerEl.classList.remove("show"), 1100);
+  }
+
+  function setCombo(n) {
+    if (n <= 1) { comboEl.classList.remove("show"); return; }
+    comboEl.textContent = "COMBO ×" + n;
+    comboEl.classList.add("show");
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  async function spin() {
+    if (spinning) return;
+    spinning = true;
+    spinBtn.disabled = true;
+    setCombo(1);
+
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        board[r][c] = newCell();
+        const el = cellAt(r, c);
+        el.classList.remove("pop");
+        paint(el, board[r][c]);
+        el.style.transform = "translateY(-" + ((ROWS - r) * 12) + "%)";
+      }
+    }
+    await sleep(20);
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) cellAt(r, c).style.transform = "translateY(0)";
+    }
+    await sleep(380);
+
+    let spinWin = 0;
+    let chain = 0;
+    while (true) {
+      const wins = findWins();
+      if (wins.length === 0) break;
+      chain++;
+      setCombo(chain);
+
+      const ids = new Set(wins.map(w => w.sym.id));
+      for (const w of wins) {
+        outer:
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            const cell = board[r][c];
+            if (cell && cell.kind === "sym" && cell.sym.id === w.sym.id) {
+              showFloat("+" + w.payout, r, c);
+              break outer;
+            }
+          }
+        }
+        spinWin += w.payout;
+      }
+      popWinningSymbols(ids);
+      await sleep(360);
+      tumble();
+      await sleep(320);
+    }
+
+    if (spinWin > 0) {
+      const bombSum = bombMultiplierTotal();
+      if (bombSum > 0) {
+        const before = spinWin;
+        spinWin = spinWin * bombSum;
+        showBanner("SUPER BONUS ×" + bombSum + "!");
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            if (board[r][c] && board[r][c].kind === "bomb") {
+              cellAt(r, c).classList.add("pop");
+              showFloat("×" + board[r][c].mult, r, c);
+              board[r][c] = null;
+            }
+          }
+        }
+        await sleep(700);
+        tumble();
+        await sleep(200);
+        flashScore(before, spinWin);
+      } else if (chain >= 3) {
+        showBanner("BIG WIN!");
+      } else if (chain >= 2) {
+        showBanner("NICE!");
+      }
+    }
+
+    score += spinWin;
+    if (score > best) best = score;
+    lastEl.textContent = spinWin;
+    scoreEl.textContent = score;
+    bestEl.textContent = best;
+
+    setCombo(1);
+    spinBtn.disabled = false;
+    spinning = false;
+  }
+
+  function flashScore(from, to) {
+    const steps = 24;
+    let i = 0;
+    const delta = (to - from) / steps;
+    let cur = from;
+    lastEl.textContent = Math.round(cur);
+    const id = setInterval(() => {
+      i++;
+      cur += delta;
+      lastEl.textContent = Math.round(cur);
+      if (i >= steps) { clearInterval(id); lastEl.textContent = to; }
+    }, 22);
+  }
+
+  spinBtn.addEventListener("click", spin);
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "Space") { e.preventDefault(); spin(); }
+  });
+
+  renderInitial();
+})();
+</script>
+</body>
+</html>

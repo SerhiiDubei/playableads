@@ -1,0 +1,14 @@
+{
+  "id": "fruit-bonanza",
+  "name": "Fruit Bonanza Candy",
+  "colors": {
+    "background": "#2a0a4a",
+    "primary": "#ff3aa5",
+    "accent": "#ffd84d",
+    "text": "#ffffff"
+  },
+  "font": {
+    "family": "Arial Black, system-ui, sans-serif",
+    "weight": 900
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "id": "fruit-bonanza",
+  "name": "Fruit Bonanza Candy",
+  "version": "1.0.0",
+  "derivedFrom": "reference: cartoon 3D candy slot symbols (Sweet Bonanza by Pragmatic Play) — saturated, glossy, friendly, slot-machine icon style",
+
+  "artDirection": {
+    "artStyle": "cartoon 3D rendered candy sculpt",
+    "mood": ["juicy", "festive", "celebratory", "casual-cute"],
+    "theme": "a vibrant candy-fruit world where every fruit is a luxurious slot symbol"
+  },
+
+  "palette": {
+    "source": "manual",
+    "background": "#2a0a4a",
+    "primary": "#ff3aa5",
+    "secondary": "#7a1fb0",
+    "accent": "#ffd84d",
+    "text": "#ffffff",
+    "extra": ["#ff7ad6", "#ffb84d", "#9b4dff", "#38f06b", "#ff5a5a"]
+  },
+
+  "rendering": {
+    "outline": { "style": "none", "color": "#3a0e44" },
+    "material": "glossy",
+    "lighting": "soft-top",
+    "shading": "smooth-gradient",
+    "perspective": "slight-3d",
+    "shapeLanguage": "rounded-friendly",
+    "cornerRadius": "rounded"
+  },
+
+  "negative": [
+    "no text",
+    "no letters",
+    "no numbers",
+    "no watermark",
+    "no photorealism",
+    "no real photo of fruit",
+    "no harsh shadows",
+    "no busy background",
+    "no white halo",
+    "no glare blowout",
+    "no dull or muted colors",
+    "no flat 2D illustration",
+    "no woodcut or lineart"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1024x1024",
+    "quality": "medium",
+    "transparent": true
+  },
+
+  "assets": [
+    {
+      "key": "fruit-grape",
+      "kind": "sprite",
+      "subject": "a luxurious cluster of round purple grapes on a tiny green stem with one cute green leaf, glossy 3D cartoon candy sculpt, saturated rich purple with soft highlights, sweet candy-jelly look, slightly bulging round berries, single front-facing icon, perfectly centered"
+    },
+    {
+      "key": "fruit-watermelon",
+      "kind": "sprite",
+      "subject": "a single triangular slice of watermelon, glossy 3D cartoon candy sculpt, bright juicy pink-red flesh with a few black seeds, thick white rim and green rind, sweet candy-jelly look, perfectly front-facing icon, perfectly centered"
+    },
+    {
+      "key": "fruit-blueberry",
+      "kind": "sprite",
+      "subject": "a small cluster of three round dark indigo-purple blueberries with tiny green leaves on top, glossy 3D cartoon candy sculpt, deep blue-purple gradient with soft highlights, sweet candy-jelly look, single front-facing icon, perfectly centered"
+    },
+    {
+      "key": "fruit-apple",
+      "kind": "sprite",
+      "subject": "a single round shiny red apple with a small brown stem and one bright green leaf, glossy 3D cartoon candy sculpt, vibrant cherry-red with a crisp white highlight, sweet candy-jelly look, front-facing icon, perfectly centered"
+    },
+    {
+      "key": "fruit-banana",
+      "kind": "sprite",
+      "subject": "a small bunch of three curved bright yellow bananas joined at a tiny brown stem, glossy 3D cartoon candy sculpt, saturated banana yellow with soft highlights, sweet candy-jelly look, front-facing icon, perfectly centered"
+    },
+    {
+      "key": "fruit-candy-green",
+      "kind": "sprite",
+      "subject": "a single round translucent green gummy candy ball with a glossy wet highlight, glossy 3D cartoon candy sculpt, vibrant lime-green jelly look, single front-facing icon, perfectly centered"
+    },
+    {
+      "key": "fruit-heart-red",
+      "kind": "sprite",
+      "subject": "a single plump glossy red heart-shaped gummy candy, glossy 3D cartoon candy sculpt, saturated cherry-red jelly with a crisp white highlight, sweet candy-jelly look, front-facing icon, perfectly centered"
+    },
+    {
+      "key": "fruit-scatter-lollipop",
+      "kind": "sprite",
+      "subject": "a round lollipop with a glossy swirling spiral pattern of pink, purple and gold candy, on a short white stick, surrounded by a faint subtle golden glow sparkle ring suggesting a special bonus symbol, glossy 3D cartoon candy sculpt, slot-machine SCATTER icon, front-facing, perfectly centered"
+    },
+    {
+      "key": "bomb",
+      "kind": "sprite",
+      "subject": "a round shiny black cartoon bomb with a tiny lit fuse and a small bright spark on top, glossy 3D cartoon candy sculpt look, a subtle golden energy ring glow around it suggesting a special multiplier bonus symbol, slot-machine icon, front-facing, perfectly centered"
+    },
+    {
+      "key": "bg-candy",
+      "kind": "background",
+      "subject": "a dreamy vertical candy-world backdrop for a mobile slot game: soft gradient sky from deep magenta at the top through hot pink to warm gold at the bottom, a few soft fluffy pink-and-white clouds floating, distant blurred candy-fruit silhouettes (a hint of giant lollipops and gummy bears) far back, soft bokeh sparkles, empty clean center area for gameplay overlay, no characters, no text, no UI",
+      "overrides": { "defaults": { "size": "1024x1536", "quality": "medium", "transparent": false } }
+    },
+    {
+      "key": "logo-fruits",
+      "kind": "sprite",
+      "subject": "a decorative cluster of stylized cartoon candy fruits (purple grapes, red apple, yellow bananas, watermelon slice) tightly grouped into a horizontal banner-shaped composition, glossy 3D cartoon candy sculpt, festive and luxurious, with a small subtle golden sparkle, NO TEXT inside or around the fruits, just the fruit cluster, isolated"
+    },
+    {
+      "key": "endcard-frame",
+      "kind": "sprite",
+      "subject": "an ornate luxurious vertical golden cartouche frame, like a fancy slot machine win-screen panel, glossy 3D candy-slot trophy style, thick gold ornamental border with little pink and purple gem-candies in the corners, soft inner pink-purple glow, the CENTER of the panel is COMPLETELY EMPTY and dark deep-purple — NO text, NO numbers, NO fruits, NO figures inside, just an empty dark panel surrounded by the gold frame for overlay content, front-facing, isolated",
+      "overrides": { "defaults": { "size": "1024x1536", "quality": "medium" } }
+    },
+    {
+      "key": "endcard-crown",
+      "kind": "sprite",
+      "subject": "an ornate decorative golden ribbon banner shaped like a curved arched cartouche header, glossy 3D candy-slot trophy style, gold and pink gradient, sparkles around it, like a trophy ribbon spread horizontally, NO TEXT and NO letters and NO numbers anywhere, just the empty decorative ribbon banner shape for text overlay, front-facing, isolated"
+    },
+    {
+      "key": "coin",
+      "kind": "sprite",
+      "subject": "a single round glossy gold coin with a small embossed candy fruit symbol on its face (a simple grape silhouette in the center), thick rim with subtle sparkle highlight, glossy 3D candy-slot style, NO TEXT, NO numbers, NO letters, front-facing, perfectly centered, isolated"
+    }
+  ]
+}
