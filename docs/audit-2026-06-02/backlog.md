@@ -14,8 +14,8 @@
 | P1-1 | 1 | `pipeline/runner.ts` — runStages + run.json після кожної | AC1.2 | P0-* | **done** |
 | P1-2 | 1 | переходи статусів + resume (skip done) | AC1.2 | P1-1 | **done** |
 | P1-3 | 1 | Validator як `Stage` | AC1.1 | P1-1 | **done** |
-| — | 1 | 🛑 CHECKPOINT B | run.json + resume ок | P1-* | **review (чекає тебе)** |
-| P2-1 | 2 | `runAssetGen` → emit `envelope.json` | AC2.3 | P1-* | blocked |
+| — | 1 | 🛑 CHECKPOINT B | run.json + resume ок (demo: pipeline:demo) | P1-* | **done** (2026-06-03) |
+| P2-1 | 2 | `runAssetGen` → emit `envelope.json` | AC2.3 | P1-* | **wip** |
 | P2-2 | 2 | `buildKitPlayable` читає Envelope; прибрати хардкод | AC2.1 | P2-1 | blocked |
 | P2-3 | 2 | `cmdMenu` через раннер (assetgen→build стадії) | AC2.2 | P2-2 | blocked |
 | — | 2 | 🛑 CHECKPOINT C | before/after ідентичні | P2-* | review |

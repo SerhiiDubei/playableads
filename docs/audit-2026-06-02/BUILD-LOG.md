@@ -83,3 +83,13 @@
 - `validateStage` enrich-only: політику «fail run on !ok» винесемо в CLI/gate (Phase 3-4).
 
 **Чекпойнт B:** review — користувач перевіряє форму `run.json` + що resume працює, тоді Phase 2.
+
+---
+
+## CHECKPOINT B — пройдено (2026-06-03)
+
+**Доведено:** `npm run pipeline:demo` (3 стадії: assetgen[gate]→build→validate) — свіжий прогін став на gate (`needs-approval`), resume добіг до `done` НЕ перезапустивши assetgen (`trace.log` = одна згадка). Реальні `run.json` + `envelope.json` у `out/runs/<id>/`. Користувач підтвердив → старт Phase 2.
+**Принагідно:** `docs/dashboard.html` — проєктний хаб (7 вкладок), задеплоєно на gh-pages.
+
+## Phase 2 — START (2026-06-03) ⭐ головна
+Мета: реальний `assetgen → build` через Envelope (прибрати хардкод у білдері). P2-1 → wip.

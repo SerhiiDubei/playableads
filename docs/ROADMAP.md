@@ -110,12 +110,19 @@
 
 **Гілки:** `main` (ствол — усе тут) · `dev` (робоча гілка) · `gh-pages` (превʼю, незмінна назва).
 
-## Як продовжити (рекомендований порядок)
-1. **Z-01 / Z-03 / Z-04** (1.5h разом) — найдешевші конверсії (архетипи `pick-hero`/`grid`/`dense` уже є).
-2. **Z-02** (1h) — `menu5` на зони, взявши `showcase.ts` за зразок.
-3. **Z-05…Z-09** — за пріоритетом, по одному зі скріном на рев'ю (усі архетипи готові).
-4. **I-04** — прибрати дублі прапорів після міграції.
-5. **I-02** — `check:layouts -- all` зелений → епік закрито.
+## Pipeline track (окремий беклог: [`audit-2026-06-02/backlog.md`](audit-2026-06-02/backlog.md) · план: [`build-plan.md`](audit-2026-06-02/build-plan.md))
+Технічний хребет (Brief→assetgen→build→validate, з resume і gates). Прогрес:
+- **Phase 0** контракти ✅ · **CHECKPOINT A** ✅
+- **Phase 1** orchestrator + resume + Validator ✅ (36/36) · **CHECKPOINT B** ✅
+- **Phase 2** ⭐ реальний assetgen→build через Envelope — **wip** (P2-1)
+- Phase 3 CLI · Phase 4 gates · Phase 5 planner — попереду
+- Жива вітрина прогресу: [`dashboard.html`](dashboard.html) (вкладка Pipeline)
+
+## Як продовжити (актуальне)
+1. **Phase 2** (pipeline) — P2-1 → P2-2 → P2-3 → CHECKPOINT C.
+2. **T-01** — стандарт шаблону (ворота labs→template).
+3. **S-01 / S-02** — словник + перенести ігри в `labs/`.
+4. **I-04** — прибрати дублі `enforceZones`/`maxHeroPx`.
 
 ---
 
