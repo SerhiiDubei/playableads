@@ -23,7 +23,9 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "pipeline:demo": "tsx src/assetgen/pipeline/demo.ts",
-    "dashboard": "tsx src/assetgen/dashboard.ts"
+    "dashboard": "tsx src/assetgen/dashboard.ts",
+    "dashboard:deploy": "npm run dashboard && tsx tools/deploy-dashboard.ts",
+    "hooks:install": "tsx tools/install-hooks.ts"
   },
   "dependencies": {
     "@imgly/background-removal-node": "^1.4.5",

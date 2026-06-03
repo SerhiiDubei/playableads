@@ -1,0 +1,13 @@
+#!/bin/sh
+# Auto-regenerate + deploy the progress dashboard after every commit.
+# Install with: npm run hooks:install
+#
+# Guard: skip on the gh-pages branch — the deploy itself commits there, and
+# worktrees share one hooks dir, so without this guard we'd loop forever.
+# Non-blocking: a failed deploy must NEVER fail your commit (|| true).
+
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+[ "$branch" = "gh-pages" ] && exit 0
+
+npm run --silent dashboard:deploy >/dev/null 2>&1 || true
+exit 0
