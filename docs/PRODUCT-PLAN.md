@@ -36,7 +36,8 @@
 | **F+** | Asset-gen hardening (решта) | retry×3 з модифікованим промтом; фейли → `out/runs/<id>/failures/`; edit-toolkit (CLI правки ассета) | (F-core ✅) | blocked |
 | **E** | Style system | 3-5 пресетів + власний; референс-картинки обов'язкові; style-каталог; image2style | — | blocked |
 | **G+** | Compose & zones (решта) | прапор `experimental` на layout; animation-варіативність (GSAP+AI-SVG, тест ваги) | (G-core ✅) | blocked |
-| **J** | Cross-cutting infra | інтерактивний грейбокс-viewport; версіонування+відкат прогонів; A/B-ітерація промтів | C | blocked |
+| **J** | Cross-cutting infra | інтерактивний грейбокс-viewport; версіонування+відкат прогонів; A/B-ітерація промтів | C | **partial** (greybox/AB далі) |
+| **UI** | **Designer Studio** (локальний web-UI) | `npm run studio`: brief→топ-3 механік→живе прев'ю playable; обгортка над B/D/pipeline; нуль deps | B, D | **done v1** (brief→suggest→preview) |
 
 ## TIER 3 — закрите / відкладене
 - **H** Validation ✅ done.
