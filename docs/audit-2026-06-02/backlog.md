@@ -23,10 +23,10 @@
 | P3-2 | 3 | `pipeline resume <runId>` | AC3.2 | P3-1 | **done** |
 | P3-3 | 3 | `pipeline inspect <runId>` | AC3.3 | P3-1 | **done** |
 | — | 3 | 🛑 CHECKPOINT D | 3 команди працюють | P3-* | **done** (run/inspect/resume погнані) |
-| P4-1 | 4 | `gate:true` → status needs-approval | AC4.1 | P3-* | blocked |
-| P4-2 | 4 | `forge approve <runId>` (+ overpush) | AC4.2, AC4.3 | P4-1 | blocked |
-| P4-3 | 4 | cost-preview gate перед asset-gen | AC4.1 | P4-1 | blocked |
-| — | 4 | 🛑 CHECKPOINT E | cost-preview підтверджено | P4-* | review |
+| P4-1 | 4 | `gate:true` → status needs-approval | AC4.1 | P3-* | **done** |
+| P4-2 | 4 | `pipeline approve <runId>` (явний human-override) | AC4.2, AC4.3 | P4-1 | **done** |
+| P4-3 | 4 | cost-preview gate (cost.json + пауза) | AC4.1 | P4-1 | **done** |
+| — | 4 | 🛑 CHECKPOINT E | cost-preview підтверджено | P4-* | **done** (gate→approve→done погнано) |
 | P5-1 | 5 | Planner-стадія: намір → plan.screens + assetKeys | AC5.1 | P4-* | blocked |
 | P5-2 | 5 | план редагований ДО asset-gen | AC5.2 | P5-1 | blocked |
 | P5-3 | 5 | downstream споживає `plan` | AC5.3 | P5-1 | blocked |

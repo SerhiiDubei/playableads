@@ -114,3 +114,8 @@
 **Зроблено:** `pipeline/cli.ts` — 3 команди над оркестратором: `run <style> [layout]`, `resume <runId>`, `inspect <runId>`. `menu-run.ts`: layout їде в `brief` (passthrough) → resume відбудовує стадії; додано `resumeMenuRun`. Скрипт `npm run pipeline`.
 **Перевірено:** tsc · 41/41 tests · вручну: `run cyber-heist endcard`→done+validation ok; `inspect`→стадії з таймстемпами + envelope(13 assets); `resume`→no-op done. → CHECKPOINT D витримано.
 **AC:** AC3.1/3.2/3.3 ✅. **Далі:** Phase 4 — gates (cost-preview, human-in-the-loop).
+
+## Phase 4 — cost-preview gate + approve (2026-06-03) ✅ Phase 4 done
+**Зроблено:** `pipeline/stages/cost-preview.ts` — gate-стадія: `estimateCost(style)` рахує cached-ассети × $/img, пише `cost.json`, ставить run на `needs-approval`. `menu-run.ts`: опційний gate (`--gate`), resume відновлює gated-стадії з run.json. CLI: `run … --gate` + `approve <runId>` (явний human-override = «overpush»). Envelope-схему не чіпав — cost живе окремим артефактом (CHECKPOINT A frozen).
+**Перевірено:** tsc · 43/43 tests (+estimateCost) · вручну: `run --gate`→needs-approval ($0 now / $1.04 regen / 13 cached)→`approve`→done, validation ok; inspect показує всі 4 стадії + cost. → CHECKPOINT E витримано.
+**AC:** AC4.1/4.2/4.3 ✅. **Далі:** Phase 5 — planner (намір → plan.screens + assetKeys), останній модуль.

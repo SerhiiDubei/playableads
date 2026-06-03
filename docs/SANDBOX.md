@@ -14,6 +14,8 @@
 | `npm run pipeline -- run cyber-heist endcard` | 🆓 повний прогін assetgen→build→validate | `status: done`, playable у `out\runs\<id>\endcard.html` |
 | `npm run pipeline -- inspect <runId>` | 👀 показує стейт прогону | стадії з таймстемпами + envelope (assets/build/validation) |
 | `npm run pipeline -- resume <runId>` | продовжує прогін | пропускає `done`-стадії |
+| `npm run pipeline -- run cyber-heist endcard --gate` | 🆓👀💰 прогін із **cost-preview gate** | стає на `needs-approval` + показує $ |
+| `npm run pipeline -- approve <runId>` | підтвердити суму → продовжити | gate знято, білд доходить до done |
 | `npm run pipeline:demo` | 🆓👀 демо з **gate-паузою** | стає на `needs-approval`; resume командою з підказки |
 | `npm run pipeline:demo <runId>` | продовжує demo | `trace.log` доводить: стадія бігла раз |
 

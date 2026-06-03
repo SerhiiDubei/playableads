@@ -6,6 +6,8 @@
 //
 // Wired as `npm run pipeline -- <cmd> ...`. CHECKPOINT D: you run all three.
 
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { buildMenuViaPipeline, resumeMenuRun, type MenuRunResult } from "./menu-run.js";
 import { readRunState, readEnvelope, runDirOf } from "./runDir.js";
 
@@ -33,31 +35,45 @@ async function cmdInspect(runId: string): Promise<void> {
   for (const s of state.stages) {
     const col = s.status === "done" ? G : s.status === "failed" ? R : s.status === "running" ? Y : DIM;
     const span = s.startedAt && s.endedAt ? ` ${DIM}${s.startedAt}→${s.endedAt}${X}` : "";
-    console.log(`  ${col}●${X} ${s.name.padEnd(10)} ${col}${s.status}${X}${span}${s.error ? ` ${R}${s.error}${X}` : ""}`);
+    console.log(`  ${col}●${X} ${s.name.padEnd(12)} ${col}${s.status}${X}${span}${s.error ? ` ${R}${s.error}${X}` : ""}`);
   }
   if (env) {
     console.log(`envelope: ${env.assets.length} assets · build=${env.build ? env.build.bytes + "b" : "—"} · validation=${env.validation ? (env.validation.ok ? "ok" : "FAIL") : "—"}`);
+  }
+  try {
+    const cost = JSON.parse(readFileSync(path.join(runDir, "cost.json"), "utf8"));
+    console.log(`cost: charge now $${cost.chargeNowUsd?.toFixed(2)} · full regen ≈ $${cost.fullRegenUsd?.toFixed(2)} (${cost.cachedAssets} cached)`);
+  } catch {
+    /* no cost gate on this run */
+  }
+  if (state.status === "needs-approval") {
+    console.log(`${Y}⏸  awaiting approval — run: pipeline approve ${state.runId}${X}`);
   }
 }
 
 function usage(): void {
   console.log(`pipeline — orchestrated playable runs
 
-  pipeline run <style> [layout]   fresh run (default layout: menu5)
-  pipeline resume <runId>         continue a run (skips done stages)
-  pipeline inspect <runId>        show run.json + envelope summary`);
+  pipeline run <style> [layout] [--gate]   fresh run (--gate = cost-preview pause)
+  pipeline approve <runId>                 approve a gated (needs-approval) run → continue
+  pipeline resume <runId>                  continue a run (skips done stages)
+  pipeline inspect <runId>                 show run.json + envelope + cost summary`);
 }
 
 async function main(): Promise<void> {
-  const [cmd, a1, a2] = process.argv.slice(2);
+  const args = process.argv.slice(2);
+  const gate = args.includes("--gate");
+  const [cmd, a1, a2] = args.filter((a) => a !== "--gate");
   switch (cmd) {
     case "run": {
       if (!a1) return fail("run needs a <style>");
-      printResult(await buildMenuViaPipeline(a1, a2 ?? "menu5"));
+      printResult(await buildMenuViaPipeline(a1, a2 ?? "menu5", { gate }));
       return;
     }
+    case "approve":
     case "resume": {
-      if (!a1) return fail("resume needs a <runId>");
+      if (!a1) return fail(`${cmd} needs a <runId>`);
+      if (cmd === "approve") console.log(`${G}✅ approved${X} — continuing run ${a1}`);
       printResult(await resumeMenuRun(a1));
       return;
     }
