@@ -19,10 +19,10 @@
 | P2-2 | 2 | `buildKitPlayable` читає asset-план; хардкод винесено | AC2.1 | P2-1 | **done** (byte-identical vs golden) |
 | P2-3 | 2 | menu-білд через раннер (assetgen→build→validate) | AC2.2 | P2-2 | **done** (`pipeline:menu`) |
 | — | 2 | 🛑 CHECKPOINT C | before/after ідентичні | P2-* | **done** (golden: 11/11 byte-identical) |
-| P3-1 | 3 | `forge run <style>` | AC3.1 | P2-* | blocked |
-| P3-2 | 3 | `forge resume <runId>` | AC3.2 | P3-1 | blocked |
-| P3-3 | 3 | `forge inspect <runId>` | AC3.3 | P3-1 | blocked |
-| — | 3 | 🛑 CHECKPOINT D | 3 команди працюють | P3-* | review |
+| P3-1 | 3 | `pipeline run <style>` | AC3.1 | P2-* | **done** |
+| P3-2 | 3 | `pipeline resume <runId>` | AC3.2 | P3-1 | **done** |
+| P3-3 | 3 | `pipeline inspect <runId>` | AC3.3 | P3-1 | **done** |
+| — | 3 | 🛑 CHECKPOINT D | 3 команди працюють | P3-* | **done** (run/inspect/resume погнані) |
 | P4-1 | 4 | `gate:true` → status needs-approval | AC4.1 | P3-* | blocked |
 | P4-2 | 4 | `forge approve <runId>` (+ overpush) | AC4.2, AC4.3 | P4-1 | blocked |
 | P4-3 | 4 | cost-preview gate перед asset-gen | AC4.1 | P4-1 | blocked |

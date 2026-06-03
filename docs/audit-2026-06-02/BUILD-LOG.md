@@ -109,3 +109,8 @@
 **Перевірено:** tsc · 41/41 tests · **golden: pipeline-білд == прямий білд байт-у-байт на всіх 11 шаблонах** → CHECKPOINT C (no-regression) витримано об'єктивно.
 **AC:** AC2.2 ✅. Phase 2 (⭐ головна) закрита: assetgen→build тепер ідуть через Envelope+оркестратор, вивід незмінний.
 **Далі:** Phase 3 — CLI (`forge run/resume/inspect`).
+
+## Phase 3 — CLI (run/resume/inspect) (2026-06-03) ✅ Phase 3 done
+**Зроблено:** `pipeline/cli.ts` — 3 команди над оркестратором: `run <style> [layout]`, `resume <runId>`, `inspect <runId>`. `menu-run.ts`: layout їде в `brief` (passthrough) → resume відбудовує стадії; додано `resumeMenuRun`. Скрипт `npm run pipeline`.
+**Перевірено:** tsc · 41/41 tests · вручну: `run cyber-heist endcard`→done+validation ok; `inspect`→стадії з таймстемпами + envelope(13 assets); `resume`→no-op done. → CHECKPOINT D витримано.
+**AC:** AC3.1/3.2/3.3 ✅. **Далі:** Phase 4 — gates (cost-preview, human-in-the-loop).
