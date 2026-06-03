@@ -1,243 +1,55 @@
-<!doctype html>
-<html lang="uk">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>playable-forge — проєктний хаб</title>
+<!doctype html><html lang="uk"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>playable-forge — прогрес</title>
 <style>
-  :root{
-    --bg:#0c0e13; --panel:#161922; --panel2:#1e222d; --line:#2a2f3c;
-    --txt:#e8eaed; --dim:#9aa1ad; --accent:#7aa2ff; --gold:#ffce6b;
-    --ok:#3fb950; --wip:#d29922; --block:#f85149; --radius:14px;
-    color-scheme:dark;
-  }
+  :root{--bg:#0c0e13;--panel:#161922;--p2:#1e222d;--line:#2a2f3c;--txt:#e8eaed;--dim:#9aa1ad;
+    --ok:#3fb950;--wip:#d29922;--block:#f85149;--accent:#7aa2ff;--gold:#ffce6b;color-scheme:dark}
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    line-height:1.5;-webkit-text-size-adjust:100%;padding-bottom:48px}
-  header{padding:26px 18px 10px;max-width:860px;margin:0 auto}
-  h1{font-size:26px;letter-spacing:-.2px}
-  h1 .f{color:var(--gold)}
-  .tagline{color:var(--dim);font-size:14px;margin-top:4px}
-  .meta{color:#6b7280;font-size:12px;margin-top:8px}
+    line-height:1.45;padding:0 0 48px;-webkit-text-size-adjust:100%}
+  .wrap{max-width:760px;margin:0 auto;padding:22px 16px}
+  h1{font-size:24px}h1 .f{color:var(--gold)}
+  .sub{color:var(--dim);font-size:13px;margin-top:4px}
+  code{background:#000a;border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:12px;color:#cdd3df}
+  .overall{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin:16px 0}
+  .overall .big{font-size:40px;font-weight:800;color:var(--gold);line-height:1}
+  .overall .lbl{color:var(--dim);font-size:13px;margin-bottom:10px}
+  .bar{height:12px;background:#000a;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:8px}
+  .fill{height:100%;background:linear-gradient(90deg,#2a7d3f,#3fb950);border-radius:8px;transition:width .4s}
+  .pctline{display:flex;justify-content:space-between;color:var(--dim);font-size:12px;margin-top:4px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 15px;margin:12px 0}
+  .card.hot{border-color:#d2992255;background:#1c1a12}
+  .card h3{font-size:15px;margin-bottom:8px}
+  .rows{margin-top:10px}
+  .row{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid #20242f;font-size:13px}
+  .row:first-child{border-top:0}
+  .rid{color:var(--accent);font-weight:700;font-size:12px;flex:0 0 auto;min-width:46px}
+  .rt{color:var(--dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:#39404f}
+  .dot.ok{background:var(--ok)}.dot.wip{background:var(--wip)}.dot.block{background:var(--block)}
+  .pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;flex:0 0 auto}
+  .pill.ok{background:#15351f;color:var(--ok)}.pill.wip{background:#36280a;color:var(--wip)}
+  .pill.block{background:#3a1714;color:var(--block)}.pill.todo{background:#222734;color:var(--dim)}
+  .pill.dim{background:#1a1d26;color:#5b6270}
+  .commit{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--dim);padding:3px 0;border-top:1px solid #20242f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .commit:first-child{border-top:0}
+  footer{color:#5b6270;font-size:11px;margin-top:18px;text-align:center}
+</style></head><body><div class="wrap">
+  <h1>playable-<span class="f">forge</span> · прогрес</h1>
+  <div class="sub">Генерується з <code>ROADMAP.md</code> + <code>backlog.md</code> · <code>npm run dashboard</code></div>
 
-  nav{position:sticky;top:0;z-index:10;background:rgba(12,14,19,.92);backdrop-filter:blur(8px);
-    border-bottom:1px solid var(--line);overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
-  nav .wrap{max-width:860px;margin:0 auto;display:flex;gap:4px;padding:8px 12px}
-  nav button{flex:0 0 auto;background:transparent;border:1px solid transparent;color:var(--dim);
-    font-size:14px;font-weight:600;padding:9px 14px;border-radius:10px;cursor:pointer}
-  nav button.active{background:var(--panel2);color:var(--txt);border-color:var(--line)}
+  <div class="overall">
+    <div class="big">52%</div>
+    <div class="lbl">загальний прогрес (27/52 задач, без deferred)</div>
+    <div class="bar"><div class="fill" style="width:52%"></div></div><div class="pctline"><span>27/52</span><span>52%</span></div>
+    <div class="chips"><span class="pill ok">done 27</span><span class="pill wip">wip 1</span><span class="pill wip">review 4</span><span class="pill block">blocked 11</span><span class="pill dim">deferred 1</span><span class="pill todo">todo 9</span></div>
+  </div>
 
-  main{max-width:860px;margin:0 auto;padding:18px 16px}
-  section{display:none;animation:fade .25s ease}
-  section.active{display:block}
-  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  <div class="card hot"><h3>🔥 Зараз у роботі</h3><div class="row"><span class="rid">P2-2</span><span class="rt">buildKitPlayable читає Envelope; прибрати хардкод</span><span class="pill wip">wip</span></div><div class="row"><span class="rid">CHK-C</span><span class="rt">CHECKPOINT C</span><span class="pill wip">review</span></div><div class="row"><span class="rid">CHK-D</span><span class="rt">CHECKPOINT D</span><span class="pill wip">review</span></div><div class="row"><span class="rid">CHK-E</span><span class="rt">CHECKPOINT E</span><span class="pill wip">review</span></div><div class="row"><span class="rid">CHK-F</span><span class="rt">CHECKPOINT F</span><span class="pill wip">review</span></div></div>
+  <div class="card"><h3>Z · Зони/шаблони</h3><div class="bar"><div class="fill" style="width:100%"></div></div><div class="pctline"><span>10/10</span><span>100%</span></div><div class="rows"><div class="row"><span class="dot ok"></span><span class="rid">Z-00</span><span class="rt">endcard → зони (еталон)</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">Z-01</span><span class="rt">pick-hero → зони</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">Z-02</span><span class="rt">menu5 → зони (5 екранів nav)</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">Z-03</span><span class="rt">feature-grid → зони</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">Z-04</span><span class="rt">feature-list → зони</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">Z-05</span><span class="rt">tap-reveal → зони (2 екр.)</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">Z-06</span><span class="rt">progress-reveal → зони (2 екр.)</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">Z-07</span><span class="rt">two-choice → зони (2 екр.)</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">Z-08</span><span class="rt">match-cluster → зони (board+reveal)</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">Z-09</span><span class="rt">tutorial → зони (3 екр.)</span><span class="pill ok">done</span></div></div></div><div class="card"><h3>I · Інфраструктура</h3><div class="bar"><div class="fill" style="width:67%"></div></div><div class="pctline"><span>4/6</span><span>67%</span></div><div class="rows"><div class="row"><span class="dot ok"></span><span class="rid">I-01</span><span class="rt">visual-test.ts перевіряє зони для будь-якого data-type (auto-discover)</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">I-02</span><span class="rt">check:layouts зелений на всіх мігрованих шаблонах</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">I-03</span><span class="rt">Звірити merge kit.ts + CLAUDE.md на здоровий глузд (не лише tsc)</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">I-06</span><span class="rt">Прибрати тимчасові worktrees + зайві гілки після merge</span><span class="pill ok">done</span></div><div class="row"><span class="dot todo"></span><span class="rid">I-04</span><span class="rt">Прибрати enforceZones/maxHeroPx дублі після міграції (lint бере з зон)</span><span class="pill todo">todo</span></div><div class="row"><span class="dot todo"></span><span class="rid">I-05</span><span class="rt">(опц.) перейменувати теку layouts/ → templates/? — обережно, багато import-шляхів</span><span class="pill todo">todo</span></div></div></div><div class="card"><h3>M · Модульність</h3><div class="bar"><div class="fill" style="width:100%"></div></div><div class="pctline"><span>3/3</span><span>100%</span></div><div class="rows"><div class="row"><span class="dot ok"></span><span class="rid">M-01</span><span class="rt">Спільний CSS у kit (reset/title/sub/gold/zone/compact-card) — прибрати копіпаст із 7-11 шаблонів</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">M-02</span><span class="rt">Шаблон декларує ассети (meta.assets); білдер читає це замість хардкоду knight/hero2/hero3</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">M-03</span><span class="rt">Доля groups/flow (НЕ мертві — юзаються games/recipes). Рішення: лишити паралельними, задокументувати межу</span><span class="pill ok">done</span></div><div class="row"><span class="dot dim"></span><span class="rid">M-04</span><span class="rt">Уніфікувати ігри під контракт шаблонів</span><span class="pill dim">deferred</span></div></div></div><div class="card"><h3>S · Структура</h3><div class="bar"><div class="fill" style="width:0%"></div></div><div class="pctline"><span>0/5</span><span>0%</span></div><div class="rows"><div class="row"><span class="dot block"></span><span class="rid">S-02</span><span class="rt">Зберігання ігор — РІШЕННЯ: labs-first. Усі ігри/чернетки → labs/. templates/ = ЗАРЕЗЕРВОВАНО за промоутованими (що пройшли стандарт T). Промоція — лише за прямим запитом. Зараз 0 ігор = шаблони (стандарту ще нема). Перемістити поточні templates/<гра>/ + build-game/connect/experiments/recipes → labs/</span><span class="pill block">blocked</span></div><div class="row"><span class="dot todo"></span><span class="rid">S-01</span><span class="rt">Словник термінів: templates/=ігри, layouts/=екрани, styles/vsbriefs/. Зафіксувати в SYSTEMS.md; (опц.) layouts/→screens/</span><span class="pill todo">todo</span></div><div class="row"><span class="dot todo"></span><span class="rid">S-03</span><span class="rt">out/ структурувати: playables/ · assets/<style>/ · runs/ · logs/ (узгодити зі старим пласким + новим out/runs/)</span><span class="pill todo">todo</span></div><div class="row"><span class="dot todo"></span><span class="rid">S-04</span><span class="rt">test/: консолідувати 6 visual- тек під test/visual/<suite>/</span><span class="pill todo">todo</span></div><div class="row"><span class="dot todo"></span><span class="rid">S-05</span><span class="rt">Тріаж one-off скриптів у src/assetgen/ (optimize-madmage, gen-only, menu-buttons, sprite-icons, ref-test, test-openai, prompt-lab, md-to-html) → labs/ або видалити</span><span class="pill todo">todo</span></div></div></div><div class="card"><h3>T · Стандарт шаблонів</h3><div class="bar"><div class="fill" style="width:0%"></div></div><div class="pctline"><span>0/3</span><span>0%</span></div><div class="rows"><div class="row"><span class="dot todo"></span><span class="rid">T-01</span><span class="rt">Стандарт вигляду по архетипах — що повинен містити кожен тип екрана (endcard/feature-grid/pick-hero/…): обов'язкові елементи, ліміти, ієрархія. Новий docs/TEMPLATE-STANDARD.md</span><span class="pill todo">todo</span></div><div class="row"><span class="dot todo"></span><span class="rid">T-02</span><span class="rt">Оновити layout-authoring-guide.md під zone-driven (meta.zoneTypes/assets, спільний CSS, патерни text-title/compact-cards/enforceZones з Z-міграції)</span><span class="pill todo">todo</span></div><div class="row"><span class="dot todo"></span><span class="rid">T-03</span><span class="rt">Кодифікувати усталені патерни як soft-lint правила (тонкий title→текст; дрібні картки→compact; nav→enforceZones:false)</span><span class="pill todo">todo</span></div></div></div><div class="card"><h3>Pipeline</h3><div class="bar"><div class="fill" style="width:40%"></div></div><div class="pctline"><span>10/25</span><span>40%</span></div><div class="rows"><div class="row"><span class="dot ok"></span><span class="rid">CHK-A</span><span class="rt">CHECKPOINT A</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">CHK-B</span><span class="rt">CHECKPOINT B</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">P0-1</span><span class="rt">додати zod у deps</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">P0-2</span><span class="rt">pipeline/types.ts — схеми Envelope/RunState/Stage/RunContext</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">P0-3</span><span class="rt">pipeline/runDir.ts — out/runs/{runId}/, run.json I/O</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">P0-4</span><span class="rt">types.test.ts — valid/invalid parse</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">P1-1</span><span class="rt">pipeline/runner.ts — runStages + run.json після кожної</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">P1-2</span><span class="rt">переходи статусів + resume (skip done)</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">P1-3</span><span class="rt">Validator як Stage</span><span class="pill ok">done</span></div><div class="row"><span class="dot ok"></span><span class="rid">P2-1</span><span class="rt">assetgen-стадія → emit envelope.assets[] (read-only)</span><span class="pill ok">done</span></div><div class="row"><span class="dot wip"></span><span class="rid">P2-2</span><span class="rt">buildKitPlayable читає Envelope; прибрати хардкод</span><span class="pill wip">wip</span></div><div class="row"><span class="dot wip"></span><span class="rid">CHK-C</span><span class="rt">CHECKPOINT C</span><span class="pill wip">review</span></div><div class="row"><span class="dot wip"></span><span class="rid">CHK-D</span><span class="rt">CHECKPOINT D</span><span class="pill wip">review</span></div><div class="row"><span class="dot wip"></span><span class="rid">CHK-E</span><span class="rt">CHECKPOINT E</span><span class="pill wip">review</span></div><div class="row"><span class="dot wip"></span><span class="rid">CHK-F</span><span class="rt">CHECKPOINT F</span><span class="pill wip">review</span></div><div class="row"><span class="dot block"></span><span class="rid">P2-3</span><span class="rt">cmdMenu через раннер (assetgen→build стадії)</span><span class="pill block">blocked</span></div><div class="row"><span class="dot block"></span><span class="rid">P3-1</span><span class="rt">forge run <style></span><span class="pill block">blocked</span></div><div class="row"><span class="dot block"></span><span class="rid">P3-2</span><span class="rt">forge resume <runId></span><span class="pill block">blocked</span></div><div class="row"><span class="dot block"></span><span class="rid">P3-3</span><span class="rt">forge inspect <runId></span><span class="pill block">blocked</span></div><div class="row"><span class="dot block"></span><span class="rid">P4-1</span><span class="rt">gate:true → status needs-approval</span><span class="pill block">blocked</span></div><div class="row"><span class="dot block"></span><span class="rid">P4-2</span><span class="rt">forge approve <runId> (+ overpush)</span><span class="pill block">blocked</span></div><div class="row"><span class="dot block"></span><span class="rid">P4-3</span><span class="rt">cost-preview gate перед asset-gen</span><span class="pill block">blocked</span></div><div class="row"><span class="dot block"></span><span class="rid">P5-1</span><span class="rt">Planner-стадія: намір → plan.screens + assetKeys</span><span class="pill block">blocked</span></div><div class="row"><span class="dot block"></span><span class="rid">P5-2</span><span class="rt">план редагований ДО asset-gen</span><span class="pill block">blocked</span></div><div class="row"><span class="dot block"></span><span class="rid">P5-3</span><span class="rt">downstream споживає plan</span><span class="pill block">blocked</span></div></div></div>
 
-  h2{font-size:20px;margin:6px 0 4px}
-  .lead{color:var(--dim);font-size:14px;margin-bottom:16px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 16px;margin:0 0 12px}
-  .card h3{font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .card p{color:var(--dim);font-size:13.5px}
-  .card ul{color:var(--dim);font-size:13.5px;margin:6px 0 0 18px}
-  .card li{margin:3px 0}
-  .b{color:var(--txt)}
-  code{background:#000a;border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:12.5px;color:#cdd3df}
+  <div class="card"><h3>📜 Останні коміти (momentum)</h3><div class="commit">4b1332c P2-1: assetgen stage emits envelope.assets[] (read-only, from out/&lt;style>/)</div><div class="commit">24798bd docs: reconcile backlog — CHECKPOINT B done, Phase 2 wip, pipeline track cross-ref in ROADMAP, dashboard logged</div><div class="commit">ab19f68 docs: project hub dashboard.html — tabbed, self-contained, mobile (overview/zones/modularity/structure/pipeline/playables/roadmap)</div><div class="commit">c0be348 demo: pipeline:demo script for CHECKPOINT B (visible run.json + resume)</div><div class="commit">1d59431 Phase 1: pipeline orchestrator (runner.ts) + Validator stage + resume</div><div class="commit">931f565 infra: prepare storage homes + skeletons (no content yet)</div><div class="commit">545f050 decision: labs-first game storage — templates/ reserved for promoted games (gated by T standard)</div><div class="commit">ab2749e audit: project structure + games-storage + template-spec gaps; sync epics S+T into roadmap</div><div class="commit">5027500 M-03: document the two-systems boundary (layouts vs groups/flow) — kept parallel</div><div class="commit">eaf34c7 docs: roadmap M-03/M-04 reframed — groups/flow are USED (games/recipes), not dead; needs unify-vs-coexist decision</div></div>
 
-  .pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;letter-spacing:.03em}
-  .ok{background:#15351f;color:var(--ok)}
-  .wip{background:#36280a;color:var(--wip)}
-  .block{background:#3a1714;color:var(--block)}
-  .next{background:#16243f;color:var(--accent)}
-
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:4px 0 14px}
-  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-  .stat .n{font-size:22px;font-weight:700;color:var(--gold)}
-  .stat .l{font-size:12px;color:var(--dim);margin-top:2px}
-
-  a.link{display:inline-block;color:var(--accent);font-size:13.5px;font-weight:600;text-decoration:none;
-    margin:8px 10px 0 0;border-bottom:1px solid #7aa2ff44}
-  a.btn{display:block;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;
-    margin:8px 0 0;color:var(--txt);text-decoration:none;font-weight:600;font-size:15px}
-  a.btn:active{background:#262b37}
-  a.btn .s{display:block;color:var(--dim);font-size:12.5px;font-weight:400;margin-top:3px}
-
-  .step{display:flex;gap:10px;align-items:flex-start;margin:8px 0}
-  .step .dot{flex:0 0 auto;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    font-size:12px;font-weight:700;background:#15351f;color:var(--ok)}
-  .step .dot.wip{background:#36280a;color:var(--wip)}
-  .step .dot.todo{background:#222734;color:var(--dim)}
-  .step .t{font-size:13.5px}
-  .step .t b{color:var(--txt)}
-  footer{max-width:860px;margin:24px auto 0;padding:0 16px;color:#5b6270;font-size:12px}
-</style>
-</head>
-<body>
-<header>
-  <h1>playable-<span class="f">forge</span></h1>
-  <div class="tagline">CLI-тулчейн, що будує Meta playable ads з <code>templates × styles × briefs</code>.</div>
-  <div class="meta">Проєктний хаб · оновлено 2026-06-03 · гілка <code>dev</code></div>
-</header>
-
-<nav><div class="wrap" id="tabs">
-  <button data-t="overview" class="active">Огляд</button>
-  <button data-t="zones">Шаблони&amp;Зони</button>
-  <button data-t="modularity">Модульність</button>
-  <button data-t="structure">Структура</button>
-  <button data-t="pipeline">Pipeline</button>
-  <button data-t="playables">Playable-и</button>
-  <button data-t="roadmap">Роадмеп</button>
-</div></nav>
-
-<main>
-  <!-- OVERVIEW -->
-  <section id="overview" class="active">
-    <h2>Огляд</h2>
-    <div class="lead">Що це і де воно зараз.</div>
-    <div class="grid">
-      <div class="stat"><div class="n">11</div><div class="l">zone-шаблонів</div></div>
-      <div class="stat"><div class="n">10</div><div class="l">зонових архетипів</div></div>
-      <div class="stat"><div class="n">36/36</div><div class="l">тестів pass</div></div>
-      <div class="stat"><div class="n">14</div><div class="l">live playable-ів</div></div>
-      <div class="stat"><div class="n">3</div><div class="l">гілки (main·dev·gh-pages)</div></div>
-      <div class="stat"><div class="n">&lt;2MB</div><div class="l">кожен playable</div></div>
-    </div>
-    <div class="card">
-      <h3>Як це працює <span class="pill ok">стабільно</span></h3>
-      <p>Один <code>#stage</code> (фіксований канвас 400×860) масштабується під будь-який екран. Компоненти кладуться в <b>зони</b> (трафарет «де що»), а не в координати. Кнопка завжди в thumb-зоні. Усе валідується автотестами перед релізом.</p>
-    </div>
-    <div class="card">
-      <h3>Дві системи композиції</h3>
-      <ul>
-        <li><b>A — <code>layouts/</code></b>: рекламні екрани (11 шаблонів), zone-driven.</li>
-        <li><b>B — <code>groups/flow</code></b>: інтерактивні ігри (tap, connect).</li>
-        <li>Спільний фундамент: зони + компоненти. Деталі — <code>docs/SYSTEMS.md</code>.</li>
-      </ul>
-    </div>
-    <a class="btn" href="https://github.com/SerhiiDubei/playableads">Репозиторій на GitHub<span class="s">SerhiiDubei/playableads</span></a>
-  </section>
-
-  <!-- ZONES & TEMPLATES -->
-  <section id="zones">
-    <h2>Шаблони &amp; Зони <span class="pill ok">epic Z — done</span></h2>
-    <div class="lead">Усі 11 екранних шаблонів переведено на зонову систему, кожен протестовано (lint + visual на 8 viewport-ах).</div>
-    <div class="card">
-      <h3>Зоновий двигун <code>kit/layout.ts</code></h3>
-      <p><code>resolveLayout(type)</code> = <code>BASE ⊕ архетип</code>. 10 архетипів: <code>menu · pick-hero · endcard · immersive · focal · split · grid · dense · battle · puzzle</code>. Debug-оверлей: додай <code>?zones=1</code> до будь-якого playable.</p>
-    </div>
-    <div class="card">
-      <h3>11 шаблонів</h3>
-      <ul>
-        <li>endcard · menu5 · showcase (10 екр.) · pick-hero · tutorial</li>
-        <li>feature-grid · feature-list · tap-reveal · progress-reveal · two-choice · match-cluster</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>Усталені патерни (з міграції)</h3>
-      <ul>
-        <li>Тонкий title-band → <b>текстовий заголовок</b>, не banner.</li>
-        <li>Дрібні картки → <b>compact frame</b> (<code>border-width:16px</code>).</li>
-        <li>Nav-меню → <code>enforceZones:false</code>.</li>
-      </ul>
-    </div>
-  </section>
-
-  <!-- MODULARITY -->
-  <section id="modularity">
-    <h2>Модульність <span class="pill ok">epic M — done</span></h2>
-    <div class="lead">Прибрано copy-paste і злиплення; спільне — в одному місці.</div>
-    <div class="card"><h3>M-01 — спільний CSS <span class="pill ok">done</span></h3><p><code>kit/screen-css.ts</code>: reset/title/sub/gold/zone/compact — раніше копіювались у 7-11 файлах, тепер одна правда. Принагідно знайдено й полагоджено латентний баг endcard.</p></div>
-    <div class="card"><h3>M-02 — ассети з шаблоном <span class="pill ok">done</span></h3><p><code>meta.assets</code>: шаблон сам декларує, що йому треба; білдер не хардкодить героїв. Білди полегшали.</p></div>
-    <div class="card"><h3>M-03 — дві системи <span class="pill ok">done</span></h3><p>Рішення: лишити <code>layouts/</code> і <code>groups/flow</code> паралельними, межу задокументовано (<code>SYSTEMS.md</code>).</p></div>
-  </section>
-
-  <!-- STRUCTURE -->
-  <section id="structure">
-    <h2>Структура &amp; labs-first <span class="pill wip">epic S — частково</span></h2>
-    <div class="lead">Аудит структури + рішення, як зберігати ігри.</div>
-    <div class="card">
-      <h3>Принцип labs-first</h3>
-      <p>Гра живе в <code>labs/</code> за замовчуванням. <code>templates/</code> зарезервовано за <b>промоутованими</b> (за стандартом + явним запитом). Зараз 0 ігор є шаблонами — стандарт ще пишеться.</p>
-      <p style="margin-top:6px"><code>нова гра → labs/&lt;гра&gt; → (стандарт + запит) → templates/&lt;гра&gt;</code></p>
-    </div>
-    <div class="card">
-      <h3>Готові «полиці» <span class="pill ok">infra ready</span></h3>
-      <ul>
-        <li><code>labs/</code> + README — домівка чернеток</li>
-        <li><code>docs/STORAGE-LAYOUT.md</code> — мапа «де що лежить»</li>
-        <li><code>docs/TEMPLATE-STANDARD.md</code> — скелет стандарту (T-01, заповнюється)</li>
-      </ul>
-    </div>
-  </section>
-
-  <!-- PIPELINE -->
-  <section id="pipeline">
-    <h2>Pipeline <span class="pill wip">Фази 0-1 done</span></h2>
-    <div class="lead">Оркестратор прогонів: Brief → asset-gen → build → validate, з resume і human-gates.</div>
-    <div class="card">
-      <h3>Прогрес фаз</h3>
-      <div class="step"><span class="dot">✓</span><div class="t"><b>Phase 0</b> — контракти (Envelope / run.json / Stage). <span class="pill ok">done</span> · CHECKPOINT A підтверджено.</div></div>
-      <div class="step"><span class="dot">✓</span><div class="t"><b>Phase 1</b> — orchestrator <code>runner.ts</code> + resume + Validator-стадія. <span class="pill ok">done · 36/36</span></div></div>
-      <div class="step"><span class="dot wip">B</span><div class="t"><b>CHECKPOINT B</b> — реальний run.json + resume. <span class="pill wip">review</span></div></div>
-      <div class="step"><span class="dot todo">2</span><div class="t"><b>Phase 2</b> ⭐ — під'єднати реальний asset-gen→build через Envelope.</div></div>
-      <div class="step"><span class="dot todo">3</span><div class="t"><b>Phase 3</b> — CLI: <code>forge run / resume / inspect</code>.</div></div>
-      <div class="step"><span class="dot todo">4</span><div class="t"><b>Phase 4</b> — gates (cost-preview).</div></div>
-      <div class="step"><span class="dot todo">5</span><div class="t"><b>Phase 5</b> — planner (екрани перед генерацією).</div></div>
-    </div>
-    <div class="card">
-      <h3>Спробуй сам</h3>
-      <p><code>npm run pipeline:demo</code> → свіжий прогін стає на gate-паузу. <code>npm run pipeline:demo &lt;runId&gt;</code> → resume доходить до кінця, не перезапускаючи зроблене. Дивись <code>out/runs/&lt;id&gt;/run.json</code> + <code>trace.log</code>.</p>
-    </div>
-  </section>
-
-  <!-- PLAYABLES -->
-  <section id="playables">
-    <h2>Live playable-и <span class="pill ok">14 на gh-pages</span></h2>
-    <div class="lead">Тапни — відкриється на телефоні. Усі &lt;2MB, self-contained.</div>
-    <a class="btn" href="https://serhiidubei.github.io/playableads/">Усі превʼю (index)<span class="s">serhiidubei.github.io/playableads</span></a>
-    <a class="btn" href="https://serhiidubei.github.io/playableads/fruit-bonanza.html">🎰 Fruit Bonanza<span class="s">tumble-слот · pays anywhere · free spins</span></a>
-    <a class="btn" href="https://serhiidubei.github.io/playableads/fruit-bonanza-v2-music.html">🎰 Fruit Bonanza · V2 music<span class="s">AI-звук: BGM + 6 SFX</span></a>
-    <a class="btn" href="https://serhiidubei.github.io/playableads/menu-cyber-heist-endcard.html">Cyber Heist · Endcard<span class="s">+ 10 інших cyber-heist layout-ів в index</span></a>
-  </section>
-
-  <!-- ROADMAP -->
-  <section id="roadmap">
-    <h2>Роадмеп — що далі</h2>
-    <div class="lead">Повний беклог: <code>docs/ROADMAP.md</code>. Найголовніше нижче.</div>
-    <div class="card">
-      <h3>Зараз / наступне <span class="pill next">next</span></h3>
-      <ul>
-        <li><b>Phase 2</b> ⭐ — реальний build через Envelope (після CHECKPOINT B).</li>
-        <li><b>T-01</b> — стандарт шаблону (ворота промоції labs→template).</li>
-        <li><b>S-01/S-02</b> — словник + перенести ігри в <code>labs/</code>.</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>Великий продуктовий беклог</h3>
-      <ul>
-        <li><b>B</b> Brief stage · <b>C</b> Planning layer · <b>D</b> Mechanics catalog (P0)</li>
-        <li><b>E</b> Style system · <b>F</b> Asset-gen hardening · <b>G</b> Compose&amp;zones (P1)</li>
-        <li>Деталі — <code>docs/audit-2026-06-02/</code> (brief-decisions, build-plan).</li>
-      </ul>
-    </div>
-  </section>
-</main>
-
-<footer>playable-forge · self-contained hub · нуль зовнішніх залежностей · <code>docs/dashboard.html</code></footer>
-
-<script>
-  const tabs = document.getElementById("tabs");
-  const sections = document.querySelectorAll("main > section");
-  tabs.addEventListener("click", (e) => {
-    const btn = e.target.closest("button[data-t]");
-    if (!btn) return;
-    const id = btn.dataset.t;
-    tabs.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
-    sections.forEach((s) => s.classList.toggle("active", s.id === id));
-    if (location.hash !== "#" + id) history.replaceState(null, "", "#" + id);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  });
-  // deep-link: open the tab in the URL hash
-  const initial = location.hash.replace("#", "");
-  if (initial) { const b = tabs.querySelector('button[data-t="' + initial + '"]'); if (b) b.click(); }
-</script>
-</body>
-</html>
+  <footer>живий трекер · перегенеровуй після зміни статусів у беклозі</footer>
+</div></body></html>

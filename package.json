@@ -22,7 +22,8 @@
     "build:cli": "esbuild src/cli.ts --bundle --platform=node --packages=external --format=esm --outfile=dist/cli.js",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
-    "pipeline:demo": "tsx src/assetgen/pipeline/demo.ts"
+    "pipeline:demo": "tsx src/assetgen/pipeline/demo.ts",
+    "dashboard": "tsx src/assetgen/dashboard.ts"
   },
   "dependencies": {
     "@imgly/background-removal-node": "^1.4.5",
