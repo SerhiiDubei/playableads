@@ -12,6 +12,7 @@ import path from "node:path";
 import { makeRunId, runDirOf, readRunState } from "./runDir.js";
 import { runStages, type EnvelopeStage } from "./runner.js";
 import { validateStage } from "./stages/validate.js";
+import { assetgenStage } from "./stages/assetgen.js";
 import type { Envelope } from "./types.js";
 
 const BASE = "out/runs";
@@ -20,20 +21,16 @@ async function trace(runDir: string, line: string): Promise<void> {
   await fs.appendFile(path.join(runDir, "trace.log"), line + "\n", "utf8");
 }
 
-// Stage 1: pretend to generate an asset. gate:true → orchestrator pauses AFTER it
-// (this is where the real cost-preview gate will live in Phase 4).
+// Stage 1: REAL assetgen (P2-1) — reads out/<style>/ and emits envelope.assets[].
+// Wrapped with gate:true so the orchestrator pauses AFTER it (future cost-preview).
+const realAssetgen = assetgenStage();
 const assetgenStub: EnvelopeStage = {
   name: "assetgen",
   gate: true,
   async run(env, ctx) {
-    await trace(ctx.runDir, `assetgen ran @ ${ctx.runId}`);
-    return {
-      ...env,
-      assets: [
-        ...env.assets,
-        { key: "hero", path: "assets/hero.webp", bytes: 12345, prompt: "demo hero", briefVersion: "v1" },
-      ],
-    };
+    const out = await realAssetgen.run(env, ctx);
+    await trace(ctx.runDir, `assetgen ran @ ${ctx.runId} → ${out.assets.length} assets`);
+    return out;
   },
 };
 

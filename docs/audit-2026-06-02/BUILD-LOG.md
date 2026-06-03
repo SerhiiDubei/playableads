@@ -93,3 +93,8 @@
 
 ## Phase 2 — START (2026-06-03) ⭐ головна
 Мета: реальний `assetgen → build` через Envelope (прибрати хардкод у білдері). P2-1 → wip.
+
+## Phase 2 / P2-1 — assetgen stage emit envelope (2026-06-03)
+**Зроблено:** `pipeline/stages/assetgen.ts` — read-only стадія: сканує `out/<style>/*.png` (+ sidecar для prompt/briefVersion) → `envelope.assets[]`. НЕ генерує (нуль витрат). `assetgen.test.ts` — 3 кейси.
+**Перевірено:** tsc · **39/39 tests** · demo на реальному cyber-heist → 13 ассетів у envelope.json.
+**AC:** AC2.3 ✅. **Далі:** P2-2 (білдер читає envelope.assets замість хардкоду) — РИЗИК CHECKPOINT C (before/after ідентичні).
