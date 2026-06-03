@@ -48,6 +48,9 @@ export interface TemplateManifest {
   assetBudgetBytes: number;
   // Declared params with defaults; brief params override these.
   params: Record<string, string | number | boolean>;
+  // Mechanics catalog tier (epic D). "v1" = curated, meets TEMPLATE-STANDARD;
+  // absent / "candidate" = not yet promoted (visible only in dev mode).
+  catalog?: "v1" | "candidate";
 }
 
 // The single config object injected into the bundled playable at build time.

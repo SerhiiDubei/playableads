@@ -138,3 +138,8 @@ Brief → (planner gate) → (cost gate) → assetgen → build → validate, з
 ## PRE-3 — Mechanics list v1 (2026-06-03) · TIER 0 complete
 **Зроблено:** `docs/MECHANICS-v1.md` — 14 механік: 10 готових zone-шаблонів (endcard/tap-reveal/pick-hero/progress-reveal/two-choice/match-cluster/feature-grid/feature-list/tutorial/menu5) + 4 lab-ігри (tap-coin/connect/mad-mage/bonanza). Кожна: архетип, екрани, психологія конверсії. Чернетка-дефолт (чекає фіналізації користувача). **AC PRE-3 ✅.**
 **TIER 0 (прерквізити) закрито:** PRE-1 (Brief-дедуп) · PRE-2 (template standard) · PRE-3 (механіки). Розблоковано Tier 1 (D→B→C).
+
+## D — Mechanics catalog v1 (2026-06-03) · TIER 1 start
+**Зроблено:** `manifest.catalog: "v1"` додано до fruit-bonanza + mad-mage-tower; `TemplateManifest.catalog?` у типах; `src/assetgen/mechanics.ts` — `listMechanics(mode)` поверх `loader.listTemplates`: user=курований v1, dev=всі. CLI `npm run mechanics [-- --dev]`. Розширюваний (manifest → авто). +mechanics.test.ts.
+**Перевірено:** tsc · 47/47 tests · `mechanics`→2 v1, `--dev`→6. **AC D (v1) ✅** (combine-2 механік + scaffold-AI-fill → беклог/решта епіків).
+**Далі:** B (Brief-агент, CLI) — будується на канонічному `Brief` (PRE-1).
