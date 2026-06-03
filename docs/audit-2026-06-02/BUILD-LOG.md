@@ -154,3 +154,8 @@ Brief → (planner gate) → (cost gate) → assetgen → build → validate, з
 **Перевірено:** tsc · 55/55 tests · флоу: `run --plan`(пауза)→`plan show`(10 screens/13 keys)→`rm-screen battle`(9)→`rm-asset avatar-frame`(12)→`approve`→assetgen спожив 12 ассетів. «План редагований до asset-gen» (Q29) ✅.
 **AC C ✅** (review/edit + downstream споживає). Майлстоуни/uncertainty→ask — агентні поведінки на потім.
 **🏁 TIER 1 (P0-ядро) ЗАКРИТО:** D (catalog) + B (brief-агент) + C (planning). Ланцюг Brief→Catalog→Plan→Pipeline з'єднаний на CLI.
+
+## Create-new-mechanic (2026-06-03) 🆕
+**Зроблено:** `src/assetgen/scaffold.ts` — `scaffoldMechanic({id,name,desc,baseDir})` → `labs/<id>/{manifest.json (без catalog→draft), game.ts}`; валідація id + guard дублів. CLI `playable new <id>` → **labs/** (було templates/, тепер labs-first). `mechanics.listDrafts()` читає labs/. Studio: `/api/drafts`, `/api/scaffold` + форма «Нова механіка». Спільний scaffolder для CLI+Studio+тестів.
+**Перевірено:** tsc · 57/57 tests (+scaffold) · смоук: `playable new`→labs/, Studio create→labs/ + drafts лістить + dup→409.
+**Тепер можна:** не лише обирати наявні, а й **створювати нові** механіки (чернетки в labs/), потім промоція за T-01.

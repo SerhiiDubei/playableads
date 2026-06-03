@@ -58,6 +58,16 @@
     <div id="results"></div>
     <h2>Каталог v1</h2>
     <div id="catalog"></div>
+
+    <h2>Чернетки (labs)</h2>
+    <div id="drafts"></div>
+
+    <h2>+ Нова механіка</h2>
+    <input id="newId" placeholder="kebab-id (напр. swipe-to-slice)">
+    <input id="newName" placeholder="Назва (опційно)" style="margin-top:6px">
+    <input id="newDesc" placeholder="Опис (опційно)" style="margin-top:6px">
+    <button id="create">Створити чернетку в labs/</button>
+    <div class="toast" id="ctoast"></div>
   </div>
   <div class="right">
     <div class="info" id="info"></div>
@@ -118,6 +128,34 @@ async function loadCatalog() {
   mechs.forEach((m) => wrap.appendChild(makeCard(m)));
 }
 
+async function loadDrafts() {
+  const drafts = await api("/api/drafts");
+  drafts.forEach((m) => (catalog[m.id] = m));
+  const wrap = $("drafts");
+  clear(wrap);
+  if (!drafts.length) { wrap.appendChild(el("div", "card", "поки немає чернеток")); return; }
+  drafts.forEach((m) => wrap.appendChild(makeCard({ ...m, hasPreview: false })));
+}
+
+$("create").onclick = async () => {
+  const id = $("newId").value.trim();
+  const t = $("ctoast");
+  if (!id) { t.textContent = "потрібен kebab-id"; t.style.color = "var(--err)"; return; }
+  const r = await api("/api/scaffold", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ id, name: $("newName").value.trim() || undefined, description: $("newDesc").value.trim() || undefined }),
+  });
+  if (r.id) {
+    t.textContent = `✓ створено: ${r.dir} — тепер код у game.ts, потім промоція`;
+    t.style.color = "var(--ok)";
+    $("newId").value = $("newName").value = $("newDesc").value = "";
+    loadDrafts();
+  } else {
+    t.textContent = r.error || "помилка";
+    t.style.color = "var(--err)";
+  }
+};
+
 function toast(msg, color) { const t = $("toast"); t.textContent = msg; t.style.color = color; }
 
 $("suggest").onclick = async () => {
@@ -149,6 +187,7 @@ $("suggest").onclick = async () => {
 };
 
 loadCatalog();
+loadDrafts();
 </script>
 </body>
 </html>

@@ -4,13 +4,14 @@ import path from "node:path";
 import { buildFromBriefFile } from "./builder.js";
 import { buildKitPlayable } from "./assetgen/build-test-playable.js";
 import { validate } from "./build/validator.js";
-import { listStyles, listTemplates, TEMPLATES_DIR, OUT_DIR } from "./loader.js";
+import { listStyles, listTemplates, OUT_DIR } from "./loader.js";
 import { logStage, timed, summary } from "./assetgen/stage-log.js";
 import { writeHtmlReport } from "./assetgen/log-report.js";
 import { runAssetGen } from "./assetgen/run.js";
 import { listStyles as listStylesFn } from "./loader.js";
 import { writeCatalogHtml } from "./assetgen/catalog.js";
 import { listLayouts, DEFAULT_LAYOUT } from "./assetgen/layouts/index.js";
+import { scaffoldMechanic } from "./assetgen/scaffold.js";
 
 const RED = "\x1b[31m";
 const GREEN = "\x1b[32m";
@@ -60,7 +61,7 @@ Usage:
   playable build <brief.json>                      Build from a custom brief
   playable catalog [--no-open]                     Scan all out/<style>/ → out/catalog.html
   playable validate <file.html>                    Meta requirements check
-  playable new <mechanic-id>                       Scaffold a new mechanic template
+  playable new <mechanic-id>                       Scaffold a new mechanic DRAFT in labs/
 `);
 }
 
@@ -159,41 +160,19 @@ async function cmdValidate(file?: string): Promise<void> {
 }
 
 async function cmdNew(id?: string): Promise<void> {
-  if (!id || !/^[a-z0-9-]+$/.test(id)) {
+  if (!id) {
     console.error(`${RED}error:${RESET} provide a kebab-case id, e.g. playable new swipe-to-slice`);
     process.exit(1);
   }
-  const dir = path.join(TEMPLATES_DIR, id);
-  await fs.mkdir(dir, { recursive: true });
-  const manifest = {
-    id,
-    name: id,
-    description: "TODO: describe the mechanic.",
-    entry: "game.ts",
-    assetBudgetBytes: 1468006,
-    params: {},
-  };
-  await fs.writeFile(path.join(dir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
-  const stub = `import { Application } from "pixi.js";
-import { gsap } from "gsap";
-import type { PlayableConfig } from "../../src/types.js";
-
-declare const __PLAYABLE_CONFIG__: PlayableConfig;
-const cfg: PlayableConfig = __PLAYABLE_CONFIG__;
-
-async function main(): Promise<void> {
-  const app = new Application();
-  await app.init({ resizeTo: window, background: 0x000000 });
-  document.body.appendChild(app.canvas);
-  // TODO: build the "${id}" mechanic. Call window.FbPlayableAd.onCTAClick() on the CTA.
-  void cfg;
-  void gsap;
-}
-
-void main();
-`;
-  await fs.writeFile(path.join(dir, "game.ts"), stub);
-  console.log(`${GREEN}Created${RESET} templates/${id}/ (manifest.json, game.ts)`);
+  try {
+    // labs-first: new mechanics start as drafts in labs/, promoted later (T-01).
+    const { dir } = scaffoldMechanic({ id });
+    console.log(`${GREEN}Created draft${RESET} ${dir}/ (manifest.json, game.ts)`);
+    console.log(`  Build it, then promote to templates/ per docs/TEMPLATE-STANDARD.md.`);
+  } catch (e) {
+    console.error(`${RED}error:${RESET} ${(e as Error).message}`);
+    process.exit(1);
+  }
 }
 
 async function cmdForge(styleId?: string, opts: { force?: boolean; open?: boolean; layout?: string } = {}): Promise<void> {

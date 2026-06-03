@@ -30,6 +30,8 @@
 | `npm run components` | 🆓 showcase усіх kit-компонентів |
 | `npm run game` / `npm run connect` | 🆓 дві layered-ігри (tap / drag) → `test\game` / `test\connect` |
 | `npm run forge -- cyber-heist` | 💸 **повна генерація ассетів** (OpenAI) + білд — коштує гроші! |
+| `npm run playable -- new <kebab-id>` | 🆕 створити **нову механіку** (чернетку в `labs/`) — manifest + game.ts stub |
+| `npm run studio` → «Нова механіка» | 🆕👀 створити чернетку прямо з UI (форма id/назва/опис) |
 
 **Стилі:** `cyber-heist` · `cyber-heist-cheap` · `cyber-heist-sprite` · `urban-runner`
 **Layout-и (11):** `menu5` `endcard` `showcase` `tutorial` `feature-grid` `feature-list` `tap-reveal` `pick-hero` `progress-reveal` `two-choice` `match-cluster`

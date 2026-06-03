@@ -15,9 +15,10 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { listMechanics } from "../assetgen/mechanics.js";
+import { listMechanics, listDrafts } from "../assetgen/mechanics.js";
 import { summarizeBrief } from "../assetgen/brief/summarize.js";
 import { createBrief } from "../assetgen/brief/store.js";
+import { scaffoldMechanic, isValidMechanicId } from "../assetgen/scaffold.js";
 
 const PORT = Number(process.env.STUDIO_PORT ?? 4321);
 const UI = path.join(import.meta.dirname, "ui.html");
@@ -52,6 +53,21 @@ const server = createServer(async (req, res) => {
         id: m.id, name: m.name, description: m.description,
         hasPreview: existsSync(path.join("out", `${m.id}.html`)),
       })));
+    }
+
+    if (req.method === "GET" && p === "/api/drafts") {
+      return json(res, 200, listDrafts().map((m) => ({ id: m.id, name: m.name, description: m.description, draft: true })));
+    }
+
+    if (req.method === "POST" && p === "/api/scaffold") {
+      const b = (await readBody(req)) as { id?: string; name?: string; description?: string };
+      if (!b.id || !isValidMechanicId(b.id)) return json(res, 400, { error: "id required, kebab-case" });
+      try {
+        const r = scaffoldMechanic({ id: b.id, name: b.name, description: b.description });
+        return json(res, 200, { id: r.id, dir: r.dir });
+      } catch (e) {
+        return json(res, 409, { error: (e as Error).message });
+      }
     }
 
     if (req.method === "POST" && p === "/api/summarize") {
