@@ -28,7 +28,8 @@
     "dashboard": "tsx src/assetgen/dashboard.ts",
     "dashboard:deploy": "npm run dashboard && tsx tools/deploy-dashboard.ts",
     "hooks:install": "tsx tools/install-hooks.ts",
-    "brief": "tsx src/assetgen/brief/cli.ts"
+    "brief": "tsx src/assetgen/brief/cli.ts",
+    "studio": "tsx src/server/server.ts"
   },
   "dependencies": {
     "@imgly/background-removal-node": "^1.4.5",

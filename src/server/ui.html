@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>playable-forge · Designer Studio</title>
+<style>
+  :root{--bg:#0c0e13;--panel:#161922;--p2:#1e222d;--line:#2a2f3c;--txt:#e8eaed;--dim:#9aa1ad;
+    --ok:#3fb950;--warn:#d29922;--err:#f85149;--accent:#7aa2ff;--gold:#ffce6b;color-scheme:dark}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.45}
+  header{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:12px}
+  h1{font-size:18px}h1 .f{color:var(--gold)}
+  header .sub{color:var(--dim);font-size:12px}
+  .grid{display:grid;grid-template-columns:380px 1fr;gap:0;height:calc(100vh - 53px)}
+  @media(max-width:780px){.grid{grid-template-columns:1fr;height:auto}}
+  .left{padding:18px;overflow-y:auto;border-right:1px solid var(--line)}
+  .right{padding:18px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+  label{display:block;font-size:12px;color:var(--dim);margin:12px 0 4px}
+  textarea,input{width:100%;background:#000a;border:1px solid var(--line);border-radius:10px;color:var(--txt);
+    padding:10px 12px;font:inherit;font-size:14px}
+  textarea{min-height:70px;resize:vertical}
+  button{background:var(--accent);color:#08111f;border:0;border-radius:10px;padding:11px 16px;font-weight:700;
+    font-size:14px;cursor:pointer;margin-top:12px}
+  button:active{filter:brightness(.92)}
+  h2{font-size:13px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin:20px 0 8px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0;cursor:pointer}
+  .card:hover{border-color:#3a4660}
+  .card.super{border-color:var(--gold)}
+  .card.sel{border-color:var(--accent);background:#16243f}
+  .card .nm{font-weight:700;font-size:14px}
+  .card .star{color:var(--gold);font-size:12px;margin-left:6px}
+  .card .ds{color:var(--dim);font-size:12px;margin-top:3px}
+  .card .meta{color:#5b6270;font-size:11px;margin-top:5px}
+  .frameWrap{flex:1;min-height:520px;background:#000;border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  iframe{width:400px;height:100%;max-height:860px;border:0;background:#000}
+  .empty{color:#5b6270;font-size:14px;text-align:center;padding:40px}
+  .info h3{font-size:16px}.info p{color:var(--dim);font-size:13px;margin-top:4px}
+  .toast{font-size:13px;margin-top:8px;min-height:18px}
+</style>
+</head>
+<body>
+<header>
+  <h1>playable-<span class="f">forge</span> · Studio</h1>
+  <span class="sub">brief → механіка → прев'ю</span>
+</header>
+
+<div class="grid">
+  <div class="left">
+    <label>Опиши гру (промт) *</label>
+    <textarea id="prompt" placeholder="напр. tumble-слот з фруктами і free spins"></textarea>
+    <label>Референси (через кому) *</label>
+    <input id="refs" placeholder="ref1.png, ref2.png">
+    <label>Стиль (опційно)</label>
+    <input id="style" placeholder="cyber-heist">
+    <button id="suggest">Підібрати механіку →</button>
+    <div class="toast" id="toast"></div>
+    <div id="results"></div>
+    <h2>Каталог v1</h2>
+    <div id="catalog"></div>
+  </div>
+  <div class="right">
+    <div class="info" id="info"></div>
+    <div class="frameWrap" id="frameWrap" style="display:none"><iframe id="frame" title="preview"></iframe></div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const clear = (el) => { while (el.firstChild) el.removeChild(el.firstChild); };
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
+async function api(path, opts) { return (await fetch(path, opts)).json(); }
+
+let catalog = {};
+
+function setInfo(m, note) {
+  const info = $("info");
+  clear(info);
+  info.appendChild(el("h3", null, m.name));
+  if (m.description) info.appendChild(el("p", null, m.description));
+  if (note) { const w = el("p", null, note); w.style.color = "var(--warn)"; info.appendChild(w); }
+}
+
+function pick(m) {
+  document.querySelectorAll(".card").forEach((c) => c.classList.toggle("sel", c.dataset.id === m.id));
+  if (m.hasPreview === false) {
+    $("frameWrap").style.display = "none";
+    setInfo(m, `⚠ прев'ю ще не зібрано (out/${m.id}.html) — запусти білд через CLI`);
+    return;
+  }
+  setInfo(m);
+  $("frameWrap").style.display = "flex";
+  $("frame").src = "/playable/" + encodeURIComponent(m.id);
+}
+
+function makeCard(m, opts = {}) {
+  const c = el("div", "card" + (opts.super ? " super" : ""));
+  c.dataset.id = m.id;
+  const nm = el("div", "nm", m.name);
+  if (opts.super) nm.appendChild(el("span", "star", "★ суперкнопка"));
+  c.appendChild(nm);
+  if (m.description) c.appendChild(el("div", "ds", m.description));
+  if (opts.score != null) c.appendChild(el("div", "meta", `score ${opts.score}${opts.matched && opts.matched.length ? " · " + opts.matched.join("/") : ""}`));
+  c.onclick = () => pick(m);
+  return c;
+}
+
+async function loadCatalog() {
+  const mechs = await api("/api/mechanics");
+  catalog = Object.fromEntries(mechs.map((m) => [m.id, m]));
+  const wrap = $("catalog");
+  clear(wrap);
+  mechs.forEach((m) => wrap.appendChild(makeCard(m)));
+}
+
+function toast(msg, color) { const t = $("toast"); t.textContent = msg; t.style.color = color; }
+
+$("suggest").onclick = async () => {
+  const prompt = $("prompt").value.trim();
+  const refs = $("refs").value.split(",").map((s) => s.trim()).filter(Boolean);
+  if (!prompt) return toast("потрібен промт", "var(--err)");
+
+  const { top3, superbutton } = await api("/api/summarize", {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ prompt }),
+  });
+  const res = $("results");
+  clear(res);
+  res.appendChild(el("h2", null, "Топ-3 під твій промт"));
+  top3.forEach((s) => {
+    const m = catalog[s.id] || { id: s.id, name: s.name, hasPreview: false };
+    res.appendChild(makeCard({ ...m, name: s.name }, { super: s.id === (superbutton && superbutton.id), score: s.score, matched: s.matched }));
+  });
+
+  if (refs.length) {
+    const saved = await api("/api/brief", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ prompt, refs, style: $("style").value.trim() || undefined }),
+    });
+    toast(saved.id ? `✓ brief збережено: ${saved.id} v${saved.version}` : (saved.error || "помилка"), saved.id ? "var(--ok)" : "var(--err)");
+  } else {
+    toast("⚠ додай ≥1 референс, щоб зберегти brief (механіки підібрано все одно)", "var(--warn)");
+  }
+  if (superbutton) pick(catalog[superbutton.id] || { id: superbutton.id, name: superbutton.name, hasPreview: false });
+};
+
+loadCatalog();
+</script>
+</body>
+</html>
