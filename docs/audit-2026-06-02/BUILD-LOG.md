@@ -134,3 +134,7 @@ Brief → (planner gate) → (cost gate) → assetgen → build → validate, з
 
 ## PRE-2 — Template Standard T-01 (2026-06-03)
 **Зроблено:** `docs/TEMPLATE-STANDARD.md` із скелета → чинний: §1 визначення (lab vs template), §2 manifest-поля, §3 структура (zone-driven, declared assets, endcard+CTA, ≤2MB), §4 вигляд по 7 архетипах, §5 якісні ворота, §6 усталені патерни, §7 процес промоції. **AC PRE-2 ✅.** Розблокувало D (catalog) — однозначний критерій «гра→шаблон».
+
+## PRE-3 — Mechanics list v1 (2026-06-03) · TIER 0 complete
+**Зроблено:** `docs/MECHANICS-v1.md` — 14 механік: 10 готових zone-шаблонів (endcard/tap-reveal/pick-hero/progress-reveal/two-choice/match-cluster/feature-grid/feature-list/tutorial/menu5) + 4 lab-ігри (tap-coin/connect/mad-mage/bonanza). Кожна: архетип, екрани, психологія конверсії. Чернетка-дефолт (чекає фіналізації користувача). **AC PRE-3 ✅.**
+**TIER 0 (прерквізити) закрито:** PRE-1 (Brief-дедуп) · PRE-2 (template standard) · PRE-3 (механіки). Розблоковано Tier 1 (D→B→C).
