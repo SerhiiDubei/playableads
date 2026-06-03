@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>playable-forge — проєктний хаб</title>
+<style>
+  :root{
+    --bg:#0c0e13; --panel:#161922; --panel2:#1e222d; --line:#2a2f3c;
+    --txt:#e8eaed; --dim:#9aa1ad; --accent:#7aa2ff; --gold:#ffce6b;
+    --ok:#3fb950; --wip:#d29922; --block:#f85149; --radius:14px;
+    color-scheme:dark;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    line-height:1.5;-webkit-text-size-adjust:100%;padding-bottom:48px}
+  header{padding:26px 18px 10px;max-width:860px;margin:0 auto}
+  h1{font-size:26px;letter-spacing:-.2px}
+  h1 .f{color:var(--gold)}
+  .tagline{color:var(--dim);font-size:14px;margin-top:4px}
+  .meta{color:#6b7280;font-size:12px;margin-top:8px}
+
+  nav{position:sticky;top:0;z-index:10;background:rgba(12,14,19,.92);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
+  nav .wrap{max-width:860px;margin:0 auto;display:flex;gap:4px;padding:8px 12px}
+  nav button{flex:0 0 auto;background:transparent;border:1px solid transparent;color:var(--dim);
+    font-size:14px;font-weight:600;padding:9px 14px;border-radius:10px;cursor:pointer}
+  nav button.active{background:var(--panel2);color:var(--txt);border-color:var(--line)}
+
+  main{max-width:860px;margin:0 auto;padding:18px 16px}
+  section{display:none;animation:fade .25s ease}
+  section.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  h2{font-size:20px;margin:6px 0 4px}
+  .lead{color:var(--dim);font-size:14px;margin-bottom:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 16px;margin:0 0 12px}
+  .card h3{font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .card p{color:var(--dim);font-size:13.5px}
+  .card ul{color:var(--dim);font-size:13.5px;margin:6px 0 0 18px}
+  .card li{margin:3px 0}
+  .b{color:var(--txt)}
+  code{background:#000a;border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:12.5px;color:#cdd3df}
+
+  .pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;letter-spacing:.03em}
+  .ok{background:#15351f;color:var(--ok)}
+  .wip{background:#36280a;color:var(--wip)}
+  .block{background:#3a1714;color:var(--block)}
+  .next{background:#16243f;color:var(--accent)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:4px 0 14px}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .stat .n{font-size:22px;font-weight:700;color:var(--gold)}
+  .stat .l{font-size:12px;color:var(--dim);margin-top:2px}
+
+  a.link{display:inline-block;color:var(--accent);font-size:13.5px;font-weight:600;text-decoration:none;
+    margin:8px 10px 0 0;border-bottom:1px solid #7aa2ff44}
+  a.btn{display:block;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;
+    margin:8px 0 0;color:var(--txt);text-decoration:none;font-weight:600;font-size:15px}
+  a.btn:active{background:#262b37}
+  a.btn .s{display:block;color:var(--dim);font-size:12.5px;font-weight:400;margin-top:3px}
+
+  .step{display:flex;gap:10px;align-items:flex-start;margin:8px 0}
+  .step .dot{flex:0 0 auto;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;background:#15351f;color:var(--ok)}
+  .step .dot.wip{background:#36280a;color:var(--wip)}
+  .step .dot.todo{background:#222734;color:var(--dim)}
+  .step .t{font-size:13.5px}
+  .step .t b{color:var(--txt)}
+  footer{max-width:860px;margin:24px auto 0;padding:0 16px;color:#5b6270;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>playable-<span class="f">forge</span></h1>
+  <div class="tagline">CLI-тулчейн, що будує Meta playable ads з <code>templates × styles × briefs</code>.</div>
+  <div class="meta">Проєктний хаб · оновлено 2026-06-03 · гілка <code>dev</code></div>
+</header>
+
+<nav><div class="wrap" id="tabs">
+  <button data-t="overview" class="active">Огляд</button>
+  <button data-t="zones">Шаблони&amp;Зони</button>
+  <button data-t="modularity">Модульність</button>
+  <button data-t="structure">Структура</button>
+  <button data-t="pipeline">Pipeline</button>
+  <button data-t="playables">Playable-и</button>
+  <button data-t="roadmap">Роадмеп</button>
+</div></nav>
+
+<main>
+  <!-- OVERVIEW -->
+  <section id="overview" class="active">
+    <h2>Огляд</h2>
+    <div class="lead">Що це і де воно зараз.</div>
+    <div class="grid">
+      <div class="stat"><div class="n">11</div><div class="l">zone-шаблонів</div></div>
+      <div class="stat"><div class="n">10</div><div class="l">зонових архетипів</div></div>
+      <div class="stat"><div class="n">36/36</div><div class="l">тестів pass</div></div>
+      <div class="stat"><div class="n">14</div><div class="l">live playable-ів</div></div>
+      <div class="stat"><div class="n">3</div><div class="l">гілки (main·dev·gh-pages)</div></div>
+      <div class="stat"><div class="n">&lt;2MB</div><div class="l">кожен playable</div></div>
+    </div>
+    <div class="card">
+      <h3>Як це працює <span class="pill ok">стабільно</span></h3>
+      <p>Один <code>#stage</code> (фіксований канвас 400×860) масштабується під будь-який екран. Компоненти кладуться в <b>зони</b> (трафарет «де що»), а не в координати. Кнопка завжди в thumb-зоні. Усе валідується автотестами перед релізом.</p>
+    </div>
+    <div class="card">
+      <h3>Дві системи композиції</h3>
+      <ul>
+        <li><b>A — <code>layouts/</code></b>: рекламні екрани (11 шаблонів), zone-driven.</li>
+        <li><b>B — <code>groups/flow</code></b>: інтерактивні ігри (tap, connect).</li>
+        <li>Спільний фундамент: зони + компоненти. Деталі — <code>docs/SYSTEMS.md</code>.</li>
+      </ul>
+    </div>
+    <a class="btn" href="https://github.com/SerhiiDubei/playableads">Репозиторій на GitHub<span class="s">SerhiiDubei/playableads</span></a>
+  </section>
+
+  <!-- ZONES & TEMPLATES -->
+  <section id="zones">
+    <h2>Шаблони &amp; Зони <span class="pill ok">epic Z — done</span></h2>
+    <div class="lead">Усі 11 екранних шаблонів переведено на зонову систему, кожен протестовано (lint + visual на 8 viewport-ах).</div>
+    <div class="card">
+      <h3>Зоновий двигун <code>kit/layout.ts</code></h3>
+      <p><code>resolveLayout(type)</code> = <code>BASE ⊕ архетип</code>. 10 архетипів: <code>menu · pick-hero · endcard · immersive · focal · split · grid · dense · battle · puzzle</code>. Debug-оверлей: додай <code>?zones=1</code> до будь-якого playable.</p>
+    </div>
+    <div class="card">
+      <h3>11 шаблонів</h3>
+      <ul>
+        <li>endcard · menu5 · showcase (10 екр.) · pick-hero · tutorial</li>
+        <li>feature-grid · feature-list · tap-reveal · progress-reveal · two-choice · match-cluster</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Усталені патерни (з міграції)</h3>
+      <ul>
+        <li>Тонкий title-band → <b>текстовий заголовок</b>, не banner.</li>
+        <li>Дрібні картки → <b>compact frame</b> (<code>border-width:16px</code>).</li>
+        <li>Nav-меню → <code>enforceZones:false</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- MODULARITY -->
+  <section id="modularity">
+    <h2>Модульність <span class="pill ok">epic M — done</span></h2>
+    <div class="lead">Прибрано copy-paste і злиплення; спільне — в одному місці.</div>
+    <div class="card"><h3>M-01 — спільний CSS <span class="pill ok">done</span></h3><p><code>kit/screen-css.ts</code>: reset/title/sub/gold/zone/compact — раніше копіювались у 7-11 файлах, тепер одна правда. Принагідно знайдено й полагоджено латентний баг endcard.</p></div>
+    <div class="card"><h3>M-02 — ассети з шаблоном <span class="pill ok">done</span></h3><p><code>meta.assets</code>: шаблон сам декларує, що йому треба; білдер не хардкодить героїв. Білди полегшали.</p></div>
+    <div class="card"><h3>M-03 — дві системи <span class="pill ok">done</span></h3><p>Рішення: лишити <code>layouts/</code> і <code>groups/flow</code> паралельними, межу задокументовано (<code>SYSTEMS.md</code>).</p></div>
+  </section>
+
+  <!-- STRUCTURE -->
+  <section id="structure">
+    <h2>Структура &amp; labs-first <span class="pill wip">epic S — частково</span></h2>
+    <div class="lead">Аудит структури + рішення, як зберігати ігри.</div>
+    <div class="card">
+      <h3>Принцип labs-first</h3>
+      <p>Гра живе в <code>labs/</code> за замовчуванням. <code>templates/</code> зарезервовано за <b>промоутованими</b> (за стандартом + явним запитом). Зараз 0 ігор є шаблонами — стандарт ще пишеться.</p>
+      <p style="margin-top:6px"><code>нова гра → labs/&lt;гра&gt; → (стандарт + запит) → templates/&lt;гра&gt;</code></p>
+    </div>
+    <div class="card">
+      <h3>Готові «полиці» <span class="pill ok">infra ready</span></h3>
+      <ul>
+        <li><code>labs/</code> + README — домівка чернеток</li>
+        <li><code>docs/STORAGE-LAYOUT.md</code> — мапа «де що лежить»</li>
+        <li><code>docs/TEMPLATE-STANDARD.md</code> — скелет стандарту (T-01, заповнюється)</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- PIPELINE -->
+  <section id="pipeline">
+    <h2>Pipeline <span class="pill wip">Фази 0-1 done</span></h2>
+    <div class="lead">Оркестратор прогонів: Brief → asset-gen → build → validate, з resume і human-gates.</div>
+    <div class="card">
+      <h3>Прогрес фаз</h3>
+      <div class="step"><span class="dot">✓</span><div class="t"><b>Phase 0</b> — контракти (Envelope / run.json / Stage). <span class="pill ok">done</span> · CHECKPOINT A підтверджено.</div></div>
+      <div class="step"><span class="dot">✓</span><div class="t"><b>Phase 1</b> — orchestrator <code>runner.ts</code> + resume + Validator-стадія. <span class="pill ok">done · 36/36</span></div></div>
+      <div class="step"><span class="dot wip">B</span><div class="t"><b>CHECKPOINT B</b> — реальний run.json + resume. <span class="pill wip">review</span></div></div>
+      <div class="step"><span class="dot todo">2</span><div class="t"><b>Phase 2</b> ⭐ — під'єднати реальний asset-gen→build через Envelope.</div></div>
+      <div class="step"><span class="dot todo">3</span><div class="t"><b>Phase 3</b> — CLI: <code>forge run / resume / inspect</code>.</div></div>
+      <div class="step"><span class="dot todo">4</span><div class="t"><b>Phase 4</b> — gates (cost-preview).</div></div>
+      <div class="step"><span class="dot todo">5</span><div class="t"><b>Phase 5</b> — planner (екрани перед генерацією).</div></div>
+    </div>
+    <div class="card">
+      <h3>Спробуй сам</h3>
+      <p><code>npm run pipeline:demo</code> → свіжий прогін стає на gate-паузу. <code>npm run pipeline:demo &lt;runId&gt;</code> → resume доходить до кінця, не перезапускаючи зроблене. Дивись <code>out/runs/&lt;id&gt;/run.json</code> + <code>trace.log</code>.</p>
+    </div>
+  </section>
+
+  <!-- PLAYABLES -->
+  <section id="playables">
+    <h2>Live playable-и <span class="pill ok">14 на gh-pages</span></h2>
+    <div class="lead">Тапни — відкриється на телефоні. Усі &lt;2MB, self-contained.</div>
+    <a class="btn" href="https://serhiidubei.github.io/playableads/">Усі превʼю (index)<span class="s">serhiidubei.github.io/playableads</span></a>
+    <a class="btn" href="https://serhiidubei.github.io/playableads/fruit-bonanza.html">🎰 Fruit Bonanza<span class="s">tumble-слот · pays anywhere · free spins</span></a>
+    <a class="btn" href="https://serhiidubei.github.io/playableads/fruit-bonanza-v2-music.html">🎰 Fruit Bonanza · V2 music<span class="s">AI-звук: BGM + 6 SFX</span></a>
+    <a class="btn" href="https://serhiidubei.github.io/playableads/menu-cyber-heist-endcard.html">Cyber Heist · Endcard<span class="s">+ 10 інших cyber-heist layout-ів в index</span></a>
+  </section>
+
+  <!-- ROADMAP -->
+  <section id="roadmap">
+    <h2>Роадмеп — що далі</h2>
+    <div class="lead">Повний беклог: <code>docs/ROADMAP.md</code>. Найголовніше нижче.</div>
+    <div class="card">
+      <h3>Зараз / наступне <span class="pill next">next</span></h3>
+      <ul>
+        <li><b>Phase 2</b> ⭐ — реальний build через Envelope (після CHECKPOINT B).</li>
+        <li><b>T-01</b> — стандарт шаблону (ворота промоції labs→template).</li>
+        <li><b>S-01/S-02</b> — словник + перенести ігри в <code>labs/</code>.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Великий продуктовий беклог</h3>
+      <ul>
+        <li><b>B</b> Brief stage · <b>C</b> Planning layer · <b>D</b> Mechanics catalog (P0)</li>
+        <li><b>E</b> Style system · <b>F</b> Asset-gen hardening · <b>G</b> Compose&amp;zones (P1)</li>
+        <li>Деталі — <code>docs/audit-2026-06-02/</code> (brief-decisions, build-plan).</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer>playable-forge · self-contained hub · нуль зовнішніх залежностей · <code>docs/dashboard.html</code></footer>
+
+<script>
+  const tabs = document.getElementById("tabs");
+  const sections = document.querySelectorAll("main > section");
+  tabs.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-t]");
+    if (!btn) return;
+    const id = btn.dataset.t;
+    tabs.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
+    sections.forEach((s) => s.classList.toggle("active", s.id === id));
+    if (location.hash !== "#" + id) history.replaceState(null, "", "#" + id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  // deep-link: open the tab in the URL hash
+  const initial = location.hash.replace("#", "");
+  if (initial) { const b = tabs.querySelector('button[data-t="' + initial + '"]'); if (b) b.click(); }
+</script>
+</body>
+</html>
