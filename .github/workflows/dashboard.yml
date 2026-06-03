@@ -1,0 +1,54 @@
+name: progress-dashboard
+
+# Regenerate the live progress dashboard and publish it to gh-pages whenever the
+# backlogs (or the generator) change. Hands-off: push from any machine → the
+# phone-viewable dashboard at /dashboard.html updates itself.
+
+on:
+  push:
+    branches: [dev, main]
+    paths:
+      - "docs/ROADMAP.md"
+      - "docs/audit-2026-06-02/backlog.md"
+      - "src/assetgen/dashboard.ts"
+      - ".github/workflows/dashboard.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dashboard-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # dashboard.ts uses only node built-ins → run via npx tsx, no full install.
+      - name: Generate dashboard
+        run: npx -y tsx src/assetgen/dashboard.ts
+
+      - name: Publish to gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages
+          git worktree add ../ghp gh-pages
+          cp docs/dashboard.html ../ghp/dashboard.html
+          cd ../ghp
+          git add dashboard.html
+          if git diff --staged --quiet; then
+            echo "dashboard unchanged — nothing to publish."
+          else
+            git commit -m "dashboard: auto-update progress [skip ci]"
+            git push origin gh-pages
+          fi
