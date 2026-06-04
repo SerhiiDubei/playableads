@@ -1,0 +1,254 @@
+{
+  "id": "fruit-ninja-gen",
+  "name": "Fruit Ninja (gen v8)",
+  "description": "розрізати якомога більше фруктів, не зачепивши бомбу",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "params": {},
+  "brief": {
+    "id": "fruit-ninja",
+    "game": "Fruit Ninja",
+    "link": "https://en.wikipedia.org/wiki/Fruit_Ninja",
+    "studio": "Halfbrick Studios",
+    "tags": {
+      "genre": "arcade",
+      "mood": [
+        "juicy",
+        "fast",
+        "satisfying"
+      ],
+      "coreAction": "swipe",
+      "complexity": "low"
+    },
+    "coreAction": "swipe",
+    "objects": [
+      "фрукти",
+      "бомби",
+      "лезо (слід пальця)",
+      "бризки соку",
+      "половинки фруктів"
+    ],
+    "goal": "розрізати якомога більше фруктів, не зачепивши бомбу",
+    "tension": "бомби (один доторк = кінець) + фрукти падають швидше з часом",
+    "ahaMoments": [
+      {
+        "desc": "комбо: розрізати 4-5 фруктів одним махом + вибух соку та цифра score",
+        "priority": 1,
+        "trigger": "5 фруктів на екрані одночасно"
+      },
+      {
+        "desc": "slow-mo на ефектному розрізі найбільшого фрукта (кавун)",
+        "priority": 2,
+        "trigger": "розріз великого фрукта"
+      },
+      {
+        "desc": "майже зачепив бомбу — лезо проходить впритул",
+        "priority": 3,
+        "trigger": "бомба поряд з фруктом"
+      }
+    ],
+    "fantasy": "відчуття вправності й сатисфакції — ти швидкий і точний майстер клинка",
+    "winBias": "rigged легко: фрукти летять кучно й повільно на старті, гравець гарантовано робить ефектне комбо в перші 3с",
+    "firstActionHint": "рука-підказка робить свайп по першому фрукту + текст 'Swipe to slice!'",
+    "rules": [
+      "свайп через фрукт = розріз + очки",
+      "свайп через бомбу = миттєвий кінець",
+      "пропущений фрукт = -1 життя (3 промахи = кінець) АБО просто менше очок у ad-версії",
+      "одним свайпом можна різати кілька фруктів = комбо-множник"
+    ],
+    "controls": "одна неперервна лінія свайпу пальцем",
+    "progression": "к-сть і швидкість фруктів зростає кожні 5с; бомби з'являються після ~10с",
+    "states": {
+      "win": "досягнуто score-ціль / пережив таймер",
+      "lose": "розрізав бомбу або 3 промахи"
+    },
+    "feedback": [
+      "сплеск соку кольору фрукта на розрізі",
+      "екран-шейк + червоний флеш на бомбі",
+      "наростаючий звук 'whoosh' свайпу",
+      "цифра score підстрибує при комбо"
+    ],
+    "comboRule": {
+      "windowMs": 1000,
+      "multiplier": "ланцюг у вікні ~1с; бонус росте з к-стю нарізаних поспіль (x2 при 3, далі вище)",
+      "voiceCallouts": true
+    },
+    "specialItems": [
+      {
+        "name": "frenzy banana",
+        "effect": "буря фруктів ~5с — максимум очок",
+        "splitsIntoHalves": true
+      },
+      {
+        "name": "freeze banana",
+        "effect": "сповільнення часу ~5с — легше нарізати",
+        "splitsIntoHalves": true
+      },
+      {
+        "name": "double banana",
+        "effect": "подвоєння очок на короткий час",
+        "splitsIntoHalves": true
+      },
+      {
+        "name": "pomegranate",
+        "effect": "multi-hit: швидко тапай для шквалу очок, потім slow-mo zoomout",
+        "splitsIntoHalves": false
+      }
+    ],
+    "audioEvents": [
+      {
+        "event": "throw",
+        "sound": "whoosh підкидання фрукта",
+        "variations": 1
+      },
+      {
+        "event": "slice",
+        "sound": "splat розрізу фрукта",
+        "variations": 3
+      },
+      {
+        "event": "splat-stain",
+        "sound": "сік на фон",
+        "variations": 2
+      },
+      {
+        "event": "combo",
+        "sound": "голос 'Combo!' з ескалацією 1-8",
+        "variations": 8
+      },
+      {
+        "event": "crit",
+        "sound": "критичний розріз",
+        "variations": 1
+      },
+      {
+        "event": "bomb-fuse",
+        "sound": "шипіння гнота",
+        "variations": 1
+      },
+      {
+        "event": "bomb-explode",
+        "sound": "вибух",
+        "variations": 1
+      },
+      {
+        "event": "lose-life",
+        "sound": "втрата життя",
+        "variations": 1
+      },
+      {
+        "event": "time-up",
+        "sound": "кінець часу",
+        "variations": 1
+      }
+    ],
+    "modes": [
+      "Classic (3 життя, бомби)",
+      "Zen (без бомб, релакс на час)",
+      "Arcade (60с, бонус-банани + pomegranate)"
+    ],
+    "animations": [
+      {
+        "name": "fruit-spawn",
+        "trigger": "поява фрукта",
+        "desc": "виліт знизу по параболі",
+        "tech": "gsap"
+      },
+      {
+        "name": "fruit-slice",
+        "trigger": "свайп через фрукт",
+        "desc": "фрукт розпадається на 2 половинки що розлітаються",
+        "tech": "spritesheet"
+      },
+      {
+        "name": "juice-splat",
+        "trigger": "розріз",
+        "desc": "частинки соку",
+        "tech": "particles"
+      },
+      {
+        "name": "combo-burst",
+        "trigger": "3+ фрукти одним свайпом",
+        "desc": "спалах + великий score-поп",
+        "tech": "gsap"
+      },
+      {
+        "name": "bomb-explode",
+        "trigger": "доторк бомби",
+        "desc": "вибух + шейк + затемнення",
+        "tech": "particles"
+      },
+      {
+        "name": "blade-trail",
+        "trigger": "рух пальця",
+        "desc": "світний слід за пальцем",
+        "tech": "shader"
+      }
+    ],
+    "screens": [
+      {
+        "id": "intro",
+        "type": "intro",
+        "purpose": "лого + 'Swipe to slice' за 1с"
+      },
+      {
+        "id": "tutorial",
+        "type": "tutorial",
+        "purpose": "рука-підказка показує перший свайп"
+      },
+      {
+        "id": "play",
+        "type": "gameplay",
+        "purpose": "основний цикл різання ~20с"
+      },
+      {
+        "id": "endcard",
+        "type": "endcard",
+        "purpose": "score + велика CTA 'Play Now / Install'"
+      }
+    ],
+    "assets": {
+      "sprites": [
+        "кавун",
+        "яблуко",
+        "апельсин",
+        "банан",
+        "полуниця",
+        "бомба",
+        "половинки кожного фрукта"
+      ],
+      "backgrounds": [
+        "дерев'яний/бамбуковий фон додзьо"
+      ],
+      "ui": [
+        "score-лічильник",
+        "життя (3 смужки)",
+        "CTA-кнопка",
+        "лого гри"
+      ],
+      "vfx": [
+        "слід леза",
+        "частинки соку (по кольору)",
+        "вибух бомби",
+        "spark комбо"
+      ],
+      "sfx": [
+        "whoosh свайпу",
+        "splat розрізу",
+        "explosion бомби",
+        "combo-chime"
+      ],
+      "fonts": [
+        "bold playful score-font"
+      ]
+    },
+    "loop": {
+      "durationSec": 22,
+      "beats": 4
+    },
+    "estComplexity": "medium",
+    "assetBudgetHint": 1200000,
+    "mapsToTemplate": "fruit-bonanza",
+    "notes": "Найкращий первий референс для swipe-механік. Комбо-момент (aha#1) — головне що продає. У playable-версії приберати 'програш від промаху', лишати лише бомби, щоб не фрустрував."
+  }
+}
