@@ -25,6 +25,8 @@
     "pipeline:menu": "tsx src/assetgen/pipeline/menu-run.ts",
     "pipeline": "tsx src/assetgen/pipeline/cli.ts",
     "mechanics": "tsx src/assetgen/mechanics.ts",
+    "refgames": "tsx src/assetgen/refgames/index.ts",
+    "refgames:gen": "tsx src/assetgen/refgames/gen-test.ts",
     "dashboard": "tsx src/assetgen/dashboard.ts",
     "dashboard:deploy": "npm run dashboard && tsx tools/deploy-dashboard.ts",
     "hooks:install": "tsx tools/install-hooks.ts",
