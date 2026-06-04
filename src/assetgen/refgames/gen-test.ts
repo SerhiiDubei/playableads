@@ -51,13 +51,13 @@ void main();
 АРТ-АССЕТИ (НОВЕ — ОБОВ'ЯЗКОВО використовуй спрайти, НЕ малюй кружечки):
 cfg.assets містить data-URI зображення (webp):
   fruit1.webp..fruit6.webp (цілі фрукти), bomb.webp (бомба), bg.webp (фон-додзьо).
-Передзаванаж текстури НА ПОЧАТКУ (await): const tex = {}; for (const k of ["fruit1.webp","fruit2.webp","fruit3.webp","fruit4.webp","fruit5.webp","fruit6.webp","bomb.webp","bg.webp"]) tex[k] = await Assets.load({ src: cfg.assets[k], format: "webp" });
+Передзаванаж текстури НА ПОЧАТКУ (await): const tex = {}; for (const k of ["fruit1.webp","fruit2.webp","fruit3.webp","fruit4.webp","fruit5.webp","fruit6.webp","bomb.webp","bg.webp","splat1.webp","splat2.webp","splat3.webp","splat4.webp"]) tex[k] = await Assets.load({ src: cfg.assets[k], format: "webp" });
 - ФОН: Sprite з tex["bg.webp"], розтягни на весь екран (cover) у найнижчому шарі.
 - ФРУКТ: new Sprite(tex["fruitN.webp"]), anchor 0.5, масштаб під ~r. Випадковий фрукт 1..6.
 - БОМБА: new Sprite(tex["bomb.webp"]).
 - РОЗРІЗ УЗДОВЖ СВАЙПУ (важливо): запам'ятай кут свайпу (angle = atan2(dy,dx) останнього руху). Цілий спрайт ховай; дві половинки роби з того ж спрайта через маску, ОБЕРНЕНУ на цей кут (поверни контейнер половинок на angle, маски — прямокутники по обидва боки лінії розрізу). Половинки розлітаються ПЕРПЕНДИКУЛЯРНО до лінії свайпу + гравітація.
 - СЛІД-ЛЕЗО: за пальцем тягнеться світний слід — масив останніх точок свайпу, малюй як Graphics-смугу зі спаданням alpha (старі точки тьмяніші), білий/світлий glow. Очищай старі точки за ~0.2с.
-- СІК НА ФОНІ: на розрізі, крім партиклів, додай ПОСТІЙНУ пляму соку на окремий шар над фоном (Graphics-клякса кольору фрукта, alpha ~0.4, кілька крапель). Плями НАКОПИЧУЮТЬСЯ весь матч (повільно тьмяніють, не зникають одразу) — це сигнатура FN.
+- СІК НА ФОНІ (якісні асети): на розрізі додай ПОСТІЙНУ пляму на окремий шар над фоном — new Sprite(tex["splatN.webp"]) (N=1..4 випадково), anchor 0.5, .tint = колір фрукта, alpha ~0.45, випадкові rotation і scale 0.4-0.9. Плями білі (тонуються кольором), НАКОПИЧУЮТЬСЯ весь матч (повільно тьмяніють, не зникають одразу) — сигнатура FN. НЕ малюй кляксу Graphics — тільки splat-спрайт.
 - SLOW-MO: на великому комбо (3+ за змах) АБО розрізі великого фрукта — на ~0.4с глобально сповільни час (множник tScale=0.35, застосовуй до dt у motion.update(dt*tScale)) + легкий зум світу (scale 1.05). Плавно повертай до 1.
 
 РУХ (НАЙВАЖЛИВІШЕ — бери з нашого модуля, НЕ вигадуй швидкості):
@@ -115,7 +115,7 @@ async function main(): Promise<void> {
 
   const q = query({
     prompt,
-    options: { systemPrompt: CONTRACT, allowedTools: [], settingSources: [], maxTurns: 18, permissionMode: "bypassPermissions" },
+    options: { systemPrompt: CONTRACT, allowedTools: [], settingSources: [], maxTurns: 24, permissionMode: "bypassPermissions" },
   });
   let raw = "";
   let cost = 0;
