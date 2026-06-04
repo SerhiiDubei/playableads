@@ -1,6 +1,6 @@
 {
   "id": "akuma-no-yoru-gen",
-  "name": "Akuma No Yoru (Demon Slayer Night) (gen v3)",
+  "name": "Akuma No Yoru (Demon Slayer Night) (gen v4)",
   "description": "рубати демонів, що насуваються з темряви, перш ніж вони дістануться до тебе; вижити хвилі",
   "entry": "game.ts",
   "assetBudgetBytes": 1468006,

@@ -93,6 +93,8 @@ ${g.specialItems?.length ? `- СПЕЦ-ПРЕДМЕТИ (рідко, з glow): $
 - Ігровим шарам: layer.interactiveChildren=false. Лише CTA інтерактивний (окремий ui-шар).
 - Прибирання обʼєкта: removeChild ПОТІМ destroy; одразу видали з масиву (без знищених посилань).
 
+GSAP: анімуй ЛИШЕ числові властивості Pixi (x, y, alpha, rotation, scale.x/scale.y). НЕ використовуй DOM/CSS-властивості (transformOrigin, css, skew рядком) — вони кидають warning і не діють на Pixi. Для «пульсу» анімуй scale (anchor вже центрує).
+
 CTA викликається РІВНО так (БЕЗ "?."): window.FbPlayableAd.onCTAClick();
 
 ВИВЕДИ ЛИШЕ КОД game.ts у одному \`\`\`ts блоці. Без пояснень.`;
