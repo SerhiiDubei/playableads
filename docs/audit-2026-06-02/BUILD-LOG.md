@@ -204,3 +204,11 @@ Brief → (planner gate) → (cost gate) → assetgen → build → validate, з
 **Зроблено:** Синхронізовано плани з реальністю. Створено `docs/REFGAMES-BACKLOG.md` (трек R: R-01..10 done, R-11..17 todo). PRODUCT-PLAN: додано трек R, E/F+/G+/J → `partial (via R)`, UI → `done v2`. ROADMAP: T-01 todo→done (TEMPLATE-STANDARD чинний), додано refgames-track секцію + примітку S-02 (labs-first де-факто діє).
 **Перевірено:** доки звірені між собою (T-01 розбіжність усунено); BUILD-LOG = джерело стейджів.
 **Висновок:** документи знову = джерело правди; refgames-трек видимий у роадмепі/беклозі.
+
+## NEW GAME: Akuma No Yoru (Demon Slayer Night) (2026-06-04) 🆕🆕
+**Контекст:** новий референс — Unity 2D екшн-платформер з мілі-боєм (декомпільовано Assembly-CSharp, 36K рядків: PlayerController/PlayerCombat/EnemyHealth, вороги amphibian/crow). Дистильовано в **swipe-survival**: демони НАСУВАЮТЬСЯ, рубаєш свайпом, є життя.
+**Зроблено:** (1) `kit/motion.ts` +`makeApproach` (загрози до цілі, dt-correct, screen-rel) +2 тести. (2) **УЗАГАЛЬНЕНО генератор** `gen-test.ts` — `buildContract(g,imageKeys,audioKeys)` робить БУДЬ-ЯКУ гру зі схеми (асети динамічні, рух arc/approach за брифом). (3) refgame-запис `akuma-no-yoru`. (4) `gen-akuma-assets.ts` — AI демони(6)/воїн/ніч-фон/кров (~$0.25, webp), реюз sfx fruit-ninja. (5) Генерація v1→v3.
+**Перевірено:** tsc · 66/66 тестів · v1 баг (ріг: демони зливали 3 життя за 6с→endcard) → знайдено дебаг-глобалом (running=false, gtl заморожено) → фікс контракту (end лише по таймеру, грейс, щедрий хіт-радіус, повільні демони) → v2 (гра йде всі 27с, kills+score 0→40 при влучанні) → v3 (компактна назва, демони 0.10-0.14sh/s, score 25 у тесті, CTA cta:1). Браузер: демони видимі, кров на стіні, атмосфера, 0 runtime-err (лише gsap transformOrigin warning — безпечно).
+**Деплой:** gh-pages → https://serhiidubei.github.io/playableads/akuma-no-yoru.html
+**Висновок:** конвеєр зробив ДРУГУ, зовсім іншу гру (екшн замість слешера фруктів) тим самим шляхом — підтвердив, що генератор справді generic. makeApproach + generic-contract — нові переюзовні цеглини.
+**Відкрито:** баланс життів (зливаються при пасивній грі, але гра не обривається); gsap transformOrigin warning у контракт-заборону; назва демонів-half (зараз poof, не розруб навпіл).
