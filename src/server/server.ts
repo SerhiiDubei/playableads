@@ -19,6 +19,7 @@ import { listMechanics, listDrafts } from "../assetgen/mechanics.js";
 import { summarizeBrief } from "../assetgen/brief/summarize.js";
 import { createBrief } from "../assetgen/brief/store.js";
 import { scaffoldMechanic, isValidMechanicId } from "../assetgen/scaffold.js";
+import { agentTurn, type MechanicBrief } from "./agent.js";
 
 const PORT = Number(process.env.STUDIO_PORT ?? 4321);
 const UI = path.join(import.meta.dirname, "ui.html");
@@ -83,6 +84,17 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { id: r.id, dir: r.dir });
       } catch (e) {
         return json(res, 409, { error: (e as Error).message });
+      }
+    }
+
+    if (req.method === "POST" && p === "/api/agent") {
+      const b = (await readBody(req)) as { text?: string; brief?: MechanicBrief };
+      if (!b.text) return json(res, 400, { error: "text required" });
+      try {
+        const turn = await agentTurn(b.text, b.brief ?? {});
+        return json(res, 200, turn);
+      } catch (e) {
+        return json(res, 500, { error: (e as Error).message });
       }
     }
 

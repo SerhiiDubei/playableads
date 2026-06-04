@@ -68,7 +68,7 @@
 
   <!-- chat -->
   <main class="chat">
-    <div class="top">🧪 Експерт зі створення міні-ігор — веде через референс до готового брифу</div>
+    <div class="top">🧪 Експерт зі створення міні-ігор — веде через референс до готового брифу <span id="cost" style="float:right;color:#5b6270"></span></div>
     <div class="stream" id="stream"></div>
     <div class="composer">
       <input id="inp" placeholder="напиши на що схоже, або клікни карткою…" autocomplete="off">
@@ -190,30 +190,26 @@ function finish(){
   step="done";
 }
 
-// ── input handling ──
-function handleText(t){
+// ── input handling — free text goes to Claude (Agent SDK) ──
+let totalCost = 0;
+function typing(){ const t=el("div","msg bot","друкує…"); t.id="typing"; t.style.color="var(--dim)"; stream.appendChild(t); scroll(); return t; }
+async function handleText(t){
   me(t);
-  if(step==="ref"){
-    brief.ref = t; if(!name) name = t;
+  const tp = typing();
+  try{
+    const r = await fetch("/api/agent",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({ text:t, brief })});
+    const turn = await r.json();
+    tp.remove();
+    if(turn.error){ bot("⚠ "+turn.error); return; }
+    const patch = turn.briefPatch||{};
+    for(const k of Object.keys(patch)){ if(patch[k]!=null && patch[k]!=="") brief[k]=patch[k]; }
+    if(brief.name) name=brief.name; else if(brief.ref && !name) name=brief.ref;
     renderBrief();
-    bot("Окей, орієнтуюсь на «"+t+"». Яка головна дія пальцем?");
-    step="coreFromText";
-    chipRow(["tap","swipe","drag","aim"], v=>{ me(v); brief.coreAction=v; renderBrief(); askObjects(); });
-  } else if(step==="aha"){
-    brief.ahaMoment=t; renderBrief(); askCta();
-  } else if(step==="freeObjects"){
-    brief.objects=t.split(",").map(s=>s.trim()).filter(Boolean); renderBrief(); askGoalText();
-  } else if(step==="goalText"){
-    brief.goal=t; renderBrief();
-    bot("Тепер напруга — що створює ставку?");
-    step="tension";
-    chipRow(["Таймер","Обмежені життя","Промах = кінець"], v=>{ me(v); brief.tension=v; renderBrief(); askAha(); });
-  } else {
-    bot("Прийняв. (Поки клікай картки/чіпи — повний діалог підключимо на кроці LLM-агента.)");
-  }
+    bot(turn.reply||"…");
+    if(typeof turn.costUsd==="number"){ totalCost+=turn.costUsd; $("cost").textContent="≈ $"+totalCost.toFixed(3); }
+  }catch(e){ tp.remove(); bot("⚠ агент недоступний: "+String(e)); }
 }
-function askObjects(){ bot("Що на екрані? Об'єкти через кому (гравець, цілі, перешкоди…)"); step="freeObjects"; }
-function askGoalText(){ bot("Яка ціль / умова виграшу?"); step="goalText"; }
 
 $("send").onclick=()=>{ const v=$("inp").value.trim(); if(!v)return; $("inp").value=""; handleText(v); };
 $("inp").addEventListener("keydown",e=>{ if(e.key==="Enter")$("send").click(); });
