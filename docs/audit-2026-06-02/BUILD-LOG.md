@@ -189,3 +189,8 @@ Brief → (planner gate) → (cost gate) → assetgen → build → validate, з
 **Перевірено:** v6 1118KB/2MB OK · код: atan2/trailLayer/stainLayer/slowMo/4×Special присутні; interactiveChildren=false на world/stain/game/trail · браузер: стрес-різання 6 свайпів → 0 console-помилок (баг null.x усунено) · ендкард «TIME'S UP» (завершення по таймеру, не score) + sticky CTA · pomegranate-спец видно (фіолетовий glow).
 **Висновок:** 3 фічі вшито + регресію виправлено правилом у контракті (наступні генерації не впадуть). v6 — найкраща версія.
 **Відкрито:** слід-лезо не заморожено в кадрі (згасає 0.2с); точність half-cut по кутах можна ще полірувати; motion-lint гейт ще не зроблено.
+
+## refgames v7 + deploy (2026-06-04) 🆕
+**Зроблено:** AI splatter-асети (2×2 white solid-fill sheet → slice → splat1..4.webp, ~$0.05) для плям соку на стіні; контракт: плями = Sprite(splatN).tint=колір фрукта (не Graphics-blob). Згенеровано v7. Задеплоєно на gh-pages як fruit-ninja.html (worktree ../gh-pages-deploy).
+**Перевірено:** v7 1185KB/2MB OK · браузер: стіна вкрита кольоровими плямами соку (splat-спрайти тоновані), Combo x11 банер, score 685, 0 runtime-помилок · splat alpha виміряно (19% opaque, суцільна заливка — не контур; пастка білий-на-білому) · gh-pages URL https://serhiidubei.github.io/playableads/fruit-ninja.html → 200 (відкривається на телефоні).
+**Висновок:** повний playable з якісними асетами публічно доступний за посиланням для мобільного тесту.
