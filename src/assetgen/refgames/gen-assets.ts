@@ -33,6 +33,7 @@ const JOBS: Job[] = [
   { key: "bomb", prompt: "A single cartoon black bomb, round glossy body with a short lit fuse and a bright spark, mobile game style, thick clean outline, soft highlight, centered, fully isolated on a transparent background, no text.", size: "1024x1024", transparent: true },
   { key: "bg", prompt: "A vertical mobile game background: a dark wooden dojo wall with subtle bamboo, warm moody vignette, soft depth, painterly but clean, no characters, no fruit, no text, no UI. A calm backdrop.", size: "1024x1536", transparent: false },
   { key: "_splatsheet", prompt: "A 2x2 grid (2 columns, 2 rows) of 4 different paint-splat shapes, each a COMPLETELY FILLED SOLID WHITE blob (100% opaque white interior, like a white sticker cut-out), organic splatter silhouette with a few separate droplets. NO outline, NO line art, NO black stroke, NO color, NO gradient — just a solid filled white shape on a fully transparent background. Each splat centered in its cell, no text, no borders.", size: "1024x1024", transparent: true },
+  { key: "_halvessheet", prompt: "A 3x2 grid (3 columns, 2 rows) of 6 fruit HALVES — each fruit sliced in half, showing the JUICY CROSS-SECTION flesh facing the viewer. Cell order left-to-right, top-to-bottom: 1 watermelon half (red flesh, black seeds, green rind edge), 2 red apple half (cream flesh, small core seeds), 3 orange half (juicy segmented citrus), 4 strawberry half (pink-red flesh with tiny seeds, white center), 5 lemon half (pale yellow citrus segments), 6 purple plum half (golden-amber flesh, small pit). Flat cut face forward, glossy wet shine, thick clean cartoon outline matching whole-fruit style, each centered in its cell, fully isolated on transparent background, no text, no borders.", size: "1024x1024", transparent: true },
 ];
 
 async function gen(job: Job): Promise<{ buf: Buffer; cost: number }> {
@@ -57,7 +58,7 @@ async function optimize(buf: Buffer, outWebp: string, maxDim: number, quality: n
 async function main(): Promise<void> {
   mkdirSync(SRC, { recursive: true });
   // migrate any previously-generated top-level source PNGs into _src/
-  for (const k of ["_fruitsheet", "bomb", "bg", "_splatsheet"]) {
+  for (const k of ["_fruitsheet", "bomb", "bg", "_splatsheet", "_halvessheet"]) {
     if (existsSync(`${ASSETS}/${k}.png`) && !existsSync(`${SRC}/${k}.png`)) renameSync(`${ASSETS}/${k}.png`, `${SRC}/${k}.png`);
   }
   // remove stale heavy top-level pngs (old fruit cells) — webp replaces them
@@ -90,6 +91,16 @@ async function main(): Promise<void> {
         i++;
       }
       console.log(`  ✂ → splat1..4.webp`);
+    } else if (job.key === "_halvessheet") {
+      const { width = 1024, height = 1024 } = await sharp(buf).metadata();
+      const cw = Math.floor(width / 3), ch = Math.floor(height / 2);
+      let i = 1;
+      for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) {
+        const cell = await sharp(buf).extract({ left: c * cw, top: r * ch, width: cw, height: ch }).png().toBuffer();
+        bytes += await optimize(cell, `${ASSETS}/half${i}.webp`, 220, 82, true);
+        i++;
+      }
+      console.log(`  ✂ → half1..6.webp`);
     } else if (job.key === "bomb") {
       bytes += await optimize(buf, `${ASSETS}/bomb.webp`, 200, 82, true);
     } else {
