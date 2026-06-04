@@ -22,6 +22,7 @@ import { scaffoldMechanic, isValidMechanicId } from "../assetgen/scaffold.js";
 
 const PORT = Number(process.env.STUDIO_PORT ?? 4321);
 const UI = path.join(import.meta.dirname, "ui.html");
+const UI_V2 = path.join(import.meta.dirname, "ui-v2.html");
 
 // Latin kebab slug from a human name. Non-latin (Cyrillic) chars are dropped;
 // returns "" if nothing usable remains (caller errors with a hint).
@@ -50,6 +51,12 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET" && p === "/") {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
       res.end(await readFile(UI, "utf8"));
+      return;
+    }
+
+    if (req.method === "GET" && p === "/v2") {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.end(await readFile(UI_V2, "utf8"));
       return;
     }
 

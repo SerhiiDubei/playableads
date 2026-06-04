@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>playable-forge · Studio v2 · Нова механіка</title>
+<style>
+  :root{--bg:#0c0e13;--panel:#161922;--p2:#1e222d;--line:#2a2f3c;--txt:#e8eaed;--dim:#9aa1ad;
+    --ok:#3fb950;--warn:#d29922;--err:#f85149;--accent:#7aa2ff;--gold:#ffce6b;color-scheme:dark}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+  .app{display:grid;grid-template-columns:220px 1fr 340px;height:100vh}
+  @media(max-width:900px){.app{grid-template-columns:1fr}.side,.brief{display:none}}
+  /* sidebar */
+  .side{background:#0a0c11;border-right:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:6px}
+  .side h1{font-size:15px;margin-bottom:10px}.side h1 .f{color:var(--gold)}
+  .newbtn{background:var(--accent);color:#08111f;border:0;border-radius:9px;padding:10px;font-weight:700;cursor:pointer;font-size:13px}
+  .thread{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--dim);cursor:pointer}
+  .thread.active{border-color:var(--accent);color:var(--txt)}
+  .side .sp{margin-top:auto;font-size:11px;color:#5b6270}
+  /* chat */
+  .chat{display:flex;flex-direction:column;height:100vh}
+  .chat .top{padding:12px 18px;border-bottom:1px solid var(--line);font-size:13px;color:var(--dim)}
+  .stream{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:14px}
+  .msg{max-width:78%;padding:11px 14px;border-radius:14px;font-size:14px}
+  .msg.bot{background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:4px;align-self:flex-start}
+  .msg.me{background:#16243f;border:1px solid #2c4a7a;border-bottom-right-radius:4px;align-self:flex-end}
+  .cards{display:flex;flex-wrap:wrap;gap:10px;align-self:flex-start;max-width:88%}
+  .gcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;width:170px;cursor:pointer;transition:.12s}
+  .gcard:hover{border-color:var(--accent);transform:translateY(-2px)}
+  .gcard .g{font-weight:700;font-size:14px}
+  .gcard .a{color:var(--accent);font-size:11px;margin-top:3px;text-transform:uppercase;letter-spacing:.04em}
+  .gcard .d{color:var(--dim);font-size:12px;margin-top:5px}
+  .gcard .lnk{color:#5b6270;font-size:11px;margin-top:7px;display:inline-block;text-decoration:none;border-bottom:1px dotted #5b6270}
+  .gcard .lnk:hover{color:var(--accent)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;align-self:flex-start}
+  .chip{background:var(--p2);border:1px solid var(--line);border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer}
+  .chip:hover{border-color:var(--accent);color:var(--accent)}
+  .composer{padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:10px}
+  .composer input{flex:1;background:#000a;border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:11px 14px;font:inherit;font-size:14px}
+  .composer button{background:var(--accent);color:#08111f;border:0;border-radius:10px;padding:0 18px;font-weight:700;cursor:pointer}
+  .ghost{background:transparent;color:var(--dim);border:1px solid var(--line);border-radius:10px;padding:0 14px;cursor:pointer;font-size:13px}
+  /* brief panel */
+  .brief{background:#0a0c11;border-left:1px solid var(--line);padding:16px;overflow-y:auto}
+  .brief h2{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+  .bar{height:6px;background:var(--p2);border-radius:4px;overflow:hidden;margin-bottom:14px}
+  .bar i{display:block;height:100%;background:var(--ok);width:0;transition:.3s}
+  .field{margin-bottom:11px}
+  .field .k{font-size:11px;color:#5b6270;text-transform:uppercase;letter-spacing:.04em}
+  .field .v{font-size:13px;margin-top:2px}
+  .field.empty .v{color:#444b58;font-style:italic}
+  .field .req{color:var(--err)}
+  .createbar{margin-top:16px}
+  .createbar button{width:100%;background:var(--ok);color:#06140a;border:0;border-radius:10px;padding:12px;font-weight:700;cursor:pointer;font-size:14px}
+  .createbar button:disabled{background:var(--p2);color:#5b6270;cursor:not-allowed}
+  .ctoast{font-size:12px;margin-top:8px;min-height:16px}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- sidebar -->
+  <aside class="side">
+    <h1>playable-<span class="f">forge</span> · v2</h1>
+    <button class="newbtn" id="new">+ Нова механіка</button>
+    <div class="thread active">Поточна сесія</div>
+    <div class="sp">Агент 2 · створення механіки з нуля</div>
+  </aside>
+
+  <!-- chat -->
+  <main class="chat">
+    <div class="top">🧪 Експерт зі створення міні-ігор — веде через референс до готового брифу</div>
+    <div class="stream" id="stream"></div>
+    <div class="composer">
+      <input id="inp" placeholder="напиши на що схоже, або клікни карткою…" autocomplete="off">
+      <button id="send">→</button>
+      <button class="ghost" id="dunno">Не знаю</button>
+    </div>
+  </main>
+
+  <!-- brief -->
+  <aside class="brief">
+    <h2>Бриф механіки</h2>
+    <div class="bar"><i id="prog"></i></div>
+    <div id="fields"></div>
+    <div class="createbar">
+      <button id="create" disabled>Створити чернетку</button>
+      <div class="ctoast" id="ctoast"></div>
+    </div>
+  </aside>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const stream = $("stream");
+function el(t, c, txt){ const n=document.createElement(t); if(c)n.className=c; if(txt!=null)n.textContent=txt; return n; }
+function scroll(){ stream.scrollTop = stream.scrollHeight; }
+
+// ── real game archetypes (search links, not fabricated URLs) ──
+const ARCHETYPES = [
+  {id:"swipe-slice", game:"Fruit Ninja", coreAction:"swipe", objects:["фрукти","бомби","лезо"], goal:"розрізати якомога більше за час", loop:"20с, темп росте"},
+  {id:"tap-stack",   game:"Stack",       coreAction:"tap",   objects:["рухомий блок","башта"], goal:"класти блоки рівно й будувати вище", loop:"до промаху"},
+  {id:"merge",       game:"2048 / Merge", coreAction:"drag", objects:["плитки","числа"], goal:"зливати однакові й рости", loop:"до заповнення поля"},
+  {id:"aim-shoot",   game:"Angry Birds", coreAction:"aim",   objects:["снаряд","ціль","перешкоди"], goal:"збити всі цілі пострілом", loop:"3-5 пострілів"},
+  {id:"runner",      game:"Subway Surfers", coreAction:"swipe", objects:["персонаж","перешкоди","монети"], goal:"бігти, ухилятись, збирати", loop:"безкінечно, темп росте"},
+  {id:"pull-pin",    game:"Pull the Pin", coreAction:"tap",   objects:["шпильки","куля","лава"], goal:"тягнути шпильки в правильному порядку", loop:"рівень за рівнем"},
+];
+const searchLink = (g) => "https://www.google.com/search?q=" + encodeURIComponent(g + " mobile game");
+
+// ── brief state ──
+const FIELDS = [
+  {k:"ref",        label:"Референс",      req:true},
+  {k:"coreAction", label:"Core-дія",      req:true},
+  {k:"objects",    label:"Об'єкти",       req:true},
+  {k:"goal",       label:"Ціль",          req:true},
+  {k:"tension",    label:"Напруга / fail",req:true},
+  {k:"ahaMoment",  label:"Aha-момент",    req:true},
+  {k:"loop",       label:"Луп",           req:false},
+  {k:"ctaHook",    label:"CTA-зачіп",     req:false},
+];
+const brief = { ref:null, coreAction:null, objects:null, goal:null, tension:null, ahaMoment:null, loop:null, ctaHook:null };
+let name = null;
+
+function renderBrief(){
+  const f = $("fields"); while(f.firstChild)f.removeChild(f.firstChild);
+  let reqDone=0, reqTot=0;
+  for(const fd of FIELDS){
+    const v = brief[fd.k];
+    const has = v!=null && v!=="" && !(Array.isArray(v)&&!v.length);
+    if(fd.req){ reqTot++; if(has)reqDone++; }
+    const box = el("div","field"+(has?"":" empty"));
+    const k = el("div","k"); k.appendChild(el("span",null,fd.label)); if(fd.req&&!has)k.appendChild(el("span","req"," *"));
+    box.appendChild(k);
+    box.appendChild(el("div","v", has ? (Array.isArray(v)?v.join(", "):v) : "—"));
+    f.appendChild(box);
+  }
+  $("prog").style.width = Math.round(reqDone/reqTot*100)+"%";
+  $("create").disabled = reqDone<reqTot || !name;
+}
+
+// ── chat helpers ──
+function bot(text){ const m=el("div","msg bot",text); stream.appendChild(m); scroll(); }
+function me(text){ const m=el("div","msg me",text); stream.appendChild(m); scroll(); }
+function gameCards(list){
+  const wrap=el("div","cards");
+  list.forEach(a=>{
+    const c=el("div","gcard");
+    c.appendChild(el("div","g",a.game));
+    c.appendChild(el("div","a",a.coreAction));
+    c.appendChild(el("div","d",a.goal));
+    const lk=el("a","lnk","↗ глянути гру"); lk.href=searchLink(a.game); lk.target="_blank"; lk.rel="noopener";
+    lk.onclick=(e)=>e.stopPropagation();
+    c.appendChild(lk);
+    c.onclick=()=>pickArchetype(a);
+    wrap.appendChild(c);
+  });
+  stream.appendChild(wrap); scroll();
+}
+function chipRow(opts, onPick){
+  const wrap=el("div","chips");
+  opts.forEach(o=>{ const ch=el("div","chip",o); ch.onclick=()=>{ wrap.remove(); onPick(o); }; wrap.appendChild(ch); });
+  stream.appendChild(wrap); scroll();
+}
+
+// ── scripted Agent-2 state machine (stub; LLM replaces later) ──
+let step = "ref";
+function pickArchetype(a){
+  me("Як «" + a.game + "»");
+  brief.ref = a.game;
+  brief.coreAction = a.coreAction;
+  brief.objects = a.objects.slice();
+  brief.goal = a.goal;
+  brief.loop = a.loop;
+  if(!name) name = a.game + " clone";
+  renderBrief();
+  bot("Супер. З «"+a.game+"» я витягнув core-дію ("+a.coreAction+"), об'єкти й ціль. Тепер напруга — що створює ставку?");
+  step="tension";
+  chipRow(["Таймер","Обмежені життя","Промах = кінець","Зростання складності"], v=>{ me(v); brief.tension=v; renderBrief(); askAha(); });
+}
+function askAha(){
+  bot("Який ОДИН смаковий момент реклама має продати? (той кайфовий біт)");
+  step="aha";
+}
+function askCta(){
+  bot("В який момент рвемо на install?");
+  step="cta";
+  chipRow(["Після першої перемоги","На піку напруги","Коли майже виграв і обірвалось"], v=>{ me(v); brief.ctaHook=v; renderBrief(); finish(); });
+}
+function finish(){
+  bot("Готово ✅ Бриф механіки зібрано — глянь панель справа. Як ок — тисни «Створити чернетку».");
+  step="done";
+}
+
+// ── input handling ──
+function handleText(t){
+  me(t);
+  if(step==="ref"){
+    brief.ref = t; if(!name) name = t;
+    renderBrief();
+    bot("Окей, орієнтуюсь на «"+t+"». Яка головна дія пальцем?");
+    step="coreFromText";
+    chipRow(["tap","swipe","drag","aim"], v=>{ me(v); brief.coreAction=v; renderBrief(); askObjects(); });
+  } else if(step==="aha"){
+    brief.ahaMoment=t; renderBrief(); askCta();
+  } else if(step==="freeObjects"){
+    brief.objects=t.split(",").map(s=>s.trim()).filter(Boolean); renderBrief(); askGoalText();
+  } else if(step==="goalText"){
+    brief.goal=t; renderBrief();
+    bot("Тепер напруга — що створює ставку?");
+    step="tension";
+    chipRow(["Таймер","Обмежені життя","Промах = кінець"], v=>{ me(v); brief.tension=v; renderBrief(); askAha(); });
+  } else {
+    bot("Прийняв. (Поки клікай картки/чіпи — повний діалог підключимо на кроці LLM-агента.)");
+  }
+}
+function askObjects(){ bot("Що на екрані? Об'єкти через кому (гравець, цілі, перешкоди…)"); step="freeObjects"; }
+function askGoalText(){ bot("Яка ціль / умова виграшу?"); step="goalText"; }
+
+$("send").onclick=()=>{ const v=$("inp").value.trim(); if(!v)return; $("inp").value=""; handleText(v); };
+$("inp").addEventListener("keydown",e=>{ if(e.key==="Enter")$("send").click(); });
+$("dunno").onclick=()=>{
+  me("Не знаю — допоможи");
+  bot("Без проблем. Ось кілька перевірених механік-архетипів. Що відгукується?");
+  gameCards(ARCHETYPES);
+};
+$("new").onclick=()=>location.reload();
+
+$("create").onclick=async()=>{
+  const t=$("ctoast");
+  try{
+    const r=await fetch("/api/scaffold",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({ name, description: brief.goal, brief })});
+    const j=await r.json();
+    if(j.id){ t.textContent="✓ створено: "+j.dir; t.style.color="var(--ok)"; $("create").disabled=true; }
+    else { t.textContent=j.error||"помилка"; t.style.color="var(--err)"; }
+  }catch(e){ t.textContent=String(e); t.style.color="var(--err)"; }
+};
+
+// ── opening ──
+bot("Привіт! Я допоможу зібрати нову механіку з нуля. Почнемо з головного: на яку гру або механіку це схоже? (як «Fruit Ninja», «Stack»…) Якщо не знаєш — тисни «Не знаю».");
+renderBrief();
+</script>
+</body>
+</html>
