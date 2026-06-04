@@ -48,13 +48,20 @@ void main();
 Доступні кольори: cfg.style.colors.{background,primary,accent,text}; шрифт cfg.style.font.{family,weight}.
 Текст: cfg.copy.title, cfg.copy.cta. Параметри: cfg.params.
 
-ВИМОГИ ДО ГРИ:
-- Реалізуй coreAction як головну взаємодію.
-- Реалізуй щонайменше aha-момент #1 (priority 1) з відчутним фідбеком (gsap-анімація).
-- Луп ~15-25с АБО до досягнення цілі → потім показати CTA (win-стан).
-- Зроби winBias: дай гравцю легко відчути успіх (rigged).
-- firstActionHint: підкажи першу дію (текст/стрілка).
-- Без зовнішніх ассетів, без мережі, без window.* окрім FbPlayableAd.onCTAClick та addEventListener.
+АУДІО (НОВЕ — обов'язково використай): cfg.assets містить data-URI звуки:
+  cfg.assets["slice.wav"], cfg.assets["combo.wav"], cfg.assets["bomb.wav"], cfg.assets["throw.wav"].
+Грай так (клонуй щоб накладались): function sfx(k){ const a=new Audio(cfg.assets[k]); a.volume=0.5; a.play().catch(()=>{}); }
+- slice.wav — на кожен розріз фрукта; throw.wav — на появу; combo.wav — на комбо; bomb.wav — на вибух.
+
+ВИМОГИ ДО ГРИ (v2 — за уроками реального сорсу):
+- coreAction = головна взаємодія (свайп ріже все на шляху).
+- РОЗРІЗ: фрукт ділиться на ДВІ половинки, що розлітаються в боки з гравітацією, + бризки соку (партикли Graphics) кольору фрукта. НЕ просто зникає.
+- КОМБО (як у brief.comboRule): часове вікно (windowMs) — нарізані поспіль фрукти нарощують ланцюг; показуй банер "Combo xN!" + множник очок + грай combo.wav. Скидай ланцюг по таймауту.
+- СПЕЦ-ПРЕДМЕТ (хоч один із brief.specialItems, напр. frenzy banana): рідко з'являється; розріз дає короткий ефект (буря фруктів / сповільнення / x2).
+- БОМБА: розріз бомби → шейк екрана + флеш + bomb.wav + втрата (або кінець до CTA). winBias: бомб мало, фруктів багато.
+- Луп ~20с АБО score-ціль → win-стан → CTA.
+- firstActionHint: підкажи першу дію текстом.
+- Без мережі. window.* лише: FbPlayableAd.onCTAClick, addEventListener, Audio.
 - CTA ОБОВ'ЯЗКОВО викликається як window.FbPlayableAd.onCTAClick() — точно так, БЕЗ "?." (optional chaining).
 
 ВИВЕДИ ЛИШЕ КОД game.ts у одному \`\`\`ts блоці. Без пояснень.`;
@@ -74,7 +81,7 @@ async function main(): Promise<void> {
 
   const q = query({
     prompt,
-    options: { systemPrompt: CONTRACT, allowedTools: [], settingSources: [], maxTurns: 8, permissionMode: "bypassPermissions" },
+    options: { systemPrompt: CONTRACT, allowedTools: [], settingSources: [], maxTurns: 14, permissionMode: "bypassPermissions" },
   });
   let raw = "";
   let cost = 0;

@@ -33,6 +33,30 @@ const Animation = z.object({
   tech: z.enum(["gsap", "spritesheet", "shader", "particles"]).optional(),
 });
 
+// Combo as a TIME-WINDOWED chain (learned from the SB3 source: combo is not
+// "same swipe" but a chain within a timeout, with an escalating multiplier).
+const ComboRule = z.object({
+  windowMs: z.number(), // time window to keep the chain alive
+  multiplier: z.string(), // how the multiplier escalates (e.g. "x2 at 3, x3 at 5")
+  voiceCallouts: z.boolean().default(false), // escalating "Combo 1..8" callouts
+});
+
+// A special / bonus item that is its own mechanic (SB3: frenzy/freeze/double
+// bananas, pomegranate). In arcade these ARE the aha-moments.
+const SpecialItem = z.object({
+  name: z.string().min(1),
+  effect: z.string().min(1), // what it does (e.g. "freeze time 5s")
+  splitsIntoHalves: z.boolean().default(true),
+  art: z.string().optional(),
+});
+
+// Audio event → sound, with variation count (SB3: slice-1/2/3 randomized).
+const AudioEvent = z.object({
+  event: z.string().min(1), // e.g. "slice", "combo", "bomb", "throw"
+  sound: z.string().min(1), // descriptive sound name
+  variations: z.number().int().min(1).default(1), // randomized variants
+});
+
 const ScreenType = z.enum(["intro", "tutorial", "gameplay", "reward", "endcard"]);
 const Screen = z.object({
   id: z.string().min(1),
@@ -78,6 +102,10 @@ export const ReferenceGameSchema = z.object({
   progression: z.string().optional(), // how it escalates across the loop
   states: z.object({ win: z.string(), lose: z.string() }),
   feedback: z.array(z.string()).default([]), // juice moments
+  comboRule: ComboRule.optional(), // time-windowed combo + multiplier (SB3 lesson)
+  specialItems: z.array(SpecialItem).default([]), // bonus mechanics (SB3 lesson)
+  audioEvents: z.array(AudioEvent).default([]), // event→sound map w/ variations (SB3 lesson)
+  modes: z.array(z.string()).default([]), // e.g. Classic/Zen/Arcade (playable picks one)
 
   // ── 4. animations ──
   animations: z.array(Animation).default([]),

@@ -40,6 +40,30 @@
       "цифра score підстрибує при комбо"
     ],
 
+    "comboRule": {
+      "windowMs": 1000,
+      "multiplier": "ланцюг у вікні ~1с; бонус росте з к-стю нарізаних поспіль (x2 при 3, далі вище)",
+      "voiceCallouts": true
+    },
+    "specialItems": [
+      { "name": "frenzy banana", "effect": "буря фруктів ~5с — максимум очок", "splitsIntoHalves": true },
+      { "name": "freeze banana", "effect": "сповільнення часу ~5с — легше нарізати", "splitsIntoHalves": true },
+      { "name": "double banana", "effect": "подвоєння очок на короткий час", "splitsIntoHalves": true },
+      { "name": "pomegranate", "effect": "multi-hit: швидко тапай для шквалу очок, потім slow-mo zoomout", "splitsIntoHalves": false }
+    ],
+    "audioEvents": [
+      { "event": "throw", "sound": "whoosh підкидання фрукта", "variations": 1 },
+      { "event": "slice", "sound": "splat розрізу фрукта", "variations": 3 },
+      { "event": "splat-stain", "sound": "сік на фон", "variations": 2 },
+      { "event": "combo", "sound": "голос 'Combo!' з ескалацією 1-8", "variations": 8 },
+      { "event": "crit", "sound": "критичний розріз", "variations": 1 },
+      { "event": "bomb-fuse", "sound": "шипіння гнота", "variations": 1 },
+      { "event": "bomb-explode", "sound": "вибух", "variations": 1 },
+      { "event": "lose-life", "sound": "втрата життя", "variations": 1 },
+      { "event": "time-up", "sound": "кінець часу", "variations": 1 }
+    ],
+    "modes": ["Classic (3 життя, бомби)", "Zen (без бомб, релакс на час)", "Arcade (60с, бонус-банани + pomegranate)"],
+
     "animations": [
       { "name": "fruit-spawn", "trigger": "поява фрукта", "desc": "виліт знизу по параболі", "tech": "gsap" },
       { "name": "fruit-slice", "trigger": "свайп через фрукт", "desc": "фрукт розпадається на 2 половинки що розлітаються", "tech": "spritesheet" },
