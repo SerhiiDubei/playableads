@@ -23,7 +23,7 @@ const CONTRACT = `Ти генеруєш ОДИН файл game.ts — самод
 
 СУВОРИЙ КОНТРАКТ (копіюй структуру 1-в-1):
 \`\`\`ts
-import { Application, Container, Graphics, Text } from "pixi.js";
+import { Application, Container, Graphics, Sprite, Texture, Assets, Text } from "pixi.js";
 import { gsap } from "gsap";
 import type { PlayableConfig } from "../../src/types.js";
 
@@ -48,19 +48,40 @@ void main();
 Доступні кольори: cfg.style.colors.{background,primary,accent,text}; шрифт cfg.style.font.{family,weight}.
 Текст: cfg.copy.title, cfg.copy.cta. Параметри: cfg.params.
 
-АУДІО (НОВЕ — обов'язково використай): cfg.assets містить data-URI звуки:
+АРТ-АССЕТИ (НОВЕ — ОБОВ'ЯЗКОВО використовуй спрайти, НЕ малюй кружечки):
+cfg.assets містить data-URI зображення (webp):
+  fruit1.webp..fruit6.webp (цілі фрукти), bomb.webp (бомба), bg.webp (фон-додзьо).
+Передзаванаж текстури НА ПОЧАТКУ (await): const tex = {}; for (const k of ["fruit1.webp","fruit2.webp","fruit3.webp","fruit4.webp","fruit5.webp","fruit6.webp","bomb.webp","bg.webp"]) tex[k] = await Assets.load({ src: cfg.assets[k], format: "webp" });
+- ФОН: Sprite з tex["bg.webp"], розтягни на весь екран (cover) у найнижчому шарі.
+- ФРУКТ: new Sprite(tex["fruitN.webp"]), anchor 0.5, масштаб під ~r. Випадковий фрукт 1..6.
+- БОМБА: new Sprite(tex["bomb.webp"]).
+- РОЗРІЗ фрукта: сховай цілий спрайт; зроби ДВІ половинки з того ж спрайта через маску (кожна Sprite з прямокутною Graphics-маскою на ліву/праву частину), що розлітаються з гравітацією; + бризки соку (Graphics-партикли).
+
+РУХ (НАЙВАЖЛИВІШЕ — бери з нашого модуля, НЕ вигадуй швидкості):
+import { makeArc, randomLaunchAngle, DifficultyController } from "../../src/assetgen/kit/motion.js";
+- Кидай фрукти/бомби ФІЗИЧНОЮ АРКОЮ: const p = makeArc({ fromX, fromY: H, screenH: H, timeAloftSec: 2.2, apexFraction: 0.72, angleDeg: randomLaunchAngle(Math.random()), spinRadPerSec: ... });
+  Зберігай p на об'єкті; КОЖЕН тік: const dt = app.ticker.deltaMS/1000; p.update(dt); sprite.x=p.x; sprite.y=p.y; sprite.rotation=p.rotation. Прибирай коли p.done.
+- Об'єкт злітає, ЗАВИСАЄ на піку (там і ріжеться), падає. Це обов'язково — не лінійний рух.
+- ЗАБОРОНЕНО: x += speed без dt; будь-який розгін ШВИДКОСТІ за часом (напр. 1+elapsed*k).
+- Складність: const diff = new DifficultyController(); на розріз diff.recordHit(), промах diff.recordMiss(), бомба diff.recordBombHit().
+  Інтервал спавну = diff.spawnWaitSec(); скільки за раз = diff.parallelCount(); шанс бомби = diff.bombProbability().
+  Ескалюй ЩІЛЬНІСТЬ (частоту/кількість), НЕ швидкість арки.
+
+АУДІО (обов'язково використай): cfg.assets містить data-URI звуки:
   cfg.assets["slice.wav"], cfg.assets["combo.wav"], cfg.assets["bomb.wav"], cfg.assets["throw.wav"].
 Грай так (клонуй щоб накладались): function sfx(k){ const a=new Audio(cfg.assets[k]); a.volume=0.5; a.play().catch(()=>{}); }
 - slice.wav — на кожен розріз фрукта; throw.wav — на появу; combo.wav — на комбо; bomb.wav — на вибух.
 
-ВИМОГИ ДО ГРИ (v2 — за уроками реального сорсу):
-- coreAction = головна взаємодія (свайп ріже все на шляху).
-- РОЗРІЗ: фрукт ділиться на ДВІ половинки, що розлітаються в боки з гравітацією, + бризки соку (партикли Graphics) кольору фрукта. НЕ просто зникає.
-- КОМБО (як у brief.comboRule): часове вікно (windowMs) — нарізані поспіль фрукти нарощують ланцюг; показуй банер "Combo xN!" + множник очок + грай combo.wav. Скидай ланцюг по таймауту.
-- СПЕЦ-ПРЕДМЕТ (хоч один із brief.specialItems, напр. frenzy banana): рідко з'являється; розріз дає короткий ефект (буря фруктів / сповільнення / x2).
-- БОМБА: розріз бомби → шейк екрана + флеш + bomb.wav + втрата (або кінець до CTA). winBias: бомб мало, фруктів багато.
-- Луп ~20с АБО score-ціль → win-стан → CTA.
-- firstActionHint: підкажи першу дію текстом.
+ВИМОГИ ДО ГРИ (v4 — ПОВНОЦІННА гра, ad-rigged):
+- coreAction = свайп ріже все на шляху.
+- КОМБО (brief.comboRule): часове вікно — нарізані поспіль фрукти нарощують ланцюг; банер "Combo xN!" + множник + combo.wav. Скидай по таймауту.
+- СПЕЦ-ПРЕДМЕТ frenzy banana (рідко): розріз → буря фруктів ~5с. ВАЖЛИВО: під час frenzy жодних бомб; на старті frenzy ПРИБЕРИ всі бомби що вже в повітрі.
+- БОМБА = М'ЯКИЙ ШТРАФ, НЕ кінець гри: розріз бомби → шейк + флеш + bomb.wav + мінус кілька очок (або −1 з 3 життів). НЕ викликай finish/endcard від бомби. Гра триває.
+- НЕ ЗУПИНЯЙ гру на досягненні score. Жодного "score >= target → finish". Score лише росте; гра — повноцінна.
+- ТРИВАЛІСТЬ: гра йде ~25-30с безперервно; ендкард показуй ЛИШЕ коли час вийшов.
+- STICKY CTA: кнопка cfg.copy.cta видима ВНИЗУ ВЕСЬ ЧАС під час гри (sticky), і працює завжди (не лише в кінці). По кліку → window.FbPlayableAd.onCTAClick().
+- winBias: фруктів багато, бомб мало; гравець завжди почувається успішним.
+- firstActionHint: підкажи перший свайп текстом + рука-підказка.
 - Без мережі. window.* лише: FbPlayableAd.onCTAClick, addEventListener, Audio.
 - CTA ОБОВ'ЯЗКОВО викликається як window.FbPlayableAd.onCTAClick() — точно так, БЕЗ "?." (optional chaining).
 
