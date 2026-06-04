@@ -179,3 +179,50 @@ export class DifficultyController {
   /** Probability the next object is a bomb. */
   bombProbability(): number { return lerp(this.tun.bombMin, this.tun.bombMax, this.difficulty); }
 }
+
+// ── Approach motion (enemies that move TOWARD a target) ──
+// For games where threats close in on the player (action/survival), not arced.
+// Same principles: screen-relative speed, dt-correct, time-not-px.
+
+export interface ApproachConfig {
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  screenH: number;
+  /** Speed in screen-heights/sec (default = glide 0.5). Keep CONSTANT; escalate density, not speed. */
+  speedShPerSec?: number;
+  /** Distance (px) at which it counts as "arrived" (reached the target). */
+  arriveRadius?: number;
+}
+
+export interface Mover {
+  x: number;
+  y: number;
+  rotation: number;
+  /** True once it reached the target (arrived). */
+  arrived: boolean;
+  update(dtSec: number): void;
+}
+
+/** A threat that walks straight toward (toX,toY) at a constant screen-relative speed. */
+export function makeApproach(cfg: ApproachConfig): Mover {
+  const speed = (cfg.speedShPerSec ?? SPEED_SH_PER_SEC.glide) * cfg.screenH;
+  const arrive = cfg.arriveRadius ?? 40;
+  return {
+    x: cfg.fromX,
+    y: cfg.fromY,
+    rotation: 0,
+    arrived: false,
+    update(dtSec: number): void {
+      if (this.arrived) return;
+      const dx = cfg.toX - this.x;
+      const dy = cfg.toY - this.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist <= arrive) { this.arrived = true; return; }
+      const step = Math.min(dist, speed * dtSec);
+      this.x += (dx / dist) * step;
+      this.y += (dy / dist) * step;
+    },
+  };
+}

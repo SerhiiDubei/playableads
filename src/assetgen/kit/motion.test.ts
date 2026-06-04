@@ -64,3 +64,24 @@ describe("DifficultyController", () => {
     assert.equal(speedPx("glide", 1000), 500);
   });
 });
+
+import { makeApproach } from "./motion.js";
+
+describe("makeApproach", () => {
+  it("moves toward the target and arrives, frame-rate independent", () => {
+    const mk = () => makeApproach({ fromX: 0, fromY: 0, toX: 400, toY: 0, screenH: 800, speedShPerSec: 0.5, arriveRadius: 10 });
+    const run = (dt: number) => { const m = mk(); let n = 0; while (!m.arrived && n < 100000) { m.update(dt); n++; } return n * dt; };
+    // speed 0.5*800=400 px/s; distance ~400px → ~1s to arrive
+    const t60 = run(1 / 60);
+    assert.ok(Math.abs(t60 - 1.0) < 0.1, `arrive time ${t60.toFixed(2)}s ~ 1s`);
+    const t120 = run(1 / 120);
+    assert.ok(Math.abs(t60 - t120) < 0.05, `dt-independent: ${t60.toFixed(2)} vs ${t120.toFixed(2)}`);
+  });
+
+  it("never overshoots past the target", () => {
+    const m = makeApproach({ fromX: 0, fromY: 0, toX: 100, toY: 0, screenH: 800, speedShPerSec: 1, arriveRadius: 5 });
+    let maxX = 0;
+    while (!m.arrived) { m.update(1 / 60); maxX = Math.max(maxX, m.x); }
+    assert.ok(maxX <= 100 + 1, `did not overshoot (maxX=${maxX.toFixed(1)})`);
+  });
+});
