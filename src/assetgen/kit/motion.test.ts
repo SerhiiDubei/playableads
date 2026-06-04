@@ -85,3 +85,32 @@ describe("makeApproach", () => {
     assert.ok(maxX <= 100 + 1, `did not overshoot (maxX=${maxX.toFixed(1)})`);
   });
 });
+
+import { makePlatformerBody } from "./motion.js";
+
+describe("makePlatformerBody", () => {
+  it("jump apex ≈ jumpHeightFraction*screenH and rise ≈ jumpRiseSec", () => {
+    const b = makePlatformerBody({ x: 0, groundY: 800, screenH: 800, jumpHeightFraction: 0.28, jumpRiseSec: 0.4 });
+    b.jump();
+    let minY = b.y, riseT = 0; const dt = 1 / 120;
+    for (let i = 0; i < 240 && !b.grounded; i++) { b.update(dt); if (b.y < minY) { minY = b.y; riseT = (i + 1) * dt; } }
+    const apex = 800 - minY, target = 0.28 * 800;
+    assert.ok(Math.abs(apex - target) / target < 0.06, `apex ${apex.toFixed(0)} vs ${target}`);
+    assert.ok(Math.abs(riseT - 0.4) < 0.08, `rise ${riseT.toFixed(2)}s vs 0.4s`);
+  });
+
+  it("jump is frame-rate independent (apex 30 vs 120 fps within 3%)", () => {
+    const apexAt = (dt: number) => { const b = makePlatformerBody({ x: 0, groundY: 800, screenH: 800 }); b.jump(); let m = b.y; for (let i = 0; i < 1000 && !b.grounded; i++) { b.update(dt); m = Math.min(m, b.y); } return 800 - m; };
+    const a30 = apexAt(1 / 30), a120 = apexAt(1 / 120);
+    assert.ok(Math.abs(a30 - a120) / a120 < 0.03, `apex 30fps ${a30.toFixed(0)} vs 120fps ${a120.toFixed(0)}`);
+  });
+
+  it("clamps x to [minX,maxX] and never sinks below ground; no double-jump", () => {
+    const b = makePlatformerBody({ x: 50, groundY: 800, screenH: 800, minX: 0, maxX: 100, runSpeedShPerSec: 1 });
+    b.setMove(1); for (let i = 0; i < 120; i++) b.update(1 / 60);
+    assert.ok(b.x <= 100 + 0.001, `x clamped (${b.x.toFixed(1)})`);
+    assert.equal(b.grounded, true); assert.equal(b.y, 800);
+    b.jump(); b.update(1 / 60); const vyAir = b.vy; b.jump(); // 2nd jump ignored mid-air
+    assert.ok(b.vy >= vyAir - 0.001, "no double-jump (vy not reset upward)");
+  });
+});

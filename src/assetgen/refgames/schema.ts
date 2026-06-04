@@ -86,6 +86,10 @@ export const ReferenceGameSchema = z.object({
     complexity: z.enum(["low", "medium", "high"]),
   }),
 
+  // Playable archetype → selects the generator contract branch. Default "slasher"
+  // (swipe/tap arc/approach). "platformer" = controllable side-scroller (D-pad+attack).
+  playableKind: z.enum(["slasher", "platformer"]).optional(),
+
   // ── 2. core design (intake GDD / quality rubric) ──
   coreAction: CoreAction,
   objects: z.array(z.string()).min(1),

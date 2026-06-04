@@ -226,3 +226,72 @@ export function makeApproach(cfg: ApproachConfig): Mover {
     },
   };
 }
+
+// ── Platformer body (player-controlled run/jump, dt-correct) ──
+// For controllable side-scrollers (Castlevania-like). Input-driven, not a preset
+// trajectory: the D-pad sets move dir & triggers jump; update() integrates gravity.
+// Screen-relative (gravity/jump scale off screenH) so it feels identical at any size.
+
+export interface PlatformerConfig {
+  x: number;
+  groundY: number; // y of the walkable surface (feet rest here)
+  screenH: number;
+  runSpeedShPerSec?: number; // horizontal run speed; default 0.55 sh/s
+  jumpHeightFraction?: number; // apex height as fraction of screenH; default 0.28
+  jumpRiseSec?: number; // time ground→apex; default 0.40s
+  minX?: number;
+  maxX?: number;
+}
+
+export interface PlatformerBody {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  grounded: boolean;
+  facing: 1 | -1;
+  /** Held move intent: -1 left, 0 none, 1 right. Set before update(). */
+  setMove(dir: -1 | 0 | 1): void;
+  /** Jump impulse — ignored unless grounded (no double-jump). */
+  jump(): void;
+  /** Advance by dt SECONDS. Frame-rate independent. */
+  update(dtSec: number): void;
+}
+
+/**
+ * Player-controlled platformer body. Closed-form jump (like makeArc):
+ *   H = jumpHeightFraction*screenH, Tr = jumpRiseSec
+ *   g = 2H / Tr²   (down accel)   vJump = -2H / Tr  (impulse, y-down)
+ * Ground clamp makes falling off impossible (winBias-friendly).
+ */
+export function makePlatformerBody(cfg: PlatformerConfig): PlatformerBody {
+  const H = (cfg.jumpHeightFraction ?? 0.28) * cfg.screenH;
+  const Tr = cfg.jumpRiseSec ?? 0.4;
+  const g = (2 * H) / (Tr * Tr);
+  const vJump = (-2 * H) / Tr;
+  const runSpeed = (cfg.runSpeedShPerSec ?? 0.55) * cfg.screenH;
+  const minX = cfg.minX ?? -Infinity;
+  const maxX = cfg.maxX ?? Infinity;
+  let dir: -1 | 0 | 1 = 0;
+
+  return {
+    x: cfg.x,
+    y: cfg.groundY,
+    vx: 0,
+    vy: 0,
+    grounded: true,
+    facing: 1,
+    setMove(d: -1 | 0 | 1): void { dir = d; if (d !== 0) this.facing = d; },
+    jump(): void { if (this.grounded) { this.vy = vJump; this.grounded = false; } },
+    update(dtSec: number): void {
+      this.vx = dir * runSpeed;
+      // 2nd-order kinematic step → apex height ~dt-independent even at low fps
+      this.x += this.vx * dtSec;
+      this.y += this.vy * dtSec + 0.5 * g * dtSec * dtSec;
+      this.vy += g * dtSec;
+      if (this.x < minX) this.x = minX;
+      if (this.x > maxX) this.x = maxX;
+      if (this.y >= cfg.groundY) { this.y = cfg.groundY; this.vy = 0; this.grounded = true; }
+    },
+  };
+}

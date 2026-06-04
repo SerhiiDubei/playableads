@@ -1,5 +1,5 @@
-// AI assets for the akuma-no-yoru (Demon Slayer Night) playable.
-// Dark horror style. Weight pipeline: trim→resize→webp; sources in _src/ (not inlined).
+// PIXEL-ART assets for the akuma-no-yoru playable — a Castlevania-like 2D action
+// PLATFORMER (controllable heroine: run/jump/sword). Weight pipeline: trim→resize→webp.
 //   npx tsx src/assetgen/refgames/gen-akuma-assets.ts
 
 import "dotenv/config";
@@ -11,47 +11,46 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const RATE = 40;
 const ASSETS = "labs/akuma-no-yoru-gen/assets";
 const SRC = `${ASSETS}/_src`;
-const FN = "labs/fruit-ninja-gen/assets"; // reuse sfx from here
 
 interface Job { key: string; prompt: string; size: "1024x1024" | "1024x1536" | "1536x1024"; transparent: boolean; }
 
+const PIXEL = "Crisp PIXEL ART, retro 16-bit Castlevania style, limited gothic palette, clean hard pixels, no anti-aliasing, no text.";
+
 const JOBS: Job[] = [
   {
-    key: "_enemysheet",
+    key: "_herosheet",
     prompt:
-      "A 3x2 grid (3 columns, 2 rows) of 6 different CARTOON DEMON enemies for a dark fantasy slasher mobile game. " +
-      "Menacing but stylized (not gory): 1 green frog-demon with fangs, 2 black crow-demon with red eyes, 3 purple shadow imp, " +
-      "4 horned red demon, 5 grey skull-bat, 6 dark slime-demon with glowing eyes. " +
-      "Bold clean outlines, eerie glowing eyes, saturated dark palette, each centered in its own cell, " +
-      "fully ISOLATED on a transparent background, no shadows on background, no text, no borders, no grid lines.",
+      `A 2x2 grid (2 cols, 2 rows) of the SAME female vampire-hunter heroine sprite, side view facing RIGHT, in 4 poses. ${PIXEL} ` +
+      "Same character, same size & palette in every cell (dark armor, flowing red scarf, silver sword): " +
+      "cell1 = standing idle; cell2 = mid-run stride; cell3 = sword attack swing forward; cell4 = jump (legs tucked). " +
+      "Each pose centered in its cell, fully isolated on a transparent background, no shadows on background, no borders, no grid lines.",
     size: "1024x1024",
     transparent: true,
   },
   {
-    key: "warrior",
+    key: "_enemysheet",
     prompt:
-      "A lone dark demon-slayer warrior, hooded silhouette with a glowing katana, facing the viewer, heroic stance, " +
-      "moody rim light (blue/violet), stylized cartoon game style, thick clean outline, centered, " +
-      "fully isolated on a transparent background, no text.",
-    size: "1024x1024",
+      `A 3x1 row of 3 different small PIXEL ART gothic enemies, side view facing LEFT. ${PIXEL} ` +
+      "1 = shambling zombie/ghoul, 2 = winged demon-bat, 3 = armored skeleton with shield. " +
+      "Same pixel scale, each centered in its cell, fully isolated on a transparent background, no text, no borders.",
+    size: "1536x1024",
     transparent: true,
   },
   {
     key: "bg",
     prompt:
-      "A vertical mobile game background: a dark haunted forest/temple at night, large pale moon, drifting fog, " +
-      "silhouetted dead trees and torii gate, deep blue-violet palette, eerie but clean, painterly, " +
-      "no characters, no demons, no text, no UI. A moody backdrop with empty center for gameplay.",
-    size: "1024x1536",
+      `A horizontal PIXEL ART side-scrolling background: the interior hall of a gothic demon castle at night. ${PIXEL} ` +
+      "Stone-brick walls, tall arched windows with a blood-red moon, candelabras, torn banners, deep shadow, parallax depth. " +
+      "Empty lower third for a floor/gameplay area. No characters, no UI, no text. Wide cinematic composition.",
+    size: "1536x1024",
     transparent: false,
   },
   {
-    key: "_bloodsheet",
+    key: "ground",
     prompt:
-      "A 2x2 grid of 4 different paint-splat shapes, each a COMPLETELY FILLED SOLID WHITE blob (100% opaque white interior, " +
-      "like a white sticker cut-out), organic splatter silhouette with scattered droplets. NO outline, NO line art, NO black stroke, " +
-      "NO color, NO gradient — just a solid filled white shape on a fully transparent background. Each centered in its cell, no text.",
-    size: "1024x1024",
+      `A horizontal PIXEL ART stone-floor / platform strip for a gothic castle, top edge is the walkable surface (cracked stone bricks, moss). ${PIXEL} ` +
+      "Seamless left-right tiling, dark palette, isolated on a transparent background above the strip, no text.",
+    size: "1536x1024",
     transparent: true,
   },
 ];
@@ -80,7 +79,7 @@ async function sliceGrid(buf: Buffer, cols: number, rows: number, name: (i: numb
   let bytes = 0, i = 1;
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
     const cell = await sharp(buf).extract({ left: c * cw, top: r * ch, width: cw, height: ch }).png().toBuffer();
-    bytes += await optimize(cell, `${ASSETS}/${name(i)}`, maxDim, 82, true);
+    bytes += await optimize(cell, `${ASSETS}/${name(i)}`, maxDim, 88, true);
     i++;
   }
   return bytes;
@@ -95,16 +94,15 @@ async function main(): Promise<void> {
     if (existsSync(sp)) { buf = readFileSync(sp); console.log(`↻ ${job.key} reuse`); }
     else { process.stdout.write(`🎨 ${job.key}… `); const r = await gen(job); buf = r.buf; total += r.cost; writeFileSync(sp, buf); console.log(`✓ $${r.cost.toFixed(3)}`); }
 
-    if (job.key === "_enemysheet") { bytes += await sliceGrid(buf, 3, 2, (i) => `demon${i}.webp`, 200); console.log("  ✂ demon1..6.webp"); }
-    else if (job.key === "_bloodsheet") { bytes += await sliceGrid(buf, 2, 2, (i) => `splat${i}.webp`, 256); console.log("  ✂ splat1..4.webp"); }
-    else if (job.key === "warrior") bytes += await optimize(buf, `${ASSETS}/warrior.webp`, 280, 85, true);
-    else if (job.key === "bg") bytes += await optimize(buf, `${ASSETS}/bg.webp`, 540, 72, false);
+    if (job.key === "_herosheet") { bytes += await sliceGrid(buf, 2, 2, (i) => ["hero_idle.webp","hero_run.webp","hero_attack.webp","hero_jump.webp"][i - 1], 200); console.log("  ✂ hero_idle/run/attack/jump.webp"); }
+    else if (job.key === "_enemysheet") { bytes += await sliceGrid(buf, 3, 1, (i) => `demon${i}.webp`, 180); console.log("  ✂ demon1..3.webp"); }
+    else if (job.key === "bg") bytes += await optimize(buf, `${ASSETS}/bg.webp`, 900, 74, false);
+    else if (job.key === "ground") bytes += await optimize(buf, `${ASSETS}/ground.webp`, 900, 82, true);
   }
-
-  // reuse fruit-ninja SFX, renamed for combat events
-  const sfxMap: [string, string][] = [["slice.wav", "slash.wav"], ["combo.wav", "combo.wav"], ["bomb.wav", "hurt.wav"], ["throw.wav", "spawn.wav"]];
-  for (const [from, to] of sfxMap) {
-    if (existsSync(`${FN}/${from}`)) { copyFileSync(`${FN}/${from}`, `${ASSETS}/${to}`); }
+  // reuse fruit-ninja SFX, renamed for platformer combat events
+  const FN = "labs/fruit-ninja-gen/assets";
+  for (const [from, to] of [["slice.wav", "slash.wav"], ["bomb.wav", "kill.wav"], ["throw.wav", "jump.wav"], ["combo.wav", "hurt.wav"]] as [string, string][]) {
+    if (existsSync(`${FN}/${from}`)) copyFileSync(`${FN}/${from}`, `${ASSETS}/${to}`);
   }
   console.log(`\n💰 gen ~$${total.toFixed(3)} · webp ${(bytes / 1024).toFixed(0)}KB + reused sfx → ${ASSETS}/`);
 }

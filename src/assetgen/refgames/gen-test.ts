@@ -19,30 +19,15 @@ import { loadStyle } from "../../loader.js";
 import type { PlayableConfig } from "../../types.js";
 import type { ReferenceGame } from "./schema.js";
 
-// Build the system-prompt contract from the schema + present asset keys.
-function buildContract(g: ReferenceGame, imageKeys: string[], audioKeys: string[]): string {
-  const hasAssets = imageKeys.length > 0;
-  const bgKey = imageKeys.find((k) => /bg|background/i.test(k));
-  const halfKeys = imageKeys.filter((k) => /half/i.test(k));
-  const splatKeys = imageKeys.filter((k) => /splat/i.test(k));
-
-  const assetBlock = hasAssets
-    ? `АРТ-АССЕТИ — ОБОВ'ЯЗКОВО використовуй спрайти (НЕ малюй примітиви замість них):
-cfg.assets містить data-URI зображення (ключі): ${imageKeys.join(", ")}.
-Передзавантаж усі НА ПОЧАТКУ (await): const tex={}; for (const k of ${JSON.stringify(imageKeys)}) tex[k]=await Assets.load({src:cfg.assets[k],format:k.endsWith(".webp")?"webp":"png"});
-${bgKey ? `- ФОН: Sprite з tex["${bgKey}"], cover на весь екран, найнижчий шар.` : "- Фон намалюй кольором cfg.style.colors.background."}
-- Ігрові обʼєкти (${g.objects.join(", ")}) — це Sprite з відповідних ключів (підбери за змістом назви ключа). anchor 0.5, масштаб під розмір.
-${halfKeys.length ? `- РОЗРІЗ показує НУТРОЩІ: при розрізі ховай цілий спрайт, показуй "half*" (${halfKeys.join(", ")}) як дві половинки через прямокутні маски по куту свайпу (atan2), що розлітаються перпендикулярно + гравітація.` : ""}
-${splatKeys.length ? `- СЛІД/БРИЗКИ на фоні: при ударі клади Sprite("splat*") (${splatKeys.join(", ")}) на окремий шар, .tint = колір обʼєкта/крові, alpha ~0.45, випадк. rotation/scale; НАКОПИЧУЮТЬСЯ весь матч.` : ""}`
-    : `БЕЗ зовнішніх асетів — малюй усе в коді (Graphics/Text).`;
-
+// Shared skeleton + STABILITY + GSAP + CTA + audio — identical across genres.
+function sharedHeader(audioKeys: string[]): string {
   return `Ти генеруєш ОДИН файл game.ts — самодостатній playable-ad на PixiJS v8 + GSAP, за брифом гри (reference-game JSON).
 
 СУВОРИЙ КАРКАС (копіюй структуру):
 \`\`\`ts
 import { Application, Container, Graphics, Sprite, Texture, Assets, Text } from "pixi.js";
 import { gsap } from "gsap";
-import { makeArc, makeApproach, randomLaunchAngle, DifficultyController } from "../../src/assetgen/kit/motion.js";
+import { makeArc, makeApproach, makePlatformerBody, randomLaunchAngle, DifficultyController } from "../../src/assetgen/kit/motion.js";
 import type { PlayableConfig } from "../../src/types.js";
 declare const __PLAYABLE_CONFIG__: PlayableConfig;
 const cfg: PlayableConfig = __PLAYABLE_CONFIG__;
@@ -59,16 +44,88 @@ void main();
 \`\`\`
 Кольори: cfg.style.colors.{background,primary,accent,text}; шрифт cfg.style.font.{family,weight}; текст cfg.copy.{title,cta}; cfg.params.
 
-${assetBlock}
+АУДІО: cfg.assets аудіо-ключі: ${audioKeys.length ? audioKeys.join(", ") : "(немає)"}.
+${audioKeys.length ? `Грай: function sfx(k){ try{const a=new Audio(cfg.assets[k]); a.volume=0.5; a.play().catch(()=>{});}catch(e){} } — на відповідні події.` : ""}`;
+}
+
+const SHARED_TAIL = `СТАБІЛЬНІСТЬ (КРИТИЧНО — інакше "Cannot read properties of null (reading 'x')"):
+- Лише app.stage слухає вказівник (eventMode="static", hitArea=app.screen) АБО окремий UI/кнопковий шар. Ігровий хіт-тест роби ВРУЧНУ (відстань/AABB), НЕ через eventMode на ігрових спрайтах.
+- Ігровим шарам (світ/вороги/частинки): layer.interactiveChildren=false. Інтерактивні лише кнопки керування + CTA (окремий ui-шар).
+- Прибирання обʼєкта: removeChild ПОТІМ destroy; одразу видали з масиву (без знищених посилань).
+
+GSAP: анімуй ЛИШЕ числові властивості Pixi (x, y, alpha, rotation, scale.x/scale.y). НЕ використовуй DOM/CSS-властивості (transformOrigin, css, skew рядком) — вони кидають warning і не діють на Pixi.
+
+CTA викликається РІВНО так (БЕЗ "?."): window.FbPlayableAd.onCTAClick();
+
+ВИВЕДИ ЛИШЕ КОД game.ts у одному \`\`\`ts блоці. Без пояснень.`;
+
+// PLATFORMER branch — controllable side-scroller (D-pad + attack), pixel-art.
+function platformerContract(g: ReferenceGame, imageKeys: string[], audioKeys: string[]): string {
+  return [sharedHeader(audioKeys), `ЦЕ КЕРОВАНИЙ 2D ПІКСЕЛЬ-АРТ ПЛАТФОРМЕР (Castlevania-лайк). Гравець КЕРУЄ героїнею: біг/стрибок/меч.
+
+АРТ (ПІКСЕЛЬ-АРТ) — ключі: ${imageKeys.join(", ")}.
+Прелоад НА ПОЧАТКУ (await): const tex={}; for (const k of ${JSON.stringify(imageKeys)}) tex[k]=await Assets.load({src:cfg.assets[k],format:k.endsWith(".webp")?"webp":"png"});
+ПІКСЕЛЬНИЙ рендер: для кожної текстури tex[k].source.scaleMode="nearest".
+- ШАРИ: bgLayer (ЕКРАННО-ФІКСОВАНИЙ, НЕ в world!), world (земля+вороги+герой+ціль, скролиться), uiLayer (кнопки), ctaLayer — кожен окремо, поверх попереднього.
+- ФОН (КРИТИЧНО — НІКОЛИ порожніх країв): bgLayer, Sprite tex["bg.webp"], cover на ВЕСЬ екран (scale = Math.max(W/texW, H/texH), позиція по центру), оновлюй у layout(). Паралакс роби ЛЕГКИМ зсувом bg.tilePosition АБО просто лиши фон статичним cover — головне фон ЗАВЖДИ покриває весь екран (бо bgLayer не скролиться з world).
+- ЗЕМЛЯ (тайлиться, покриває ВСЮ ширину світу): у world намалюй смугу ground повторенням tex["ground.webp"] від x=0 до WORLD_W (стільки копій, скільки треба); верхній край = groundY (напр. H*0.82). Жодних прогалин.
+- ГЕРОЇНЯ: один Sprite, anchor(0.5,1.0) (ноги = низ), scale ~Math.min(W,H)*0.0020. Текстуру МІНЯЙ за станом.
+- ВОРОГИ: Sprite demon1/2/3.webp, anchor(0.5,1.0).
+
+ФІЗИКА — ЛИШЕ makePlatformerBody, dt-correct (НЕ вигадуй гравітацію, НЕ x+=speed):
+const body = makePlatformerBody({ x:W*0.3, groundY, screenH:H, runSpeedShPerSec:0.5, jumpHeightFraction:0.26, jumpRiseSec:0.4, minX:60, maxX:WORLD_W-60 });
+КОЖЕН тік: const dt=Math.min(0.05, app.ticker.deltaMS/1000); body.setMove(input.right?1:(input.left?-1:0)); if(jumpPressed){body.jump();jumpPressed=false;} body.update(dt);
+hero.x=body.x; hero.y=body.y; hero.scale.x=Math.abs(baseScale)*body.facing.
+КАМЕРА: worldScroll = clamp(body.x - W*0.4, 0, WORLD_W - W); world.x = -worldScroll. (герой ~центр/лівіше). bgLayer НЕ рухай (фіксований cover) — лише за бажання легкий tilePosition-паралакс.
+ВОРОГИ у СВІТОВИХ координатах: makeApproach({fromX:enemyWorldX, fromY:groundY, toX:body.x, toY:groundY, screenH:H, speedShPerSec:0.10+Math.random()*0.06}); щотіку update(dt); enemy.x=m.x; enemy.y=groundY. Повільні! Щільність/каденс — DifficultyController (recordHit на вбивство).
+
+КЕРУВАННЯ (екранні кнопки — інтерактивний UI-шар, великі ≥64px, напівпрозорі):
+- Внизу-ЛІВОРУЧ: LEFT, RIGHT. Внизу-ПРАВОРУЧ: JUMP, ATTACK. Підпиши стрілками/іконками.
+- LEFT/RIGHT = HELD: pointerdown→input.left/right=true; pointerup/pointerupoutside→скинь. JUMP=tap→jumpPressed=true. ATTACK=tap→почни свинг.
+- Стан у input={left,right}. НЕ читай позицію вказівника для руху.
+
+АНІМАЦІЯ (4 пози, swap tex за станом; attack > jump > run > idle):
+- attacking → hero_attack; !grounded → hero_jump; grounded&&(input.left||input.right) → hero_run; інакше hero_idle.
+- run: косметичний bob (накладай на hero.y невеликий sin, НЕ змінюй body.y) + лёгкий rotation-нахил.
+- jump: squash scale.y на приземленні (числовий tween). flip — лише scale.x.
+
+БІЙ (ручний хітбокс, БЕЗ eventMode на ворогах):
+- ATTACK → attacking=true ~0.3с (+кулдаун ~0.35с). ЩЕДРИЙ хітбокс: прямокутник перед героїнею у напрямку facing, ширина ~hero.width*1.6, висота ~hero.height. Перевір КОЖНОГО живого ворога по AABB у СВІТОВИХ координатах (порівнюй body.x±reach з enemy.x, і близькість по Y до groundY). Влучив → ворог гине (fade+відліт+іскри), score++, sfx. Намалюй slash-арку (Graphics) перед героїнею (gsap alpha). НА час свингу перевіряй хітбокс КОЖЕН тік (не лише в момент тапу), щоб ворог у зоні гарантовано загинув.
+- Ворог торкнувся героїні → -1 з 5 життів + червоний флеш + шейк + invuln ~1с. М'яко.
+
+ПРОГРЕС/ЦІЛЬ (ad-rig):
+- WORLD_W ~ W*3.5. Праворуч намалюй ціль/бос-маркер. Дійшов (body.x близько WORLD_W) → win-біт (slow-mo) → ендкард+велика CTA.
+- ІНАКШЕ — кінець ЛИШЕ по ТАЙМЕРУ ~27с → ендкард. НІКОЛИ не закінчувати по життя=0 (життя косметичні; на 0 гра триває).
+- Грейс 1.5с без шкоди. winBias: вороги повільні й рідкі, щедрий хітбокс — дійти майже гарантовано.
+- Угорі дрібно: назва (підпис ~18px) + 5 життів + дистанція/score.
+- firstActionHint: ${g.firstActionHint}. STICKY CTA: cfg.copy.cta видима ВНИЗУ-ПО-ЦЕНТРУ весь час (над/між кнопками), працює завжди.
+- DEV-ХУК (для автотесту, лиши в коді): window.__btns = { left:{x,y,w,h}, right:{x,y,w,h}, jump:{...}, attack:{...}, cta:{...} } — екранні прямокутники кнопок (px).`, SHARED_TAIL].join("\n\n");
+}
+
+// SLASHER branch (default) — swipe/tap with arc/approach motion.
+function slasherContract(g: ReferenceGame, imageKeys: string[], audioKeys: string[]): string {
+  const hasAssets = imageKeys.length > 0;
+  const bgKey = imageKeys.find((k) => /bg|background/i.test(k));
+  const halfKeys = imageKeys.filter((k) => /half/i.test(k));
+  const splatKeys = imageKeys.filter((k) => /splat/i.test(k));
+
+  const assetBlock = hasAssets
+    ? `АРТ-АССЕТИ — ОБОВ'ЯЗКОВО використовуй спрайти (НЕ малюй примітиви замість них):
+cfg.assets містить data-URI зображення (ключі): ${imageKeys.join(", ")}.
+Передзавантаж усі НА ПОЧАТКУ (await): const tex={}; for (const k of ${JSON.stringify(imageKeys)}) tex[k]=await Assets.load({src:cfg.assets[k],format:k.endsWith(".webp")?"webp":"png"});
+${bgKey ? `- ФОН: Sprite з tex["${bgKey}"], cover на весь екран, найнижчий шар.` : "- Фон намалюй кольором cfg.style.colors.background."}
+- Ігрові обʼєкти (${g.objects.join(", ")}) — це Sprite з відповідних ключів (підбери за змістом назви ключа). anchor 0.5, масштаб під розмір.
+${halfKeys.length ? `- РОЗРІЗ показує НУТРОЩІ: при розрізі ховай цілий спрайт, показуй "half*" (${halfKeys.join(", ")}) як дві половинки через прямокутні маски по куту свайпу (atan2), що розлітаються перпендикулярно + гравітація.` : ""}
+${splatKeys.length ? `- СЛІД/БРИЗКИ на фоні: при ударі клади Sprite("splat*") (${splatKeys.join(", ")}) на окремий шар, .tint = колір обʼєкта/крові, alpha ~0.45, випадк. rotation/scale; НАКОПИЧУЮТЬСЯ весь матч.` : ""}`
+    : `БЕЗ зовнішніх асетів — малюй усе в коді (Graphics/Text).`;
+
+  return [sharedHeader(audioKeys), `${assetBlock}
 
 РУХ — бери з нашого модуля motion.js, НЕ вигадуй швидкості (px/кадр заборонено):
 - Якщо обʼєкти КИДАЮТЬ/підкидають (як фрукти): makeArc({fromX,fromY:H,screenH:H,timeAloftSec:~2.2,apexFraction:~0.7,angleDeg:randomLaunchAngle(Math.random()),spinRadPerSec}). Злітає→зависає на піку→падає.
 - Якщо вороги/обʼєкти НАСУВАЮТЬСЯ на гравця (екшн/виживання): makeApproach({fromX,fromY,toX,toY,screenH:H,speedShPerSec:0.4-0.6}). Рухається до цілі зі сталою швидкістю.
 - КОЖЕН тік: const dt=app.ticker.deltaMS/1000; m.update(dt); sprite.x=m.x; sprite.y=m.y; (за наявності sprite.rotation=m.rotation). dt-correct, frame-independent.
 - Складність: const diff=new DifficultyController(); на успіх diff.recordHit(), промах/пропуск diff.recordMiss(). Каденс=diff.spawnWaitSec(); кількість=diff.parallelCount(). Ескалюй ЩІЛЬНІСТЬ, НЕ швидкість.
-
-АУДІО: cfg.assets аудіо-ключі: ${audioKeys.length ? audioKeys.join(", ") : "(немає)"}.
-${audioKeys.length ? `Грай: function sfx(k){ try{const a=new Audio(cfg.assets[k]); a.volume=0.5; a.play().catch(()=>{});}catch(e){} } — на відповідні події (удар/поява/комбо/невдача).` : ""}
 
 ГЕЙМПЛЕЙ (ad-rigged, ПОВНОЦІННА гра):
 - coreAction = "${g.coreAction}": ${g.goal}.
@@ -86,18 +143,15 @@ ${g.specialItems?.length ? `- СПЕЦ-ПРЕДМЕТИ (рідко, з glow): $
 - НЕ зупиняй гру на досягненні score; score лише росте.
 - STICKY CTA: cfg.copy.cta видима ВНИЗУ весь час, працює завжди; клік → window.FbPlayableAd.onCTAClick().
 - firstActionHint: ${g.firstActionHint} (підкажи текстом + рука-підказка).
-- Aha-момент: ${g.ahaMoments?.[0]?.desc ?? g.goal}.
+- Aha-момент: ${g.ahaMoments?.[0]?.desc ?? g.goal}.`, SHARED_TAIL].join("\n\n");
+}
 
-СТАБІЛЬНІСТЬ (КРИТИЧНО — інакше "Cannot read properties of null (reading 'x')"):
-- Лише app.stage слухає вказівник (eventMode="static", hitArea=app.screen). Хіт-тест роби ВРУЧНУ (відстань точки до позиції обʼєкта), НЕ через eventMode на ігрових спрайтах.
-- Ігровим шарам: layer.interactiveChildren=false. Лише CTA інтерактивний (окремий ui-шар).
-- Прибирання обʼєкта: removeChild ПОТІМ destroy; одразу видали з масиву (без знищених посилань).
-
-GSAP: анімуй ЛИШЕ числові властивості Pixi (x, y, alpha, rotation, scale.x/scale.y). НЕ використовуй DOM/CSS-властивості (transformOrigin, css, skew рядком) — вони кидають warning і не діють на Pixi. Для «пульсу» анімуй scale (anchor вже центрує).
-
-CTA викликається РІВНО так (БЕЗ "?."): window.FbPlayableAd.onCTAClick();
-
-ВИВЕДИ ЛИШЕ КОД game.ts у одному \`\`\`ts блоці. Без пояснень.`;
+// Dispatcher: pick the contract branch by playableKind.
+function buildContract(g: ReferenceGame, imageKeys: string[], audioKeys: string[]): string {
+  const kind = g.playableKind ?? "slasher";
+  return kind === "platformer"
+    ? platformerContract(g, imageKeys, audioKeys)
+    : slasherContract(g, imageKeys, audioKeys);
 }
 
 function extractCode(s: string): string {
