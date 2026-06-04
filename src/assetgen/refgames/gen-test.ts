@@ -8,7 +8,7 @@
 //
 // Code-only (no AI assets) to isolate schema→logic quality, $0, fast.
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readdirSync, existsSync } from "node:fs";
 import path from "node:path";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { getReferenceGame } from "./index.js";
@@ -94,14 +94,29 @@ async function main(): Promise<void> {
   // write draft
   const dir = path.join("labs", `${id}-gen`);
   mkdirSync(path.join(dir, "assets"), { recursive: true });
+
+  // ── versioning: never overwrite a previous build ──
+  // next version = max existing out/<id>-gen-v<N>.html + 1
+  let nextV = 1;
+  if (existsSync("out")) {
+    const re = new RegExp(`^${id}-gen-v(\\d+)\\.html$`);
+    for (const f of readdirSync("out")) {
+      const m = f.match(re);
+      if (m) nextV = Math.max(nextV, Number(m[1]) + 1);
+    }
+  }
+  const vid = `${id}-gen-v${nextV}`;
+
+  // working game.ts (for the build) + a kept per-version snapshot
   writeFileSync(path.join(dir, "game.ts"), code + "\n");
+  writeFileSync(path.join(dir, `game-v${nextV}.ts`), code + "\n");
   writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({
-    id: `${id}-gen`, name: `${g.game} (gen)`, description: g.goal, entry: "game.ts",
+    id: `${id}-gen`, name: `${g.game} (gen v${nextV})`, description: g.goal, entry: "game.ts",
     assetBudgetBytes: 1468006, params: {}, brief: g,
   }, null, 2) + "\n");
 
   // build it directly (bypass TEMPLATES_DIR)
-  console.log(`   🔧 збираю…`);
+  console.log(`   🔧 збираю v${nextV}…`);
   const style = await loadStyle("fruit-bonanza").catch(() => loadStyle("default"));
   const { assets } = await loadAssets(path.join(dir, "assets"));
   const config: PlayableConfig = {
@@ -112,13 +127,15 @@ async function main(): Promise<void> {
     const js = await bundleTemplate(path.join(dir, "game.ts"), config);
     const html = buildHtml(js, g.game);
     const v = validate(html);
-    const outPath = path.join("out", `${id}-gen.html`);
-    writeFileSync(outPath, html, "utf8");
-    console.log(`\n   ✅ ЗІБРАНО: ${outPath}`);
+    // write BOTH a versioned file (kept) and the latest pointer
+    const versioned = path.join("out", `${vid}.html`);
+    writeFileSync(versioned, html, "utf8");
+    writeFileSync(path.join("out", `${id}-gen.html`), html, "utf8"); // latest
+    console.log(`\n   ✅ ЗІБРАНО v${nextV}: ${versioned}`);
     console.log(`   📦 розмір: ${(v.bytes / 1024).toFixed(1)} KB / ${(v.maxBytes / 1024).toFixed(0)} KB  · validation: ${v.ok ? "OK" : "FAIL"}`);
     if (v.errors.length) console.log(`   ❌ errors: ${v.errors.join("; ")}`);
     if (v.warnings.length) console.log(`   ⚠ warnings: ${v.warnings.join("; ")}`);
-    console.log(`\n   👉 відкрий у браузері: file://${path.resolve(outPath)}\n`);
+    console.log(`\n   👉 клацни: http://localhost:4321/playable/${vid}  (latest: /playable/${id}-gen)\n`);
   } catch (e) {
     console.log(`\n   ❌ BUNDLE FAILED:\n${(e as Error).message}\n`);
     console.log(`   (game.ts лишився в ${dir}/ — глянь що згенерувалось)`);
