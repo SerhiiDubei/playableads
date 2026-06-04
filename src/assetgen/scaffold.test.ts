@@ -25,6 +25,17 @@ describe("scaffoldMechanic", () => {
     assert.equal(m.entry, "game.ts");
   });
 
+  it("persists the Agent-2 brief into the manifest when provided", () => {
+    const brief = { ref: ["Fruit Ninja"], coreAction: "swipe", goal: "розрізати фрукти" };
+    const r = scaffoldMechanic({ id: "with-brief", name: "Brief", baseDir: base, brief });
+    const m = JSON.parse(readFileSync(path.join(r.dir, "manifest.json"), "utf8"));
+    assert.deepEqual(m.brief, brief);
+    // omitted when absent
+    const r2 = scaffoldMechanic({ id: "no-brief", baseDir: base });
+    const m2 = JSON.parse(readFileSync(path.join(r2.dir, "manifest.json"), "utf8"));
+    assert.equal(m2.brief, undefined);
+  });
+
   it("rejects invalid ids and duplicates", () => {
     assert.equal(isValidMechanicId("Bad Id"), false);
     assert.equal(isValidMechanicId("good-id-1"), true);

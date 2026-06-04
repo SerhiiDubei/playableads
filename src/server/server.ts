@@ -74,13 +74,13 @@ const server = createServer(async (req, res) => {
     }
 
     if (req.method === "POST" && p === "/api/scaffold") {
-      const b = (await readBody(req)) as { id?: string; name?: string; description?: string };
+      const b = (await readBody(req)) as { id?: string; name?: string; description?: string; brief?: Record<string, unknown> };
       // Auto-slug: designers type a human name; id is derived (kebab). Explicit
       // valid id wins; otherwise slugify name (or the id field) to latin kebab.
       const id = b.id && isValidMechanicId(b.id) ? b.id : slug(b.name || b.id || "");
       if (!id) return json(res, 400, { error: "дай назву з латинськими літерами (для id)" });
       try {
-        const r = scaffoldMechanic({ id, name: b.name || id, description: b.description });
+        const r = scaffoldMechanic({ id, name: b.name || id, description: b.description, brief: b.brief });
         return json(res, 200, { id: r.id, dir: r.dir });
       } catch (e) {
         return json(res, 409, { error: (e as Error).message });

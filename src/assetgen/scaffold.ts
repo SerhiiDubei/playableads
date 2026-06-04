@@ -15,6 +15,7 @@ export interface ScaffoldInput {
   name?: string;
   description?: string;
   baseDir?: string; // default "labs"
+  brief?: Record<string, unknown>; // Agent-2 mechanic brief (mini GDD) — persisted into manifest
 }
 
 export interface ScaffoldResult {
@@ -64,6 +65,8 @@ export function scaffoldMechanic(input: ScaffoldInput): ScaffoldResult {
     entry: "game.ts",
     assetBudgetBytes: 1468006,
     params: {},
+    // Agent-2 mini-GDD brief — the spec from which game.ts is generated (Crок 5).
+    ...(input.brief ? { brief: input.brief } : {}),
     // no `catalog` field → draft; promote to "v1" via TEMPLATE-STANDARD when ready.
   };
   writeFileSync(path.join(dir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
