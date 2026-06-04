@@ -10,6 +10,12 @@
 - **G-core** ✅ 10 архетипів + 11 шаблонів + lint (лишились experimental/animation).
 - **H** ✅ validate-стадія (готово повністю).
 
+## 🆕 Трек R — Refgames generation engine (сесія 2026-06-04)
+Окремий трек: **реальна гра → схема → генерація `game.ts` → AI-асети → авто-верифікація → деплой**.
+Розблокував НА ПРАКТИЦІ частини E/F/G. Живий беклог: [`REFGAMES-BACKLOG.md`](REFGAMES-BACKLOG.md).
+- Готово: refgames-схема+база, генерація гри (Fruit Ninja v1-v8), motion.ts (фізична арка+адаптивна складність, 6 тестів), AI-асети (webp-пайплайн), розріз-з-м'якоттю, Studio v2 (чат+Claude SDK), деплой на gh-pages (живий лінк).
+- Відкрито: motion-lint, LLM-деконструктор, нові ігри в базу, генерація з UI, QR.
+
 ---
 
 ## TIER 0 — Прерквізити (розблоковують усе) · робимо першими
@@ -33,11 +39,12 @@
 | ID | Епік | Acceptance Criteria | Залеж. | Статус |
 |----|------|---------------------|--------|--------|
 | **I** | Context-filler agent | дозаповнює відсутнє (ЦА/ніша/tone) з промту; позначає як inferred; не перетирає явне | B | blocked |
-| **F+** | Asset-gen hardening (решта) | retry×3 з модифікованим промтом; фейли → `out/runs/<id>/failures/`; edit-toolkit (CLI правки ассета) | (F-core ✅) | blocked |
-| **E** | Style system | 3-5 пресетів + власний; референс-картинки обов'язкові; style-каталог; image2style | — | blocked |
-| **G+** | Compose & zones (решта) | прапор `experimental` на layout; animation-варіативність (GSAP+AI-SVG, тест ваги) | (G-core ✅) | blocked |
-| **J** | Cross-cutting infra | інтерактивний грейбокс-viewport; версіонування+відкат прогонів; A/B-ітерація промтів | C | **partial** (greybox/AB далі) |
-| **UI** | **Designer Studio** (локальний web-UI) | `npm run studio`: brief→топ-3 механік→живе прев'ю playable; обгортка над B/D/pipeline; нуль deps | B, D | **done v1** (brief→suggest→preview) |
+| **F+** | Asset-gen hardening (решта) | retry×3 з модифікованим промтом; фейли → `out/runs/<id>/failures/`; edit-toolkit (CLI правки ассета) | (F-core ✅) | **partial** (R: gen-assets + weight-пайплайн; retry/edit ще todo) |
+| **E** | Style system | 3-5 пресетів + власний; референс-картинки обов'язкові; style-каталог; image2style | — | **partial** (R: AI-асети+стиль на практиці; пресети/image2style ще) |
+| **G+** | Compose & zones (решта) | прапор `experimental` на layout; animation-варіативність (GSAP+AI-SVG, тест ваги) | (G-core ✅) | **partial** (R: motion.ts анімація/фізика; experimental/variability ще) |
+| **J** | Cross-cutting infra | інтерактивний грейбокс-viewport; версіонування+відкат прогонів; A/B-ітерація промтів | C | **partial** (R: версіонування виводу; greybox/AB далі) |
+| **UI** | **Designer Studio** (локальний web-UI) | `npm run studio`: brief→топ-3 механік→живе прев'ю playable; обгортка над B/D/pipeline; нуль deps | B, D | **done v2** (R: чат + Claude Agent SDK на підписці; генерація з UI — R-15 todo) |
+| **R** | **Refgames generation engine** 🆕 | реальна гра→схема→генерація game.ts→AI-асети→верифікація→деплой; див. [`REFGAMES-BACKLOG.md`](REFGAMES-BACKLOG.md) | B, D | **active** (R-01..10 done; R-11..17 todo) |
 
 ## TIER 3 — закрите / відкладене
 - **H** Validation ✅ done.

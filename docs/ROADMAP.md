@@ -83,7 +83,7 @@
 
 | ID | Назва | Пріор. | Тег | Цінність | Оцінка | Залежності | Статус |
 |----|-------|--------|-----|----------|--------|------------|--------|
-| T-01 | **Стандарт вигляду по архетипах** — що повинен містити кожен тип екрана (endcard/feature-grid/pick-hero/…): обов'язкові елементи, ліміти, ієрархія. Новий `docs/TEMPLATE-STANDARD.md` | P1 | #templates | High | 2h | — | todo |
+| T-01 | **Стандарт вигляду по архетипах** — що повинен містити кожен тип екрана (endcard/feature-grid/pick-hero/…): обов'язкові елементи, ліміти, ієрархія. Новий `docs/TEMPLATE-STANDARD.md` | P1 | #templates | High | 2h | — | **done** (`docs/TEMPLATE-STANDARD.md` чинний) |
 | T-02 | Оновити `layout-authoring-guide.md` під zone-driven (meta.zoneTypes/assets, спільний CSS, патерни text-title/compact-cards/enforceZones з Z-міграції) | P1 | #templates | High | 1h | T-01 | todo |
 | T-03 | Кодифікувати усталені патерни як **soft-lint** правила (тонкий title→текст; дрібні картки→compact; nav→enforceZones:false) | P2 | #templates | Med | 1.5h | T-01 | todo |
 
@@ -109,6 +109,13 @@
 - **Гілки консолідовано:** 6 → **3**. ✅
 
 **Гілки:** `main` (ствол — усе тут) · `dev` (робоча гілка) · `gh-pages` (превʼю, незмінна назва).
+
+## 🆕 Refgames generation track (сесія 2026-06-04 · беклог: [`REFGAMES-BACKLOG.md`](REFGAMES-BACKLOG.md))
+Реальна гра → схема → генерація `game.ts` → AI-асети → верифікація → деплой. Розблокував на практиці E/F/G.
+Готово: refgames-схема+база, генерація Fruit Ninja (v1-v8), `kit/motion.ts` (фізична арка+адаптивна складність),
+AI-асети (webp-пайплайн), розріз-з-м'якоттю, Studio v2 (чат+Claude SDK), деплой на gh-pages (живий лінк).
+Відкрито: motion-lint (R-11), LLM-деконструктор (R-13), нові ігри (R-14), генерація з UI (R-15).
+**Примітка S-02:** labs-first уже діє де-факто — `labs/fruit-ninja-gen/` (гра+асети на git, сирці `_src` ігноряться).
 
 ## Pipeline track (окремий беклог: [`audit-2026-06-02/backlog.md`](audit-2026-06-02/backlog.md) · план: [`build-plan.md`](audit-2026-06-02/build-plan.md))
 Технічний хребет (Brief→assetgen→build→validate, з resume і gates). Прогрес:
