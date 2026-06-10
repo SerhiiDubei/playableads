@@ -42,6 +42,24 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["-y", "serve", "test/connect", "-l", "5061"],
       "port": 5061
+    },
+    {
+      "name": "fix-the-floor",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "test/fix-the-floor", "-l", "5062"],
+      "port": 5062
+    },
+    {
+      "name": "dream-floor",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "test/dream-floor", "-l", "5063"],
+      "port": 5063
+    },
+    {
+      "name": "dream-floor-pv",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "test/dream-floor", "-l", "5070"],
+      "port": 5070
     }
   ]
 }

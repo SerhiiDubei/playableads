@@ -1,0 +1,17 @@
+{
+  "id": "dream-floor",
+  "name": "Dream Floor",
+  "description": "3/4 cozy US living-room flooring renovation. A couch tilts on a rotten floor; the player moves it, rips the rug, then a 3-tool combo (crowbar -> new planks -> finish) transforms the floor. Forgiving, no-fail, oddly-satisfying. Warm reveal + flooring-store CTA. Frame composed 3/4 (House Flipper / Design Home vibe).",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "params": {
+    "couchTiltDeg": 7,
+    "hookDelayMs": 1500,
+    "idleHintMs": 3000,
+    "autoDemoAfterIdles": 2,
+    "stepAnimMs": 500,
+    "plankCount": 5,
+    "tapTolerancePx": 40,
+    "revealHoldMs": 2500
+  }
+}

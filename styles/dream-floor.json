@@ -1,0 +1,14 @@
+{
+  "id": "dream-floor",
+  "name": "Cozy Dream Home",
+  "colors": {
+    "background": "#cdd3d8",
+    "primary": "#9c6b3f",
+    "accent": "#e0a85a",
+    "text": "#2c2622"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 700
+  }
+}

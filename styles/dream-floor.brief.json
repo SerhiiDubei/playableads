@@ -1,0 +1,84 @@
+{
+  "id": "dream-floor",
+  "name": "Cozy Dream Home",
+  "version": "1.0.0",
+  "derivedFrom": "reference: House Flipper + Design Home — warm cozy home-renovation mobile game, semi-realistic stylized 3D",
+
+  "artDirection": {
+    "artStyle": "realistic",
+    "mood": ["casual-cute", "premium-shiny"],
+    "theme": "warm cozy American living-room home renovation, soft inviting interior"
+  },
+
+  "palette": {
+    "source": "manual",
+    "background": "#e9e2d4",
+    "primary": "#9c6b3f",
+    "secondary": "#caa074",
+    "accent": "#e0a85a",
+    "text": "#2c2622"
+  },
+
+  "rendering": {
+    "outline": { "style": "none", "color": "" },
+    "material": "matte",
+    "lighting": "soft-top",
+    "shading": "smooth-gradient",
+    "perspective": "slight-3d",
+    "shapeLanguage": "rounded-friendly",
+    "cornerRadius": "rounded"
+  },
+
+  "negative": [
+    "no text, no letters, no numbers, no watermark, no UI",
+    "semi-realistic stylized, NOT a gritty literal photograph, no harsh photographic grain",
+    "no people, no pets, no hands",
+    "no harsh black cast shadows, no fisheye or wide-angle distortion"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1024x1024",
+    "quality": "medium",
+    "transparent": true
+  },
+
+  "assets": [
+    { "key": "room-bg", "kind": "background",
+      "subject": "a cozy warm American living-room interior seen in 3/4 perspective from slightly above eye level, looking into the room. The CENTRE-FOREGROUND floor is EMPTY and clean (bare light honey-oak wood planks, NO couch, NO rug, NO carpet, nothing on the centre floor). Back wall has a large framed landscape painting on the left and a bright window with soft warm daylight on the right; a tall potted palm plant stands on the floor in the back-left corner; a slim floor lamp in the back-right corner. BOTH side walls have a wide DOORLESS open passage (open archway) leading into a softly sunlit adjacent room. Soft cozy global illumination, calm, inviting, premium but homey",
+      "overrides": { "defaults": { "transparent": false, "size": "1024x1536", "quality": "medium" }, "rendering": { "perspective": "slight-3d" } } },
+
+    { "key": "couch", "kind": "sprite",
+      "subject": "a cozy two-seat sofa upholstered in warm caramel-brown fabric with two plump seat cushions, soft rounded armrests and short wooden legs, seen in 3/4 view from slightly above and in front, soft and inviting",
+      "overrides": { "rendering": { "perspective": "slight-3d" } } },
+
+    { "key": "carpet", "kind": "sprite",
+      "subject": "a seamless top-down flat bird's-eye swatch of plush WALL-TO-WALL broadloom carpet in a soft warm neutral greige (warm grey-beige) tone, uniform dense cut-pile fibre texture, subtle natural pile variation, absolutely NO pattern, NO border, NO motif, NO seams; the carpet texture FILLS THE ENTIRE SQUARE FRAME completely edge-to-edge — absolutely NO background, NO margin; even soft flat lighting, looks like real soft wall-to-wall carpet",
+      "overrides": { "defaults": { "transparent": false, "size": "1024x1024" }, "rendering": { "perspective": "top-down", "lighting": "flat" } } },
+
+    { "key": "floor-rotten", "kind": "sprite",
+      "subject": "ONE single long old DAMAGED hardwood floorboard plank seen straight from DIRECTLY ABOVE (flat top-down), natural wood grain running vertically top-to-bottom; the plank is genuinely WORN and DAMAGED and clearly needs replacing: dull faded finish, several deep SPLITS and CRACKS running along the grain, scuffs and greyed water stains, AND clear TERMITE damage — small round bore holes, winding insect-tunnel galleries, and clusters of tiny pinholes eaten into the wood, plus a couple of chipped gouged spots; old and visibly damaged, but still a warm semi-realistic cozy wood plank in the room's soft style — NOT a black grimy barn board, NO bright green mould; the single plank fills the whole frame edge-to-edge",
+      "overrides": { "defaults": { "transparent": false, "size": "1024x1536" }, "rendering": { "perspective": "top-down", "lighting": "soft-top", "material": "matte" } } },
+
+    { "key": "floor-new", "kind": "sprite",
+      "subject": "ONE single long brand-new warm honey-oak wooden floorboard plank seen straight from DIRECTLY ABOVE (flat top-down), clean straight natural wood grain running vertically top-to-bottom, smooth subtle grain, soft satin finish catching gentle warm light, pristine flawless and inviting; the single plank fills the whole frame edge-to-edge",
+      "overrides": { "defaults": { "transparent": false, "size": "1024x1536" }, "rendering": { "perspective": "top-down", "lighting": "soft-top", "material": "matte" } } },
+
+    { "key": "tool-crowbar", "kind": "icon",
+      "subject": "a single red steel crowbar pry-bar hand tool, clean instantly recognizable silhouette, perfectly centered",
+      "overrides": { "rendering": { "perspective": "slight-3d" } } },
+
+    { "key": "tool-plank", "kind": "icon",
+      "subject": "a single fresh honey-oak wooden floorboard plank, clean instantly recognizable silhouette, perfectly centered",
+      "overrides": { "rendering": { "perspective": "slight-3d" } } },
+
+    { "key": "tool-finish", "kind": "icon",
+      "subject": "a single paint roller with a green handle applying glossy clear floor finish, clean instantly recognizable silhouette, perfectly centered",
+      "overrides": { "rendering": { "perspective": "slight-3d" } } },
+
+    { "key": "logo", "kind": "logo",
+      "subject": "a friendly flooring-company emblem: a simple warm house silhouette sitting on a small swatch of wooden plank floor inside a soft rounded badge, wordless icon only, perfectly centered and symmetric",
+      "overrides": { "rendering": { "perspective": "front-flat" } } }
+  ]
+}
