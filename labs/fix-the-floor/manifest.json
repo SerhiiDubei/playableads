@@ -1,0 +1,17 @@
+{
+  "id": "fix-the-floor",
+  "name": "Fix the Floor",
+  "description": "POV cozy US living-room flooring renovation. Couch tilts on a rotten floor; player moves it, rips the carpet, then a 3-tool combo (crowbar -> new plank -> finish) transforms the floor. Forgiving, no-fail, oddly-satisfying. Ends on a warm reveal + flooring-store CTA.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "params": {
+    "couchTiltDeg": 7,
+    "hookDelayMs": 1500,
+    "idleHintMs": 3000,
+    "autoDemoAfterIdles": 2,
+    "stepAnimMs": 500,
+    "plankCount": 5,
+    "tapTolerancePx": 36,
+    "revealHoldMs": 2500
+  }
+}

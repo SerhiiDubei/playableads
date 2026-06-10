@@ -1,0 +1,81 @@
+{
+  "id": "fix-the-floor",
+  "name": "Cozy Home Reno",
+  "version": "1.0.0",
+  "derivedFrom": "reference: House Flipper + cozy warm home-renovation mobile game art, soft and inviting",
+
+  "artDirection": {
+    "artStyle": "flat-illustration",
+    "mood": ["casual-cute", "playful"],
+    "theme": "warm cozy American living-room flooring renovation, soft inviting home interior"
+  },
+
+  "palette": {
+    "source": "manual",
+    "background": "#e9dcc6",
+    "primary": "#8a5a2b",
+    "secondary": "#caa074",
+    "accent": "#e0a85a",
+    "text": "#3a2a1c"
+  },
+
+  "rendering": {
+    "outline": { "style": "none", "color": "" },
+    "material": "matte",
+    "lighting": "soft-top",
+    "shading": "smooth-gradient",
+    "perspective": "top-down",
+    "shapeLanguage": "rounded-friendly",
+    "cornerRadius": "rounded"
+  },
+
+  "negative": [
+    "no text, no letters, no numbers, no logos with words",
+    "no photorealism, not a photograph",
+    "no harsh black cast shadow on the ground",
+    "no white background halo",
+    "no flat corporate vector UI"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1024x1024",
+    "quality": "medium",
+    "transparent": true
+  },
+
+  "assets": [
+    { "key": "couch", "kind": "sprite",
+      "subject": "a cozy two-seat fabric sofa in warm caramel-brown with plump cushions, viewed STRAIGHT FROM DIRECTLY ABOVE (flat top-down bird's-eye floor-plan view), seeing the tops of the seat cushions, backrest and both armrests, no side or front elevation, perfectly centered",
+      "overrides": { "defaults": { "size": "1024x1024" } } },
+
+    { "key": "carpet", "kind": "sprite",
+      "subject": "a cozy rectangular woven area rug lying flat on the floor, viewed STRAIGHT FROM DIRECTLY ABOVE (flat top-down bird's-eye view), soft warm tan and cream tones with a subtle woven texture and a gentle frayed fabric edge, looks like real soft fabric not a cut-out sticker, perfectly centered",
+      "overrides": { "defaults": { "transparent": false } } },
+
+    { "key": "floor-rotten", "kind": "sprite",
+      "subject": "a square patch of OLD ROTTEN wooden plank floor seen straight top-down: dark grey-brown weathered boards, deep jagged cracks, greenish mold patches, dark water stains, one broken plank with a black hole, a bent rusty nail sticking up, warped gaps between boards, damaged and neglected",
+      "overrides": { "defaults": { "transparent": false }, "artDirection": { "mood": ["dark-moody"] }, "rendering": { "perspective": "top-down", "lighting": "flat" } } },
+
+    { "key": "floor-new", "kind": "sprite",
+      "subject": "a square patch of BRAND NEW warm honey-oak wooden plank floor seen straight top-down, clean fresh straight planks, smooth subtle wood grain, glossy clean finish catching soft warm light, pristine and inviting",
+      "overrides": { "defaults": { "transparent": false }, "rendering": { "perspective": "top-down", "material": "glossy" } } },
+
+    { "key": "tool-crowbar", "kind": "icon",
+      "subject": "a single red steel crowbar pry-bar tool, clean recognizable silhouette, perfectly centered",
+      "overrides": { "rendering": { "perspective": "front-flat" } } },
+
+    { "key": "tool-plank", "kind": "icon",
+      "subject": "a single fresh warm-oak wooden floor plank, clean recognizable silhouette, perfectly centered",
+      "overrides": { "rendering": { "perspective": "front-flat" } } },
+
+    { "key": "tool-finish", "kind": "icon",
+      "subject": "a single paint roller tool with a green handle applying glossy finish, clean recognizable silhouette, perfectly centered",
+      "overrides": { "rendering": { "perspective": "front-flat" } } },
+
+    { "key": "logo", "kind": "logo",
+      "subject": "a friendly flooring-company emblem: a simple warm house silhouette sitting on a small swatch of wooden plank floor inside a rounded badge, wordless icon only, perfectly centered and symmetric",
+      "overrides": { "rendering": { "perspective": "front-flat" } } }
+  ]
+}
