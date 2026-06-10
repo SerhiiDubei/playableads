@@ -1,0 +1,19 @@
+{
+  "id": "dream-kitchen-three-picks",
+  "name": "Dream Kitchen — Three Picks",
+  "description": "Quiz-picker 3-step kitchen configurator: tap a style swatch → instant recolor. Step 1 = style (Modern/Farmhouse), Step 2 = countertop (Quartz/Marble), Step 3 = backsplash tile (Herringbone/Subway). All 8 combos visible; reveal adds bonus-delta (pendant lights, golden-hour glow); endcard shows the exact kitchen the user built.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "style": "dream-kitchen-three-picks",
+  "copy": {
+    "title": "What's your dream kitchen?",
+    "cta": "Book My Free Consult"
+  },
+  "params": {
+    "idleHintMs": 2500,
+    "autoDemoAfterIdles": 2,
+    "stepAnimMs": 450,
+    "revealHoldMs": 2200,
+    "wipeSpeedMs": 1200
+  }
+}

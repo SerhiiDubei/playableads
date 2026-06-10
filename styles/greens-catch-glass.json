@@ -1,0 +1,14 @@
+{
+  "id": "greens-catch-glass",
+  "name": "Brimful Greens",
+  "colors": {
+    "background": "#0d2b3e",
+    "primary": "#4ECDC4",
+    "accent": "#FFB627",
+    "text": "#F7FFF7"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 700
+  }
+}

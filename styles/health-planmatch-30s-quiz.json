@@ -1,0 +1,14 @@
+{
+  "id": "health-planmatch-30s-quiz",
+  "name": "ClearPath Plans",
+  "colors": {
+    "background": "#F7F9F9",
+    "primary": "#1FA39A",
+    "accent": "#FF7A59",
+    "text": "#1A2E2D"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 700
+  }
+}

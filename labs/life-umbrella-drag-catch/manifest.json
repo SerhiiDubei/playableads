@@ -1,0 +1,23 @@
+{
+  "id": "life-umbrella-drag-catch",
+  "name": "Keep Them Dry",
+  "description": "Drag-umbrella catch: hold an umbrella over a family silhouette while raindrops fall. Drops bounce off the dome (squash/stretch + ripple). Miss = kid-safe paper-corner darkens + shiver + nudge. Escalates: faster rain → split clusters/wind. Near-miss micro-correction = gold heart. ~18-20s interaction, warm reveal + endcard.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "style": "life-umbrella-drag-catch",
+  "copy": {
+    "title": "Protect what matters most.",
+    "cta": "Find My Plan"
+  },
+  "params": {
+    "idleHintMs": 2500,
+    "autoDemoAfterIdles": 2,
+    "dropSpeedBase": 0.38,
+    "dropSpeedBit2": 0.52,
+    "dropSpeedBit3": 0.68,
+    "umbrellaOffsetY": 90,
+    "hitRadiusScale": 1.4,
+    "revealHoldMs": 500,
+    "gameplayDurationMs": 18000
+  }
+}

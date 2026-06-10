@@ -1,0 +1,14 @@
+{
+  "id": "routine-tower-stack",
+  "name": "Habistack Morning",
+  "colors": {
+    "background": "#2D3047",
+    "primary": "#FFB100",
+    "accent": "#93E1D8",
+    "text": "#FFFFFF"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 700
+  }
+}

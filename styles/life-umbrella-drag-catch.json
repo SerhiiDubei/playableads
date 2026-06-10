@@ -1,0 +1,14 @@
+{
+  "id": "life-umbrella-drag-catch",
+  "name": "Evergreen Life",
+  "colors": {
+    "background": "#FFF8EC",
+    "primary": "#2E6B4F",
+    "accent": "#E8B84B",
+    "text": "#1A3D2B"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 700
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "home-kitchen-hotspot-stamp",
+  "name": "Spot & Stamp — Kitchen Hotspot Inspection",
+  "description": "Kitchen hotspot inspection: 5 damage points in a 3/4-view kitchen — 4 sudden & accidental risks (pipe burst, storm window, ceiling leak, dishwasher overflow) + 1 decoy (old slow seep). Tap to reveal TYPICALLY COVERED stamps with escalating combo sparks. Honest NOT TYPICALLY COVERED for the decoy. Endcard shows free home review CTA.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "style": "home-kitchen-hotspot-stamp",
+  "copy": {
+    "title": "See what home coverage can handle.",
+    "cta": "Check my home match"
+  },
+  "params": {
+    "idleHintMs": 2000,
+    "autoDemoAfterIdles": 2,
+    "revealHoldMs": 2500,
+    "ghostDelayMs": 1500,
+    "endcardIdleMs": 3000,
+    "autoEndcardMs": 9000
+  }
+}

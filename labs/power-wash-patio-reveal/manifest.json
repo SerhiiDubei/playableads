@@ -1,0 +1,24 @@
+{
+  "id": "power-wash-patio-reveal",
+  "name": "HydroHaven Power Wash",
+  "description": "Clean-reveal: swipe erases dirt layer via stamp-mask engine. Oddly-satisfying power-wash of a patio. Variable-reward tile mosaic appears at 50%, stubborn stain bursts on third swipe. Warm evening light + string lights reveal on completion. Power-washing service CTA.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "style": "power-wash-patio-reveal",
+  "copy": {
+    "title": "So satisfying. Finish it.",
+    "cta": "Finish My Real Patio"
+  },
+  "params": {
+    "brushRadius": 38,
+    "brushStep": 14,
+    "gridCols": 24,
+    "gridRows": 40,
+    "snapFillThreshold": 0.70,
+    "stubborns": 2,
+    "idleHintMs": 3000,
+    "autoDemoAfterIdles": 2,
+    "revealHoldMs": 600,
+    "eraseOffsetY": 96
+  }
+}

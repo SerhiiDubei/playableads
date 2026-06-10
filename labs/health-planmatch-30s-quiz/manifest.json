@@ -1,0 +1,19 @@
+{
+  "id": "health-planmatch-30s-quiz",
+  "name": "PlanMatch 30 — Health Quiz",
+  "description": "3-question preference quiz: pick Dental/Vision/Rx, network style, and pharmacy perks. Each pick snaps an icon into a visible profile tray (progressive build). Final reveal assembles a dynamic profile card from chosen icons. Stopwatch counts up (no pressure), curiosity-bridge endcard with TPMO disclaimer.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "style": "health-planmatch-30s-quiz",
+  "copy": {
+    "title": "Compare 2026 plan options in minutes. No obligation.",
+    "cta": "Check my options"
+  },
+  "params": {
+    "idleHintMs": 2000,
+    "autoDemoAfterIdles": 2,
+    "flipDurationSec": 0.45,
+    "snapDurationSec": 0.35,
+    "revealHoldMs": 2200
+  }
+}

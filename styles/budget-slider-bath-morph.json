@@ -1,0 +1,14 @@
+{
+  "id": "budget-slider-bath-morph",
+  "name": "RenoScope Slate & Copper",
+  "colors": {
+    "background": "#26333B",
+    "primary": "#3D5A6C",
+    "accent": "#C77B4F",
+    "text": "#F4F1EC"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 700
+  }
+}

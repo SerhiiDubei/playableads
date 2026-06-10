@@ -1,0 +1,14 @@
+{
+  "id": "dream-kitchen-three-picks",
+  "name": "DreamSlate Kitchens",
+  "colors": {
+    "background": "#2B2B2B",
+    "primary": "#B5915A",
+    "accent": "#C96F4A",
+    "text": "#F5EFE3"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 700
+  }
+}

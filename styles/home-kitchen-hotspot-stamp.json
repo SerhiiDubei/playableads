@@ -1,0 +1,14 @@
+{
+  "id": "home-kitchen-hotspot-stamp",
+  "name": "HavenNest Home",
+  "colors": {
+    "background": "#FAF3E7",
+    "primary": "#8FA888",
+    "accent": "#D96C47",
+    "text": "#3a2418"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 700
+  }
+}

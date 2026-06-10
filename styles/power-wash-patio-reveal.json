@@ -1,0 +1,14 @@
+{
+  "id": "power-wash-patio-reveal",
+  "name": "HydroHaven Power Wash",
+  "colors": {
+    "background": "#0E7C7B",
+    "primary": "#0E7C7B",
+    "accent": "#3EC6C0",
+    "text": "#F7FAFA"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 700
+  }
+}

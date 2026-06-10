@@ -1,0 +1,20 @@
+{
+  "id": "slice-your-spark-smoothie",
+  "name": "Slice Your Spark Smoothie",
+  "description": "Swipe-to-slice fruit ingredients to fill your Morning Blend — then claim 20% off your first Zestful month",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "style": "slice-your-spark-smoothie",
+  "copy": {
+    "title": "Build your morning blend",
+    "cta": "Continue — Claim 20% Off"
+  },
+  "params": {
+    "gameDurationSec": 20,
+    "idleFallbackSec": 2,
+    "meterStartPct": 20,
+    "combo4sBeat": true,
+    "combo8sBeat": true,
+    "nearMissKiwi": true
+  }
+}

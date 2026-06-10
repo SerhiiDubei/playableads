@@ -1,0 +1,26 @@
+{
+  "id": "greens-catch-glass",
+  "name": "Catch the Greens",
+  "description": "Drag the glass left/right to catch falling greens, berries, and vitamins. Golden vitamins give x2 fill. Junk bounces off with boing effect. Fill the glass 100% for a rainbow splash and endcard offer.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "style": "greens-catch-glass",
+  "copy": {
+    "title": "Fill your glass with good",
+    "cta": "Claim 20% Off"
+  },
+  "params": {
+    "glassW": 90,
+    "glassH": 140,
+    "itemRadius": 22,
+    "spawnIntervalSec": 1.2,
+    "fallSpeedMin": 180,
+    "fallSpeedMax": 260,
+    "goldenChance": 0.12,
+    "junkChance": 0.18,
+    "nearMissMarginPx": 30,
+    "slowMoDuration": 1.2,
+    "idleAutoDemoSec": 4.0,
+    "gameDurationSec": 22
+  }
+}

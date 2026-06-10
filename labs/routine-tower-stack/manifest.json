@@ -1,0 +1,19 @@
+{
+  "id": "routine-tower-stack",
+  "name": "Habistack — Stack Your Morning",
+  "description": "Crane-stack scripted playable: tower starts 2/5 with Hydrate+Move pre-placed (progress-already-running). Player taps 3 times to drop Scoop (gold, product-tag), Daylight, Sleep. Magnet forgiveness (no slicing). Forced win after 5th block, confetti burst, Day 1 endcard with CTA.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "style": "routine-tower-stack",
+  "copy": {
+    "title": "Build a morning that holds",
+    "cta": "Continue My Routine"
+  },
+  "params": {
+    "blockWidth": 180,
+    "blockHeight": 52,
+    "magnetTol": 38,
+    "swingDurStart": 1.8,
+    "swingDurEnd": 1.1
+  }
+}

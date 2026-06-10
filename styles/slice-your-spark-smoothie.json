@@ -1,0 +1,14 @@
+{
+  "id": "slice-your-spark-smoothie",
+  "name": "Zestful Smoothie",
+  "colors": {
+    "background": "#1A535C",
+    "primary": "#FF9F1C",
+    "accent": "#FF9F1C",
+    "text": "#ffffff"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 700
+  }
+}
