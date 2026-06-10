@@ -1,0 +1,49 @@
+{
+  "vertical": "nutra",
+  "id": "slice-your-spark-smoothie",
+  "title": "Slice Your Spark — Fruit-Ninja-слайсер, що наповнює склянку енергії",
+  "coreAction": "swipe",
+  "buildOrder": 1,
+  "mechanic": "Swipe-to-slice падаючих інгредієнтів (апельсин, шпинат, ягоди, імбир): слайс відбувається лише за фактичним свайпом гравця (rigged-easy = розширене вікно, не autocomplete); сік летить у склянку-метр «Morning Blend 0→100%» (sprite склянки + Graphics-маска рідини + GSAP-твін висоти з sine-slosh, fluid-симуляція заборонена); junk-айтеми (донат, газировка) на свайп дають пружний bounce/poof без штрафу, тексту і шеймінгу; скриптовані multi-fruit підкиди на ~4с і ~8с гарантують комбо x2/x3 з бейджами-назвами інгредієнтів (Vitamin C / Greens / Protein — заморожений список; boost/immunity/detox/burn заборонені); рандомні crit-слайси «Perfect slice!» дають більший сплеш і бонус до метра.",
+  "hook3s": "Соковитий апельсин уже летить через кадр у першу секунду, ghost-finger показує свайп-жест і назавжди зникає після першого успішного свайпу гравця; склянка внизу вже на 20% (endowed progress, не перекрита фруктом/пальцем). Свайп будь-де ріже фрукт чесно (декоративну слайс-лінію прибрано) — slow-mo, бризки, SFX <200мс. Idle-fallback: без інпуту ~2с — auto-demo слайс, фрукти зациклені, екран ніколи не порожній — non-interactor гарантовано доїжджає до endcard.",
+  "flowBeats": [
+    "Hook: апельсин у польоті + ghost-finger жест (зникає після першого свайпу); idle-fallback auto-demo через ~2с",
+    "8–12с слайсів: gap між цілями ≤1.6с, сік GSAP-твіном летить у склянку, метр росте; рандомні crit-слайси «Perfect slice!» з посиленим сплешем (variable reward)",
+    "Скриптовані комбо-підкиди на ~4с і ~8с: multi-fruit → бейджі Vitamin C / Greens / Protein scale-pop",
+    "Junk-біт: свайп по донату = пружний bounce/poof без штрафу і коментаря — жодного мертвого інпуту",
+    "Справжній near-miss: фінальний ківі вислизає з-під першого свайпу (slow-mo по краю), друга спроба — rigged-easy влучання (окремий скриптований спавн: збільшений hit-радіус + вищий arc)",
+    "Склянка 100%: блендер-вибух партиклів + пляшка Zestful у кадрі (demonstration-міст), screen-shake",
+    "Endcard: «Blend complete» + Continue-framed CTA; social proof/authority — лише verified-only слоти; читабельний FDA-дисклеймер"
+  ],
+  "brand": {
+    "name": "Zestful",
+    "tagline": "Energy you can taste.",
+    "palette": "Цитрусовий помаранч #FF9F1C, лайм #8AC926, чистий білий, глибокий петроль #1A535C для тексту — соковито і їстівно",
+    "logoIdea": "Літера Z, прорізана як слід ножа через половинку апельсина; бризки соку утворюють крапку"
+  },
+  "enCopy": {
+    "headline": "Build your morning blend",
+    "instruction": "Slice the fruit!",
+    "ctaButton": "Continue — Claim 20% Off",
+    "endcardLine": "Blend complete! Continue to claim 20% off your first month — intro offer for new members. Results may vary.",
+    "disclaimer": "*These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease. Results may vary."
+  },
+  "whyWins": "Demonstration — домінантний виграшний тип креативу вертикалі: інтеракція демонструє продукт (інгредієнти → blend), а продукт Zestful тепер показаний уже в момент 100% бленду, не лише на endcard. Slice-for-discount — доведена e-commerce playable-механіка. Найшвидший білд: доведений лаб fruit-ninja v8, juice-щільність максимальна, працює muted.",
+  "buildPath": "swipe-slice — форк labs/fruit-ninja-gen (game v8) з manifest/brief-wiring (~1–2 год); нове: fill-метр (sprite склянки + Graphics-маска + GSAP), сік-партикли GSAP-твіном до склянки, скриптований near-finish спавн ківі окремо від spawnOne (збільшений o.r + вищий arc через makeArc), endcard-rework ~0.5 дня (discount-reveal, Continue-framing, Cialdini-слоти, дисклеймер); SFX перегенерувати через ElevenLabs у mp3 (наявні .wav 197KB не копіювати); гейт ≤2MB.",
+  "riskNotes": "Блокувально: лендінг містить дослівно «20% off your first month» з умовами підписки; «300,000+»/«food scientists» рендеряться лише з документальним підтвердженням; варіації clinically/scientifically proven заборонені. Кампанія: 18+, mid/top-funnel, бандл ≤5MB без зовнішніх викликів.",
+  "appliedFixes": [
+    "Social proof «300,000+» і authority «food scientists» переведені у verified-only слоти, з дефолтної копії прибрані",
+    "Junk-айтеми реагують на свайп (bounce/poof без штрафу) — жоден видимий об'єкт не ігнорує взаємодію",
+    "Блокувальна вимога: оффер 20% дослівно на лендінгу до запуску",
+    "Тексти бейджів заморожені як назви інгредієнтів; boost/immunity/detox/burn заборонені",
+    "Слайс лише за фактичним свайпом; rigged-easy = ширше вікно, не autocomplete",
+    "Idle-fallback із зацикленими фруктами і auto-demo — non-interactor доходить до endcard",
+    "Ghost-finger зникає після першого свайпу; слайс-лінію прибрано (чесний інпут)",
+    "Фейковий near-miss замінено справжнім (ківі вислизає, влучання з 2-ї спроби)",
+    "Додано variable reward (crit-слайси) і скриптовані комбо на ~4с/~8с",
+    "Endcard: Continue-framing CTA, продукт показано на 100% бленду, +0.5 дня в плані",
+    "buildPath уточнено: форк labs/fruit-ninja-gen v8; fill-метр без fluid-симуляції; SFX→mp3; скриптований фінальний спавн",
+    "Дисклеймер читабельним кеглем (≥10px екв.) на endcard + дублювання на лендінгу; «Results may vary»",
+    "Кампанія: 18+, mid/top-funnel, ≤5MB"
+  ]
+}

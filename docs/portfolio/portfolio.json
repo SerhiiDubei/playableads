@@ -1,0 +1,422 @@
+[
+  {
+    "vertical": "nutra",
+    "id": "slice-your-spark-smoothie",
+    "title": "Slice Your Spark — Fruit-Ninja-слайсер, що наповнює склянку енергії",
+    "coreAction": "swipe",
+    "buildOrder": 1,
+    "mechanic": "Swipe-to-slice падаючих інгредієнтів (апельсин, шпинат, ягоди, імбир): слайс відбувається лише за фактичним свайпом гравця (rigged-easy = розширене вікно, не autocomplete); сік летить у склянку-метр «Morning Blend 0→100%» (sprite склянки + Graphics-маска рідини + GSAP-твін висоти з sine-slosh, fluid-симуляція заборонена); junk-айтеми (донат, газировка) на свайп дають пружний bounce/poof без штрафу, тексту і шеймінгу; скриптовані multi-fruit підкиди на ~4с і ~8с гарантують комбо x2/x3 з бейджами-назвами інгредієнтів (Vitamin C / Greens / Protein — заморожений список; boost/immunity/detox/burn заборонені); рандомні crit-слайси «Perfect slice!» дають більший сплеш і бонус до метра.",
+    "hook3s": "Соковитий апельсин уже летить через кадр у першу секунду, ghost-finger показує свайп-жест і назавжди зникає після першого успішного свайпу гравця; склянка внизу вже на 20% (endowed progress, не перекрита фруктом/пальцем). Свайп будь-де ріже фрукт чесно (декоративну слайс-лінію прибрано) — slow-mo, бризки, SFX <200мс. Idle-fallback: без інпуту ~2с — auto-demo слайс, фрукти зациклені, екран ніколи не порожній — non-interactor гарантовано доїжджає до endcard.",
+    "flowBeats": [
+      "Hook: апельсин у польоті + ghost-finger жест (зникає після першого свайпу); idle-fallback auto-demo через ~2с",
+      "8–12с слайсів: gap між цілями ≤1.6с, сік GSAP-твіном летить у склянку, метр росте; рандомні crit-слайси «Perfect slice!» з посиленим сплешем (variable reward)",
+      "Скриптовані комбо-підкиди на ~4с і ~8с: multi-fruit → бейджі Vitamin C / Greens / Protein scale-pop",
+      "Junk-біт: свайп по донату = пружний bounce/poof без штрафу і коментаря — жодного мертвого інпуту",
+      "Справжній near-miss: фінальний ківі вислизає з-під першого свайпу (slow-mo по краю), друга спроба — rigged-easy влучання (окремий скриптований спавн: збільшений hit-радіус + вищий arc)",
+      "Склянка 100%: блендер-вибух партиклів + пляшка Zestful у кадрі (demonstration-міст), screen-shake",
+      "Endcard: «Blend complete» + Continue-framed CTA; social proof/authority — лише verified-only слоти; читабельний FDA-дисклеймер"
+    ],
+    "brand": {
+      "name": "Zestful",
+      "tagline": "Energy you can taste.",
+      "palette": "Цитрусовий помаранч #FF9F1C, лайм #8AC926, чистий білий, глибокий петроль #1A535C для тексту — соковито і їстівно",
+      "logoIdea": "Літера Z, прорізана як слід ножа через половинку апельсина; бризки соку утворюють крапку"
+    },
+    "enCopy": {
+      "headline": "Build your morning blend",
+      "instruction": "Slice the fruit!",
+      "ctaButton": "Continue — Claim 20% Off",
+      "endcardLine": "Blend complete! Continue to claim 20% off your first month — intro offer for new members. Results may vary.",
+      "disclaimer": "*These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease. Results may vary."
+    },
+    "whyWins": "Demonstration — домінантний виграшний тип креативу вертикалі: інтеракція демонструє продукт (інгредієнти → blend), а продукт Zestful тепер показаний уже в момент 100% бленду, не лише на endcard. Slice-for-discount — доведена e-commerce playable-механіка. Найшвидший білд: доведений лаб fruit-ninja v8, juice-щільність максимальна, працює muted.",
+    "buildPath": "swipe-slice — форк labs/fruit-ninja-gen (game v8) з manifest/brief-wiring (~1–2 год); нове: fill-метр (sprite склянки + Graphics-маска + GSAP), сік-партикли GSAP-твіном до склянки, скриптований near-finish спавн ківі окремо від spawnOne (збільшений o.r + вищий arc через makeArc), endcard-rework ~0.5 дня (discount-reveal, Continue-framing, Cialdini-слоти, дисклеймер); SFX перегенерувати через ElevenLabs у mp3 (наявні .wav 197KB не копіювати); гейт ≤2MB.",
+    "riskNotes": "Блокувально: лендінг містить дослівно «20% off your first month» з умовами підписки; «300,000+»/«food scientists» рендеряться лише з документальним підтвердженням; варіації clinically/scientifically proven заборонені. Кампанія: 18+, mid/top-funnel, бандл ≤5MB без зовнішніх викликів.",
+    "appliedFixes": [
+      "Social proof «300,000+» і authority «food scientists» переведені у verified-only слоти, з дефолтної копії прибрані",
+      "Junk-айтеми реагують на свайп (bounce/poof без штрафу) — жоден видимий об'єкт не ігнорує взаємодію",
+      "Блокувальна вимога: оффер 20% дослівно на лендінгу до запуску",
+      "Тексти бейджів заморожені як назви інгредієнтів; boost/immunity/detox/burn заборонені",
+      "Слайс лише за фактичним свайпом; rigged-easy = ширше вікно, не autocomplete",
+      "Idle-fallback із зацикленими фруктами і auto-demo — non-interactor доходить до endcard",
+      "Ghost-finger зникає після першого свайпу; слайс-лінію прибрано (чесний інпут)",
+      "Фейковий near-miss замінено справжнім (ківі вислизає, влучання з 2-ї спроби)",
+      "Додано variable reward (crit-слайси) і скриптовані комбо на ~4с/~8с",
+      "Endcard: Continue-framing CTA, продукт показано на 100% бленду, +0.5 дня в плані",
+      "buildPath уточнено: форк labs/fruit-ninja-gen v8; fill-метр без fluid-симуляції; SFX→mp3; скриптований фінальний спавн",
+      "Дисклеймер читабельним кеглем (≥10px екв.) на endcard + дублювання на лендінгу; «Results may vary»",
+      "Кампанія: 18+, mid/top-funnel, ≤5MB"
+    ]
+  },
+  {
+    "vertical": "nutra",
+    "id": "routine-tower-stack",
+    "title": "Stack Your Morning — кран-вежа зі звичок",
+    "coreAction": "tap",
+    "buildOrder": 2,
+    "mechanic": "Crane-stack зі скриптованою послідовністю: вежа стартує з 2/5 уже складених блоків (Hydrate, Move — справжній progress-already-running), гравець 3 тапами скидає Scoop → Daylight → Sleep; позиція тапу реально впливає на офсет посадки, magnet-прощення (GSAP-твін blk.x до lower.cx — блок видимо «дотягується», ширина константна, slicing вимкнено) звужується з кожним блоком; тінь-підказка пульсує лише на першому блоці гравця; золотий «Scoop» має product-tag (банка+ложка, ~0.5с); near-miss умовний від інпуту: хитання рендериться лише за фактично неточного тапу, за ідеального — драм-біт пориву вітру; форсований win після 5-го блоку, lose-гілка недосяжна.",
+    "hook3s": "Вежа вже 2/5 з частково заповненим habit-метром, золотий блок «Scoop» гойдається на крані, тінь пульсує — справжній progress-already-running; ghost-finger лише показує tap-жест, НЕ завершуючи падіння: перший справжній drop із bounce виконує користувач. Конфеті в хуку немає — єдиний залп зарезервовано на win. Авто-старт без меню.",
+    "flowBeats": [
+      "Hook: вежа 2/5, золотий Scoop гойдається, ghost-finger показує жест без авто-дропу",
+      "Тап 1 — золотий «Scoop» з product-tag (банка+ложка): особливе сяйво і дзвін — demonstration-біт",
+      "Тап 2 «Daylight»: тінь-підказка звужується, прощення менше; неточний тап → блок видимо дотягується магнітом",
+      "Тап 3 «Sleep»: near-miss лише за реально неточного тапу (скриптований GSAP rotation-твін ±3° elastic, вежа вистоює); за ідеального — порив вітру",
+      "Win: streak-полум'я (спрайт + flicker), «Day 1 complete», єдиний конфеті-залп (порт confettiBurst з fruit-bonanza)",
+      "Endcard: Cialdini-слоти розведені по окремих елементах; social proof/authority — лише верифіковані"
+    ],
+    "brand": {
+      "name": "Habistack",
+      "tagline": "Small blocks. Big mornings.",
+      "palette": "Градієнт індиго-ніч #2D3047 → ранковий бурштин #FFB100, м'ятний акцент #93E1D8 — «з ночі в ранок»",
+      "logoIdea": "Чотири заокруглені блоки сходинками, з-за верхнього сходить маленьке сонце; силует читається як H"
+    },
+    "enCopy": {
+      "headline": "Build a morning that holds",
+      "instruction": "Tap to drop",
+      "ctaButton": "Continue My Routine",
+      "endcardLine": "Day 1 stacked! Join the morning builders community — your routine starts now.",
+      "disclaimer": "*These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease. Results may vary."
+    },
+    "whyWins": "Продає routine та identity — головний меседж-тренд вертикалі, повністю поза зоною health-claims. Продукт вбудований у геймплей як золотий блок із product-tag — demonstration, а не disconnected minigame. Реюз crane-модуля з керованим рефактором endless→scripted. «Day 1 complete» — найчистіший endowed progress і міст у Continue-framing.",
+    "buildPath": "tower-stack — рефактор templates/mad-mage-tower: (1) endless→scripted: фіксована послідовність, 2 пре-розміщені блоки + 3 тапи, форсований win, lose недосяжний (зі збереженням впливу інпуту на офсет); (2) slicing у land() замінено на magnet-прощення (твін blk.x до lower.cx, константна ширина, makeSlice вимкнено); (3) showMenu/СТАРТ видалено — авто-старт; (4) ghost-finger — новий спрайт руки + tap-твін (~1 год); (5) хитання = скриптований GSAP rotation-твін ±3° elastic навколо базового pivot, БЕЗ фізики, узгоджений із tower.pivot.y у screen-shake тікері; (6) confettiBurst — порт із templates/fruit-bonanza/game.ts:1013; streak-полум'я — спрайт/Graphics + flicker.",
+    "riskNotes": "Блокувально: «Day 1»/«streak»/Continue-framing лишаються лише якщо ленд має реальний streak/routine-механізм; інакше fallback «Routine stacked! Get your starter kit». Золотий Scoop — крок рутини, без імплікації миттєвого ефекту. 18+, health&wellness, mid/top-funnel.",
+    "appliedFixes": [
+      "З дисклеймера видалено «most people notice a difference in 4–6 weeks» → FDA-текст + «Results may vary.»",
+      "«500,000+» і «behavioral coaches» прибрані з дефолтної копії — verified-only слоти",
+      "Блокувальний критерій: Day 1/streak-framing лише за реального streak-механізму на ленді, інакше fallback-копія",
+      "Інпут реально впливає: тап → офсет, magnet-«дотягування» видиме, прощення звужується",
+      "Near-miss умовний від інпуту; за ідеального тапу — порив вітру (без зради інпуту)",
+      "Хук: вежа стартує 2/5 (справжній progress-already-running), ghost-finger лише жест, перший drop — гравця",
+      "Конфеті прибрано з хука — єдиний залп на win",
+      "Тінь-підказка лише на першому блоці гравця — повернуто ставки в середину",
+      "Золотий Scoop отримав продуктовий контекст (банка+ложка/product-tag)",
+      "Cialdini-слоти розведені по окремих візуальних елементах endcard",
+      "buildPath: рефактор endless→scripted, slicing→magnet, без меню, скриптований sway узгоджено зі screen-shake, confettiBurst портовано",
+      "Кампанія: 18+, mid/top-funnel"
+    ]
+  },
+  {
+    "vertical": "insurance",
+    "id": "home-kitchen-hotspot-stamp",
+    "title": "Spot & Stamp — home, hotspot-інспекція кухні",
+    "coreAction": "tap",
+    "buildOrder": 3,
+    "mechanic": "Hotspot-інспекція кухні: 3/4-вид з 5 точками — 4 однозначно sudden & accidental перили (раптовий розрив труби під мийкою, вікно розбите штормом, стеля пошкоджена раптовим протіканням труби згори, перелив посудомийки) + 1 decoy-точка зі старою плямою повільного просочування. Тап по перилу → мікро-reveal «полагоджено» (GSAP fade/dissolve damage-оверлея над чистою базою) + штамп TYPICALLY COVERED з on-screen кваліфікатором «varies by policy»; тап по decoy → чесний штамп «NOT TYPICALLY COVERED — ask about add-ons» (near-miss + освітній payoff). Кожен наступний reveal більший (ескалація: combo-spark → streak → full-room bloom + конфеті). Промахів нема — rigged-easy, кожна точка реально тапабельна.",
+    "hook3s": "Mute-proof кінетичний хук: у перші 800мс пляма на стелі видимо розповзається + крапля падає у відро (крапля/сплеск — Graphics+GSAP), точки пульсують scale+glow. Ghost-finger з'являється лише після 1.5–2с бездіяльності. Один рядок «Spot the damage». Тап по стельовій точці зупиняє крапання і прибирає відро — найдешевший causal-payoff сцени.",
+    "flowBeats": [
+      "Hook (0–3с): пляма розповзається, крапля у відро, 5 точок пульсують scale+glow; ghost-finger після 1.5–2с idle",
+      "Тап 1 (труба): спрей зникає, штамп TYPICALLY COVERED + кваліфікатор; інфо-рядок «Avg. repair: $2,400» (довідкова вартість ремонту з джерелом, не обіцянка виплати)",
+      "Тап 2 (вікно): combo-spark; тап 3 (стеля): крапання зупиняється, відро зникає — streak-біт",
+      "Decoy-біт: стара пляма просочування → «NOT TYPICALLY COVERED — ask about add-ons» (чесна сегментація + curiosity)",
+      "Тап 4 (посудомийка): full-room bloom — кухня переливається в after, сонце у вікні, конфеті",
+      "Reveal-картка без 100%-метра і без «4 of 4 covered»: «4 sudden risks spotted — 1 surprise» + кваліфікатор",
+      "Endcard: 2 trust-елементи — authority «Licensed agents in [State]» + reciprocity «Free home review»; дисклеймер видимий; idle: nudge 3с, авто-endcard 8–10с"
+    ],
+    "brand": {
+      "name": "HavenNest Home",
+      "tagline": "Your home, handled.",
+      "palette": "Тепла теракота (#D96C47) + шавлієвий зелений (#8FA888) + кремовий (#FAF3E7); штампи — насичений зелений, суто брендовий стиль без емблем",
+      "logoIdea": "Контур будиночка, дах якого утворений долонею, що накриває його, як щит"
+    },
+    "enCopy": {
+      "headline": "See what home coverage can handle.",
+      "instruction": "Spot the damage",
+      "ctaButton": "Check my home match",
+      "endcardLine": "You spotted all 5. Continue to your free home coverage review — licensed agents in [State].",
+      "disclaimer": "Coverage depends on your policy terms and state. Exclusions apply. Licensed agents in [State]."
+    },
+    "whyWins": "Reuse найдорожчої частини стеку — 3/4-view кімната з before/after, але не дублює флоу crowbar→plank: інша кімната, інша механіка (hotspot-штампи). Curiosity-hook «знайди пошкодження» + сатисфакція ремонту + чесний covered/not-covered контраст = і engagement, і освітній продуктовий аргумент.",
+    "buildPath": "Старт копією labs/dream-floor scaffold (boot hardening, spriteOr, фіксований 540×960 канвас, pulse/idle/auto-demo, ?dbg, standalone-білдер) з ВИКИНУТОЮ перспективною геометрією підлоги (~300 рядків); FSM → Set виконаних hotspot-ів. Ассети: 1 чистий after-master кухні + 5 прозорих damage-оверлеїв + відро (~250–350KB raw webp); штампи/лічильник — процедурно (Pixi Text + Graphics roundRect, back.out pop + shake); ~0.5 дня на вирівнювання оверлеїв через ?props-тюнер dream-floor. «Гілка у вікні» замінена на перелив посудомийки (дешевший оверлей, tap-target ≥44px).",
+    "riskNotes": "Housing SAC (Meta help 298000447747885) + Financial Products & Services з 21.01.2025 — підтвердити комбінацію з Meta rep, НЕ запускати як «Financial, не Housing». Пошкодження м'які (без потопу/пожежі). End-to-end блокувально: лендінг реально видає безкоштовний home coverage match.",
+    "appliedFixes": [
+      "Перили замінені на sudden & accidental; штамп → «TYPICALLY COVERED» з кваліфікатором; 100%-метр і «4 of 4 covered» прибрані",
+      "Headline пом'якшено: «really handles» → «can handle»",
+      "Класифікація виправлена: Housing SAC + Financial (з 21.01.2025)",
+      "Дисклеймер замінено на релевантний і видимо відрендерений на endcard",
+      "Social proof «[N] homeowners this month» видалено",
+      "«Licensed agents in [State]» з підготовленим підтвердженням ліцензії",
+      "Арт-бриф штампа: без емблем/гербів/канцелярської типографіки",
+      "Mismatch копії закрито: «Spot the damage» + 5-та decoy-точка NOT COVERED (near-miss + дві дірки одним фіксом)",
+      "Хук mute-proof кінетичний; ghost-finger лише після 1.5–2с; крапля пов'язана зі стельовим хотспотом",
+      "Ескалація reveal-ів + інфо-payload у штампах (довідкова вартість, не виплата)",
+      "Endcard скорочено до 2 trust-елементів; «2026 plans now available» видалено; idle-логіка специфікована",
+      "Ассет-план: 1 after-master + 5 оверлеїв, процедурні штампи, dream-floor scaffold без перспективної геометрії, 0.5 дня на ?props-вирівнювання, заміна гілки на посудомийку",
+      "End-to-end верифікація лендінга як блокувальний критерій"
+    ]
+  },
+  {
+    "vertical": "house",
+    "id": "power-wash-patio-reveal",
+    "title": "Мийка під тиском: брудне патіо (oddly-satisfying clean-reveal)",
+    "coreAction": "swipe",
+    "buildOrder": 4,
+    "mechanic": "Clean-reveal: свайп стирає шар бруду через stamp-mask engine (RenderTexture + pre-baked м'який радіальний brush-спрайт, стамп раз на ~12–16px шляху, рендер у RT раз на кадр із clear:false; RT у фіксованому design-просторі 400×860). Точка erase зміщена на 80–120px нижче тача (сопло/струмінь під пальцем — рука не закриває reveal). Прогрес — CPU-сітка ~24×40 (без extract.pixels); агресивний snap-fill з ~70%, rigged-«домивання» сусідніх клітинок на ≥85% через ту саму сітку. Variable-reward: на ~50% проявляється візерунок-мозаїка плитки + одна «вперта» пляма, що опирається 2 свайпам і вибухає на третьому. Muted-джус: піна/бризки на фронті erase, wet-sheen прохід, частинки.",
+    "hook3s": "0–1с: струмінь АКТИВНО ріже другу чисту смугу в autoplay до передачі контролю — рух у першому кадрі; видимий контраст чистого/брудного ≥1/3 екрана. Ghost-finger робить короткий жест — юзер домиває сам. Без тексту, крім інструкції «Swipe to wash»; headline живе лише на endcard.",
+    "flowBeats": [
+      "Hook (0–3с): струмінь сам ріже другу смугу, контраст ≥1/3 екрана, ghost-finger жест",
+      "Beat 1 (3–8с): свайпи стирають бруд (повна чистота за ~8–10 свайпів), піна+бризки на фронті, прогрес росте лише від реальних свайпів",
+      "Beat 2 (~50%): візерунок-мозаїка проявляється (variable reward); «вперта» пляма — 2 свайпи опору, вибух на третьому (near-miss-сурогат)",
+      "Snap-fill з ~70%, 100% і reveal не пізніше ~13с",
+      "Reveal: тепле вечірнє світло + гірлянда загоряється + водяний sweep-перехід — БЕЗ furniture move-in і before/after флешу (не дублює відвантажений floor-playable)",
+      "Endcard: headline + CTA + один головний proof-слот (лише верифіковані дані); Licensed & insured in [State] дрібними бейджами; дисклеймер видимий"
+    ],
+    "brand": {
+      "name": "HydroHaven",
+      "tagline": "Satisfaction, restored.",
+      "palette": "Глибокий бірюзовий #0E7C7B + чисто-білий #F7FAFA + брудно-коричневий #6B5B45 (шар бруду) + акцент аква #3EC6C0",
+      "logoIdea": "Краплеподібне сопло, що лишає за собою дугу з трьох «іскор» чистоти; негативний простір краплі утворює силует будинку"
+    },
+    "enCopy": {
+      "headline": "So satisfying. Finish it.",
+      "instruction": "Swipe to wash",
+      "ctaButton": "Finish My Real Patio",
+      "endcardLine": "Patio 100% clean! Licensed & insured in [State]. Booking is open — get your free estimate.",
+      "disclaimer": "Free estimate, no obligation. Results shown are illustrative."
+    },
+    "whyWins": "Прямий переклад жанру oddly-satisfying power-wash (віральні серії 70M+ TikTok) у тактильну механіку; працює повністю muted; «буденна дія, виконана ідеально» = найнижчий поріг входу. Найчистіший хук без тексту, тепер із рухом у нульовому кадрі.",
+    "buildPath": "Спільний модуль stamp-mask engine будується ПЕРШИМ і параметризується add/erase (майбутній reuse для paint-варіанту): RenderTexture + renderer.render({target: rt, clear:false}) + Sprite(rt) як маска (~80–120 рядків, стандартний Pixi v8 scratch-card патерн, +0.5 дня). Trail-input/pointer-tracking — реюз labs/fruit-ninja-gen/game-v8.ts (рядки 336–455), slow-mo через tScale; шаровий reveal-FSM — labs/dream-floor; прецедент — out/flooring-restore-swipe-en.html. Ассети: чисте патіо = master, бруд через images.edit з master-референсом АБО процедурний/тайловий шар (дві незалежні генерації заборонені); повний ліст: 2 шари патіо + гірлянда/світлові пропси + сопло + лого + 3–4 SFX, raw ≤1.0MB; Playwright QA на 360–393px.",
+    "riskNotes": "Housing SAC зафіксувати в медіаплані ДО білда (без ZIP, 18–65+, радіус ≥15 миль). Рейтинг 4.9/2,100+ — verified-only слот із дзеркалом на лендінгу. Потрібна video-capture версія для плейсментів без playable.",
+    "appliedFixes": [
+      "«Spring booking is open» замінено на правдиве нейтральне «Booking is open» (запуск у червні 2026)",
+      "«4.9 / 2,100+» — verified-only слот, з дефолтної копії прибрано",
+      "«Licensed & insured» → «in [State]» з доказами напоготові",
+      "«100% clean!» — окремий ігровий статус-блок; дисклеймер видимий на endcard",
+      "Housing SAC зафіксовано до білда",
+      "Reveal змінено: світло+гірлянда+водяний sweep, без furniture move-in і before/after флешу (не дублює floor-playable)",
+      "Хук кінетичний: струмінь сам ріже смугу в 0–1с, контраст ≥1/3; headline лише на endcard",
+      "Erase зміщено на 80–120px нижче тача — палець не закриває reveal",
+      "Таймінг: ~8–10 свайпів, snap-fill з ~70%, reveal ≤13с",
+      "Variable-reward: мозаїка на ~50% + «вперта» пляма",
+      "Muted-джус: піна/wet-sheen/частинки замість опори на SFX",
+      "Техспека: stamp-mask engine першим параметричним модулем; прогрес через CPU-сітку (extract.pixels заборонено); бруд лише через images.edit від master або процедурно; ассет-ліст розширено, raw ≤1.0MB"
+    ]
+  },
+  {
+    "vertical": "insurance",
+    "id": "health-planmatch-30s-quiz",
+    "title": "PlanMatch 30 — health/medicare-adjacent, квіз на 3 питання",
+    "coreAction": "pick",
+    "buildOrder": 5,
+    "mechanic": "3 quiz-картки з вибором із 3 великих карток-відповідей (Q1 = Dental/Vision/Rx — кількість узгоджена); замість rigged-countdown — stopwatch, що рахує ВГОРУ (Graphics.arc + GSAP, ~50 рядків) з копією «Most people finish in under 30 seconds» — жодного countdown-пресингу для 65+ аудиторії. Відповіді РЕАЛЬНО розгалужують результат: кожен пік ОДРАЗУ влітає іконкою у видимий profile-tray унизу (прогресивна збірка, окремий джус на слот), фінальна картка профілю складається ДИНАМІЧНО зі спрайтів-іконок обраних відповідей (усі комбінації; пре-рендери заборонені). Фідбек піку — «додано в профіль» (снап у tray), без зелених correct-чеків.",
+    "hook3s": "GSAP фліп-ін картки Q1 + пульс трьох варіантів у перші 0.5с — стимул, не читання; stopwatch стартує відлік угору. Чип «3 questions» графічно; hand-cue з'являється на ~2с бездіяльності. Свідомо нуль червоно-біло-синього, нуль слова Medicare, нуль печаток у кадрі.",
+    "flowBeats": [
+      "Hook: фліп-ін Q1 «What matters most?» (Dental/Vision/Rx) + пульс карток у 0.5с; stopwatch угору; hand-cue після ~2с idle",
+      "Q1–Q3: кожен пік → іконка снапиться у profile-tray з окремим джусом; GSAP-фліп наступної картки; Q3 у benefit-framing: «Pharmacy benefits: pickup perks or delivery perks?»",
+      "Reveal: іконки з tray злітаються у динамічно складену картку профілю (particle-джус) — кульмінація прогресивної збірки",
+      "Curiosity-міст: тізер «Plans with dental + vision benefits exist — see what's available» (у межах no-fake-functionality, без прив'язки до area)",
+      "Endcard: commitment + CTA домінують; authority «Licensed agents. We represent [X] organizations» (реальні числа) другорядно; TPMO-дисклеймер окремим блоком, читабельний, видимий без скролу"
+    ],
+    "brand": {
+      "name": "ClearPath Plans",
+      "tagline": "Options, explained.",
+      "palette": "Бірюзовий (#1FA39A) + кораловий (#FF7A59) + м'який білий (#F7F9F9) — дистанційовано від «державної» гами",
+      "logoIdea": "Звивиста стежка, що складається у галочку; жодних щитів/орлів/зірок"
+    },
+    "enCopy": {
+      "headline": "Compare 2026 plan options in minutes. No obligation.",
+      "instruction": "Pick what matters",
+      "ctaButton": "Check my options",
+      "endcardLine": "Nice picks. See plans that match what you chose — with a licensed agent.",
+      "disclaimer": "We do not offer every plan available in your area. Currently we represent [X] organizations which offer [Y] products in your area. Please contact Medicare.gov, 1-800-MEDICARE, or your local State Health Insurance Program to get information on all of your options. Not connected with or endorsed by the United States government or the federal Medicare program."
+    },
+    "whyWins": "Quiz — формат №1 страхового lead-gen (~71% start rate); питання-преференції самосегментують аудиторію там, де Special Ad Category вбила таргетинг. Stopwatch-челендж зберігає ігровий фрейм без CMS-ризикового countdown-пресингу. Всі питання у goal/benefit-framing — обходить Personal Attributes.",
+    "buildPath": "Pixi-шлях: клон скелета labs/fix-the-floor/game.ts (setState-ланцюжок intro→Q1→Q2→Q3→profile→end, GSAP timeline на крок, готові drawProgress/sparkle/puff); картки = Container+Sprite+pointertap; coreAction «pick» мапиться на tap у спеці. Stopwatch-кільце — новий компонент (~50 рядків, відлік угору; idle = ghost-finger hint). Ассети ≤13 зображень (card-frame 9-slice, 7 іконок одним шітом через sprite-icons.ts), 3–4 SFX через ElevenLabs; TPMO і весь текст — шрифтом (woff2), не запеченим. Блокувальний крок ДО запуску: carrier/HPMS-процес + документи regulatory authorization для Meta. Гейти: npm run visual + Meta validator (CTA в actions-зоні, 44px+).",
+    "riskNotes": "TPMO prominent display обов'язковий; Financial Products SAC; A/B-варіант без таймера для 64+ закладено; питання лише про преференції сервісу (мультимодальна модерація сканує і візуал); «with a licensed agent» — лише з ліцензією у кожному штаті показу.",
+    "appliedFixes": [
+      "Rigged-countdown прибрано повністю: stopwatch угору + «Most people finish in under 30 seconds»; чип «30 sec» знято (це скасовує engagement-пропозицію таймерного near-miss — компенсовано progressive profile-tray; A/B без таймера закладено)",
+      "Headline → «Compare 2026 plan options in minutes. No obligation.» (без недоказової доступності планів)",
+      "Endcard без «Profile complete»: «Nice picks. See plans that match what you chose» — onCTAClick не передає параметрів, handoff не обіцяємо",
+      "TPMO: реальні X/Y до сабміту, кегль ≥10–11px, видимий без скролу, обидва речення дослівно",
+      "«[X] carriers» — реальні числа; carrier/HPMS + regulatory authorization — блокувальний крок у buildPath",
+      "Rx-питання у benefit-framing (pickup perks / delivery perks)",
+      "Прогресивна збірка профілю в tray; correct-чеки замінені на «додано в профіль»",
+      "Хук-стимул: фліп-ін + пульс у 0.5с, hand-cue на ~2с; Q1 узгоджено на 3 варіанти",
+      "Endcard-ієрархія + curiosity-міст у межах no-fake-functionality",
+      "Стек зафіксовано: клон fix-the-floor FSM; pick→tap; динамічна profile-картка зі спрайтів; ассети ≤13; текст шрифтом; гейти visual + Meta validator"
+    ]
+  },
+  {
+    "vertical": "nutra",
+    "id": "greens-catch-glass",
+    "title": "Catch Your Greens — лови інгредієнти склянкою (drag по X)",
+    "coreAction": "drag",
+    "buildOrder": 6,
+    "mechanic": "Один input: drag склянки по X (touch-action:none на canvas + preventDefault на touchmove — мітигація конфлікту зі скролом iOS webview); зверху падають greens/ягоди/вітаміни. Рівно ОДИН rigged-біт: детермінований перший спавн точно на стартову x склянки (авто-перше попадання, один раз), далі input-gate — спавн призупиняється до першого drag гравця. Junk на спробу ловіння дає комедійний нейтральний фідбек (донат відскакує з «boing», склянка трясеться) — ніколи no-op чи проліт крізь склянку, без штрафу і підписів. Variable reward: golden-вітамін (x2 fill, окремий спалах/SFX) + streak-лічильник + ескалація темпу спавну на ~50%. Near-miss чесний: slow-mo (0.45–0.5) тригериться лише коли палець реально рухається до айтема на краю склянки (aim-at-x спавн) — читається як скіл. Fill-метр — masked rect у контурі склянки + GSAP-твін висоти (fluid-симуляція заборонена); метр не називається health score.",
+    "hook3s": "Передній край: на 0мс уже 2–3 айтеми в повітрі, єдиний авто-catch з партиклами ≤0.8с, ghost-finger ≤1.5с, перший власний catch гравця досяжний до ~3с; далі спавн чекає на інпут (input-gate знімає ефект «гра грає сама»). Інструкція «Catch the greens!» показується після 3с-хука — перші 3 секунди справді без тексту.",
+    "flowBeats": [
+      "Hook: 2–3 айтеми в повітрі на 0мс, єдиний авто-catch ≤0.8с, ghost-finger ≤1.5с, input-gate до першого drag",
+      "10–15с ловіння: squash-stretch склянки, SFX <200мс; golden-вітамін x2 fill + streak; ескалація темпу на ~50%",
+      "Junk-біт: спроба впіймати донат → boing-відскік + трясіння склянки, без штрафу і тексту",
+      "Near-miss: ківі на край склянки (aim-at-x), slow-mo лише при русі пальця до айтема",
+      "Склянка 100%: веселковий сплеш + бейджі в goal-framing «Your goals: Energy · Focus · Daily greens»",
+      "Endcard незалежно від результату: «Glass full! Get 20% off your first month» — оффер як стандартна промо, не приз; один меседж; FDA-дисклеймер + «Results may vary» читабельно на 360px"
+    ],
+    "brand": {
+      "name": "Brimful",
+      "tagline": "Fill up on good.",
+      "palette": "Аква #4ECDC4, манго #FFB627, вершково-білий, темно-синій #26547C для тексту — свіжо, грайливо, AA+ контраст",
+      "logoIdea": "Склянка по вінця, де лінія поверхні рідини вигинається в усмішку і читається як літера B"
+    },
+    "enCopy": {
+      "headline": "Fill your glass with good",
+      "instruction": "Catch the greens!",
+      "ctaButton": "Claim 20% Off",
+      "endcardLine": "Glass full! Get 20% off your first month — intro offer for new members. Results may vary.",
+      "disclaimer": "*These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease. Results may vary."
+    },
+    "whyWins": "Класичний brand-playable патерн із нульовими health-клеймами всередині геймплея — найнижчий компллаєнс-ризик трійки. Один input ідеально лягає на 9:16 thumb-зону, junk без шеймінгу обходить negative self-perception, висока juice-щільність, працює muted.",
+    "buildPath": "Донор — labs/fruit-ninja-gen/game.ts: реюз spawnOne/spawnTimer/DifficultyController, гравітації vy+=g*dt, spawnParticles, slowMo(), ghost-finger та endcard-патерну (tumble-slot прибрано зі шляху реюзу). Fill-метр — masked rect + GSAP. Rigged-спавн у спеці: біт 1 = детермінований спавн на x склянки (рівно один раз), near-miss = aim-at-x край склянки + slowMo(0.45–0.5) як у game.ts:315. Аудіо: 4–6 коротких SFX, BGM — опційний короткий луп з лімітом ваги; гейт ≤2MB (assetBudgetBytes 1468006). Повні ворота T-01: typecheck + check:layouts (дисклеймер у footer-зоні) + npm run visual (8 в'юпортів, координати лише у відносних W()/H()).",
+    "riskNotes": "18+ таргетинг у вимогах запуску. End-to-end QA: 20% off (і будь-який рейтинг/цифра) дослівно на лендінгу. Новий шаблон — найбільший QA-обсяг трійки, без запасу на день 2.",
+    "appliedFixes": [
+      "Каузальність «перемога→знижка» розірвано: endcard показується незалежно від результату, оффер — стандартна промо",
+      "CTA «Continue» → «Claim 20% Off» (конфлікт лінз вирішено на користь compliance)",
+      "«400,000+» і «4.8» прибрані з дефолтної копії — verified-only слоти з basis і «Results may vary» у тому ж блоці",
+      "Бейджі в goal-framing; «Immunity» як клейм прибрано («Daily greens»)",
+      "Лишився один rigged-біт (авто-catch ×1 + input-gate); near-miss став чесним (slow-mo лише при русі пальця)",
+      "Junk — комедійний boing-відскік, ніколи no-op/проліт крізь склянку",
+      "Variable reward: golden-вітамін x2 + streak + ескалація темпу",
+      "Хук ущільнено: айтеми в повітрі з 0мс, авто-catch ≤0.8с, власний catch ≤3с; інструкція після 3с",
+      "Мітигація drag-vs-scroll зафіксована (touch-action:none, preventDefault)",
+      "Дисклеймер специфіковано на endcard із читабельним кеглем на 360px",
+      "buildPath виправлено: донор labs/fruit-ninja-gen (не tumble-slot); fill-метр без fluid; аудіо-бюджет і гейт ≤2MB; ворота T-01",
+      "18+ + end-to-end QA лендінга в чеклісті"
+    ]
+  },
+  {
+    "vertical": "house",
+    "id": "budget-slider-bath-morph",
+    "title": "Бюджет-слайдер: ванна $6K→$25K (live-морф good/better/best)",
+    "coreAction": "slider",
+    "buildOrder": 7,
+    "mechanic": "Slider-калькулятор: горизонтальний повзунок бюджету (патерн dream-floor: pointerdown на ручці + stage.pointermove, thumb ≥44px, трек у bottom thumb-зоні); сцена реагує на КОЖЕН піксель драгу: дискретні пошарові кросфейди на порогах $8K/$15K/$22K з hysteresis (continuous-морф растрів заборонений) + дешеві безперервні канали між порогами — кодовий lerp температури світла, мікро-підміни фінішів delta-спрайтами, аксесуар-pop кожні ~$1.5K, безперервний цифровий тікер. Variable reward: на перетині порогу попається 1 із N випадкових designer-bonus об'єктів + прихований sweet-spot ($18.5K — бейдж «Best Value» зі sparkle). Усі цифри марковані «est.» з кадру 0. Фіксація тіру — явний tappable-чіп «Lock my style» після першого повного проходу (idle-fallback не раніше 6–8с); після reveal слайдер лишається повністю функціональним. Per-threshold SFX + haptic pulse — обов'язкова спека.",
+    "hook3s": "Ванна на весь екран, великий слайдер з цифрою «$9,500 est.»; тізер БЕЗ спойлера: мерехтить лише ЦИФРА ($9,500 → $24,000 → назад), максимальний тір прихований — правий край сцени за теплим світінням/затемненим контуром. Curiosity gap відкритий до першого драгу. Ghost-finger лягає на ручку; перший дотик миттєво перехоплює контроль.",
+    "flowBeats": [
+      "Hook (0–3с): мерехтить цифра бюджету (est.), макс-тір — затемнений силует; ghost-finger; перший дотик перехоплює контроль",
+      "Beat 1 (3–10с): безперервні мікро-зміни між порогами (світло, фініші, аксесуари ~$1.5K) + пороги $8K/$15K/$22K: плитка доміношкою (stripTexture), ванна→walk-in душова, LED-дзеркало; per-threshold SFX + haptic",
+      "Beat 2 (10–15с): випадковий designer-bonus на порозі + прихований sweet-spot $18.5K «Best Value» зі sparkle; потяг назад — чесний контраст",
+      "Commit: чіп «Lock my style» після першого повного проходу (idle-fallback 6–8с); банер «Your style: {tier}» + діапазон як ESTIMATE; слайдер не блокується",
+      "Endcard: заголовок повторює обраний тір і діапазон (est.), CTA continue-framed «See My {Tier} Estimate»; trust-слоти лише верифіковані; дисклеймер на інтерактивному екрані ТА endcard"
+    ],
+    "brand": {
+      "name": "RenoScope",
+      "tagline": "See your budget take shape.",
+      "palette": "Сланцево-синій #3D5A6C + мідний акцент #C77B4F + білий мармур #F4F1EC + темний графіт #26333B",
+      "logoIdea": "Ручка слайдера у формі двосхилого даху, що ковзає по треку-лінійці; трек переходить у контур ванни"
+    },
+    "enCopy": {
+      "headline": "$6K or $25K? Slide and see.",
+      "instruction": "Slide your budget",
+      "ctaButton": "See My {Tier} Estimate",
+      "endcardLine": "Your {Tier} bath is taking shape. Free consult includes a 3D design — licensed & insured in [State].",
+      "disclaimer": "Estimates only. Final pricing varies by project, materials, and location."
+    },
+    "whyWins": "Переносить доведений Lendi-патерн інтерактивного калькулятора (CPL −66%, +20% лідів) у вертикаль із CPL $30-70 — найбільший простір виграшу. Слайдер = самосегментація бюджету там, де Housing SAC обрізає таргетинг; тепер без мертвого ходу і з variable reward на порогах.",
+    "buildPath": "Labs-білд за шаблоном labs/fix-the-floor/game.ts (шар-стек room/objects/fx/hud, spriteOr, stripTexture для плитки, idle-таймер) — НЕ new-from-schema (генератор не має slider/configurator гілки). Слайдер — новий контрол на drag-патерні dream-floor (~80–120 LOC, hit ≥44px, цифра = Pixi Text на pointermove). Морф: дискретні кросфейди на порогах з hysteresis + кодові безперервні канали (tint-lerp, delta-спрайти, тікер). Ассети: один shared room shell + delta-спрайти на тір через images.edit з master-референсом (geometry coherence), ~18–22 webp ≤ ~800KB raw (рантайм ~590KB, base64 +33% → під 2MB).",
+    "riskNotes": "Housing SAC обов'язково (радіус ≥15 миль, без ZIP). Шкала $6K–$25K і пороги = ленд 1:1. Тір у CTA-URL лише де канал підтримує параметри, інакше сегментація ad set-ами. «Free 3D design» — лише як живий оффер без прихованих умов. Жодних government rebate.",
+    "appliedFixes": [
+      "endcardLine/CTA динамічні за тіром — хардкод «Premium» прибрано",
+      "Усі доларові цифри марковані «est.» з кадру 0; дисклеймер і на інтерактивному екрані",
+      "Auto-lock замінено явним чіпом «Lock my style»; після reveal слайдер функціональний",
+      "«1,800+ remodels» / «12 yrs» — verified-only слоти (дослівне дзеркало на лендінгу або видалення)",
+      "«Spring consults» прибрано; «free 3D design» — лише живий оффер",
+      "Шкала/пороги звіряються з лендінгом 1:1; тір передається де технічно можливо, інакше ad set-сегментація",
+      "Housing SAC у чеклісті запуску",
+      "Хук без спойлера: мерехтить лише цифра, макс-тір прихований — curiosity gap до першого драгу",
+      "Мертвий хід усунено: безперервні кодові канали між порогами + дискретні кросфейди з hysteresis (узгоджено engagement-вимогу з feasibility-забороною continuous-морфу)",
+      "Variable reward: designer-bonus + sweet-spot $18.5K «Best Value»",
+      "Per-threshold SFX + haptic — обов'язкова спека",
+      "buildPath перекласифіковано: labs-білд на fix-the-floor, слайдер на патерні dream-floor, shared shell + delta-спрайти через images.edit"
+    ]
+  },
+  {
+    "vertical": "house",
+    "id": "dream-kitchen-three-picks",
+    "title": "Квіз «Зберіть кухню мрії» за 3 вибори (tap-picker конфігуратор)",
+    "coreAction": "pick",
+    "buildOrder": 8,
+    "mechanic": "Quiz-picker 3 кроки (стиль → стільниця → фартух), кожен тап миттєво перешкуровує кухню; «неправильних» відповідей нема, winBias 100%, але всі 8 комбінацій рендеряться видимо по-різному (модульні шари, QA-прогін усіх 8). Ескалація джусу по кроках: крок 2 — shimmer + push-in камери + SFX, крок 3 — cascade плитки + зміна освітлення. Reveal додає НЕвибрану бонус-дельту (пендант-лампи, пара/рослина, golden-hour світло) — єдиний variable-reward біт. Результат — улесливе архетипне ім'я («The Modern Purist») + рядок усіх 3 виборів («Modern · Quartz · Herringbone»). Idle-обробник на кожному кроці: після ~4с пульс свотчів + ghost-demo, який можна перехопити.",
+    "hook3s": "Спліт-екран modern/farmhouse, wipe-лінія САМА осцилює з перших кадрів (автономний стимул для пасивних глядачів); на ~2.5–3с без інпуту ghost-finger демонстративно тапає preview-перефарбування. Два великі свотчі знизу; перший тап повністю застосовує стиль на всю кухню.",
+    "flowBeats": [
+      "Hook: wipe-лінія авто-осцилює modern↔farmhouse; ghost-demo на ~2.5–3с без інпуту; перший тап перефарбовує всю кухню",
+      "Крок 2: свотчі стільниці — shimmer + push-in камери + камінний SFX; прогрес 2/3; idle-пульс після ~4с",
+      "Крок 3: фартух cascade плитка за плиткою (патерн укладання планок dream-floor) + зміна освітлення — ескалація замість спадання",
+      "Reveal: камера від'їжджає, бонус-дельта поза вибором (пендант-лампи, пара з чашки, golden-hour); банер-архетип «The Modern Purist» + рядок «Modern · Quartz · Herringbone» — всі 3 вибори видимі",
+      "Endcard: фон = ТОЧНО зібрана юзером кухня (персистенція стану); CTA + максимум 2 trust-слоти (professional designers; free consult); дисклеймер дрібним футером"
+    ],
+    "brand": {
+      "name": "DreamSlate Kitchens",
+      "tagline": "Designed by you. Built by us.",
+      "palette": "Вугільний #2B2B2B + латунь #B5915A + вершковий #F5EFE3 + теракотовий мікроакцент #C96F4A",
+      "logoIdea": "Три свотч-плашки внахлест (камінь/дерево/плитка), що утворюють літеру D; нижня плашка — стільниця в профіль"
+    },
+    "enCopy": {
+      "headline": "What's your dream kitchen?",
+      "instruction": "Tap your favorite",
+      "ctaButton": "Book My Free Consult",
+      "endcardLine": "Your style is set: The Modern Purist. Designed with professional designers — book your free consult.",
+      "disclaimer": "Free consult, no obligation. Visualization is illustrative."
+    },
+    "whyWins": "Quiz funnel — стандарт лідогенерації вертикалі + material comparison; AR-візуалізатори (ColorSnap, Dulux) привчили аудиторію до «tap a swatch — instant recolor» = нульова крива навчання. Кожна відповідь — видимий прогрес сцени; сегментація реалізується креатив-варіантами під Housing SAC.",
+    "buildPath": "База = labs/dream-floor/game.ts (FSM intro→кроки→reveal→end + spriteOr() шарова підміна + поетапне викладання планок як прецедент tile-cascade) + picker-патерн з src/assetgen/layouts/two-choice.ts / pick-hero.ts для ряду свотчів (посилання на word-guess grid прибрано — нерелевантне і відсутнє на main). Ассети модульними шарами, НЕ 8 пре-рендерів: 1 базова оболонка + 2 повнокадрові стильові шари + 2 region-crop стільниці + 2 тайл-текстури фартуха + 6 свотчів + 4–6 пропсів; ціль ~1.0–1.4MB. CTA-URL-сегментація прибрана (FbPlayableAd.onCTAClick без параметрів) — сегментація ad set-ами або 2–3 креатив-варіантами. +0.5 дня D1 на alignment-ітерації шарів (images.edit master-reference, верифікація sharp). Окремий lab за патерном build-dream-floor.ts; «pick» у CoreAction enum — follow-up.",
+    "riskNotes": "Housing SAC для US; instant form без віку/статі/сімейного стану/точної локації. QA усіх 8 комбінацій на видиму різницю — блокувальний критерій. «See My Kitchen Plan» як CTA можливий лише якщо ленд показує план/візуалізацію.",
+    "appliedFixes": [
+      "«NKBA-certified» і «3,400+» — verified-only; дефолт «professional designers» без числа",
+      "«saved» прибрано (onCTAClick без параметрів) → «Your style is set»; сегментація ad set-ами / креатив-варіантами",
+      "CTA за замовчуванням «Book My Free Consult»; «See My Kitchen Plan» лише з планом/візуалізацією на ленді",
+      "«this season» видалено з endcard",
+      "Reveal-банер показує всі 3 вибори (архетип + рядок виборів); QA усіх 8 комбінацій",
+      "Housing SAC + обмеження instant form",
+      "Хук автономний: wipe-лінія авто-осцилює з 0с; ghost-demo ~2.5–3с; idle-обробник на кожному кроці",
+      "Крива винагороди інвертована: ескалація по кроках + бонус-дельта поза вибором у Reveal",
+      "Endcard: фон = точна кухня юзера, CTA + максимум 2 trust-слоти",
+      "buildPath переписано: dream-floor + two-choice/pick-hero замість word-guess; модульні шари замість 8 пре-рендерів; +0.5 дня на alignment"
+    ]
+  },
+  {
+    "vertical": "insurance",
+    "id": "life-umbrella-drag-catch",
+    "title": "Keep Them Dry — life, drag-парасоля над сім'єю",
+    "coreAction": "drag",
+    "buildOrder": 9,
+    "mechanic": "Umbrella-catch: drag відкритої парасолі з вертикальним offset над точкою дотику (анти-occlusion; сім'я і сердечка у верхній половині екрана); краплі відскакують від купола (рефлект вектора, dt-clamp Math.min(0.05, deltaMS/1000), хітбокс = візуальний радіус ×1.4 + розширення на |швидкість drag|·dt проти тунелювання; відбита крапля живе ≤0.4с з fade). Видимий kid-safe наслідок влучання: папір темніє/закручується на кутику, фігурка коротко shiver + сумний нахил — миттєво reversible; protection-метр ставиться на паузу + м'який nudge «Almost! Keep them covered» (без мокрої/постраждалої сім'ї) — інтерактивність має реальний наслідок. Ескалація: біт 2 — дощ пришвидшується, біт 3 — потік ділиться на два кластери/вітер гне траєкторії. Інтерактивний near-miss: крапля на край купола, яку рятує мікрокорекція гравця — золоте сердечко/sparkle (другий reward-канал). Листок/жолудь диференційовані: інша дуга відскоку, унікальний pop, бонусний тік метра. Основний фідбек — візуальний (squash/stretch купола + ripple), SFX лише підсилювач. Інтерактив ~18–20с.",
+    "hook3s": "Перша крапля падає і відскакує (або влучає з kid-safe наслідком) до 1.5с — видима подія без участі гравця; ghost-finger накладається НА падіння краплі, не передує йому. Перший дотик дає фідбек <0.5с. «Keep them dry» одним рядком. Дощ лагідний — без блискавок, грози, повені.",
+    "flowBeats": [
+      "Hook (0–3с): крапля дає видиму подію ≤1.5с, ghost-finger поверх падіння; фідбек першого дотику <0.5с",
+      "Біт 1: краплі відскакують (squash/stretch + ripple — sound-off first), сердечка scale-pop; влучання без купола = кутик паперу темніє + shiver, метр на паузі + nudge «Almost! Keep them covered»",
+      "Біт 2: дощ пришвидшується і зміщується — гравець веде парасолю; листок/жолудь з унікальними дугами/pop + бонус-тік",
+      "Біт 3: потік ділиться на два кластери/вітер гне краплі; інтерактивний near-miss — мікрокорекція рятує край купола → золоте сердечко",
+      "Reveal: хмари розходяться, сонце, картка «Protected» з теплим glow — без псевдо-лоадера «analyzing…»",
+      "Endcard: 2 слоти — liking (тепла сцена захищеної сім'ї) + reciprocity («Free plan match, no obligation»); «Licensed agents in [State]» лише в дисклеймері; social proof тільки з верифікованою цифрою"
+    ],
+    "brand": {
+      "name": "Evergreen Life",
+      "tagline": "Protect what matters most.",
+      "palette": "Лісовий зелений (#2E6B4F) + теплий золотий (#E8B84B) + кремовий (#FFF8EC); дощ — м'який блакитний, без грозових тонів",
+      "logoIdea": "Крона вічнозеленого дерева у формі купола парасолі над двома маленькими силуетами"
+    },
+    "enCopy": {
+      "headline": "Protect what matters most.",
+      "instruction": "Keep them dry",
+      "ctaButton": "Find My Plan",
+      "endcardLine": "They stayed dry. Find a life plan that fits — free plan match, no obligation.",
+      "disclaimer": "Coverage varies by state. Licensed agents in [State]. No obligation."
+    },
+    "whyWins": "Family-protection емоційний фрейм прибутковіший за раціональний (31% vs 16% uplift) — поданий метафорою-грою без «your family is at risk» (Personal Attributes safe). Один drag-input, читається без звуку, парасоля = архетипний символ страхування без пояснень.",
+    "buildPath": "Hand-build labs/keep-them-dry/game.ts (НЕ schema-генерація — drag-гілки в генераторі немає): реюз makeArc + DifficultyController з src/assetgen/kit/motion.ts і drag-патерну з templates/plug-in-socket/game.ts. План — 2 повні дні (день 1: механіка + rigged hitbox; день 2: тюнінг фізики/near-miss + ассети) — підтверджено історією 6–8 ітерацій на новий gen-архетип. Ассет-ліст ≤10 webp (парасоля, сім'я одним cutout-групою, листок, жолудь, фон, сонце/хмари, лого, ендкард-сцена); краплі/бризки/метр/сердечка — ТІЛЬКИ Pixi Graphics; SFX ≤6 (rain loop ≤8с, boing ×2–3, heart-pop, win-chime) — гейт ≤2MB з урахуванням base64 +33%.",
+    "riskNotes": "Кампейн-чекліст: Financial Products & Services SAC, 18+, без age/gender/ZIP-таргетингу, радіус ≥15 миль. Білд-заборони: блискавки/гроза/повінь, анімації шкоди фігуркам, псевдо-лоадер. Бандл ≤5MB без зовнішніх викликів. «Free plan match» — підтвердити безкоштовність і дзеркало на лендінгу.",
+    "appliedFixes": [
+      "CTA «See my plan match» → «Find My Plan» (без натяку на вже виконаний розрахунок)",
+      "«[N] families matched» видалено; слот замінено liking-візуалом (повертається лише з верифікованою цифрою)",
+      "Додано реальний fail/idle-стан з kid-safe наслідком — інтерактивність має фактичний результат (закрито Nonexistent Functionality)",
+      "«Licensed agents in [State]» + ліцензії напоготові; дисклеймер на endcard і лендінгу",
+      "Financial SAC, 18+, без age/gender/ZIP, радіус ≥15 миль — у чеклісті",
+      "Білд-заборони зафіксовані: гроза/повінь, шкода фігуркам, псевдо-лоадер; ≤5MB без зовнішніх викликів",
+      "Хук перебудовано: подія ≤1.5с, ghost-finger поверх падіння, фідбек дотику <0.5с",
+      "Ескалація бітів (швидший дощ → два кластери/вітер); інтерактив ~18–20с",
+      "Near-miss інтерактивний (мікрокорекція гравця → золоте сердечко); листок/жолудь диференційовані",
+      "Occlusion вирішено: offset парасолі над пальцем, сім'я/сердечка вгорі",
+      "Sound-off first: squash/stretch + ripple як основний фідбек",
+      "buildPath перекваліфіковано: hand-build на makeArc+DifficultyController+plug-in-socket drag; 2 повні дні; фізичні guardrails (dt-clamp, хітбокс ×1.4); ассети ≤10 webp, Graphics-партикли, SFX ≤6"
+    ]
+  }
+]

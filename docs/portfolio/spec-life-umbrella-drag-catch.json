@@ -1,0 +1,47 @@
+{
+  "vertical": "insurance",
+  "id": "life-umbrella-drag-catch",
+  "title": "Keep Them Dry — life, drag-парасоля над сім'єю",
+  "coreAction": "drag",
+  "buildOrder": 9,
+  "mechanic": "Umbrella-catch: drag відкритої парасолі з вертикальним offset над точкою дотику (анти-occlusion; сім'я і сердечка у верхній половині екрана); краплі відскакують від купола (рефлект вектора, dt-clamp Math.min(0.05, deltaMS/1000), хітбокс = візуальний радіус ×1.4 + розширення на |швидкість drag|·dt проти тунелювання; відбита крапля живе ≤0.4с з fade). Видимий kid-safe наслідок влучання: папір темніє/закручується на кутику, фігурка коротко shiver + сумний нахил — миттєво reversible; protection-метр ставиться на паузу + м'який nudge «Almost! Keep them covered» (без мокрої/постраждалої сім'ї) — інтерактивність має реальний наслідок. Ескалація: біт 2 — дощ пришвидшується, біт 3 — потік ділиться на два кластери/вітер гне траєкторії. Інтерактивний near-miss: крапля на край купола, яку рятує мікрокорекція гравця — золоте сердечко/sparkle (другий reward-канал). Листок/жолудь диференційовані: інша дуга відскоку, унікальний pop, бонусний тік метра. Основний фідбек — візуальний (squash/stretch купола + ripple), SFX лише підсилювач. Інтерактив ~18–20с.",
+  "hook3s": "Перша крапля падає і відскакує (або влучає з kid-safe наслідком) до 1.5с — видима подія без участі гравця; ghost-finger накладається НА падіння краплі, не передує йому. Перший дотик дає фідбек <0.5с. «Keep them dry» одним рядком. Дощ лагідний — без блискавок, грози, повені.",
+  "flowBeats": [
+    "Hook (0–3с): крапля дає видиму подію ≤1.5с, ghost-finger поверх падіння; фідбек першого дотику <0.5с",
+    "Біт 1: краплі відскакують (squash/stretch + ripple — sound-off first), сердечка scale-pop; влучання без купола = кутик паперу темніє + shiver, метр на паузі + nudge «Almost! Keep them covered»",
+    "Біт 2: дощ пришвидшується і зміщується — гравець веде парасолю; листок/жолудь з унікальними дугами/pop + бонус-тік",
+    "Біт 3: потік ділиться на два кластери/вітер гне краплі; інтерактивний near-miss — мікрокорекція рятує край купола → золоте сердечко",
+    "Reveal: хмари розходяться, сонце, картка «Protected» з теплим glow — без псевдо-лоадера «analyzing…»",
+    "Endcard: 2 слоти — liking (тепла сцена захищеної сім'ї) + reciprocity («Free plan match, no obligation»); «Licensed agents in [State]» лише в дисклеймері; social proof тільки з верифікованою цифрою"
+  ],
+  "brand": {
+    "name": "Evergreen Life",
+    "tagline": "Protect what matters most.",
+    "palette": "Лісовий зелений (#2E6B4F) + теплий золотий (#E8B84B) + кремовий (#FFF8EC); дощ — м'який блакитний, без грозових тонів",
+    "logoIdea": "Крона вічнозеленого дерева у формі купола парасолі над двома маленькими силуетами"
+  },
+  "enCopy": {
+    "headline": "Protect what matters most.",
+    "instruction": "Keep them dry",
+    "ctaButton": "Find My Plan",
+    "endcardLine": "They stayed dry. Find a life plan that fits — free plan match, no obligation.",
+    "disclaimer": "Coverage varies by state. Licensed agents in [State]. No obligation."
+  },
+  "whyWins": "Family-protection емоційний фрейм прибутковіший за раціональний (31% vs 16% uplift) — поданий метафорою-грою без «your family is at risk» (Personal Attributes safe). Один drag-input, читається без звуку, парасоля = архетипний символ страхування без пояснень.",
+  "buildPath": "Hand-build labs/keep-them-dry/game.ts (НЕ schema-генерація — drag-гілки в генераторі немає): реюз makeArc + DifficultyController з src/assetgen/kit/motion.ts і drag-патерну з templates/plug-in-socket/game.ts. План — 2 повні дні (день 1: механіка + rigged hitbox; день 2: тюнінг фізики/near-miss + ассети) — підтверджено історією 6–8 ітерацій на новий gen-архетип. Ассет-ліст ≤10 webp (парасоля, сім'я одним cutout-групою, листок, жолудь, фон, сонце/хмари, лого, ендкард-сцена); краплі/бризки/метр/сердечка — ТІЛЬКИ Pixi Graphics; SFX ≤6 (rain loop ≤8с, boing ×2–3, heart-pop, win-chime) — гейт ≤2MB з урахуванням base64 +33%.",
+  "riskNotes": "Кампейн-чекліст: Financial Products & Services SAC, 18+, без age/gender/ZIP-таргетингу, радіус ≥15 миль. Білд-заборони: блискавки/гроза/повінь, анімації шкоди фігуркам, псевдо-лоадер. Бандл ≤5MB без зовнішніх викликів. «Free plan match» — підтвердити безкоштовність і дзеркало на лендінгу.",
+  "appliedFixes": [
+    "CTA «See my plan match» → «Find My Plan» (без натяку на вже виконаний розрахунок)",
+    "«[N] families matched» видалено; слот замінено liking-візуалом (повертається лише з верифікованою цифрою)",
+    "Додано реальний fail/idle-стан з kid-safe наслідком — інтерактивність має фактичний результат (закрито Nonexistent Functionality)",
+    "«Licensed agents in [State]» + ліцензії напоготові; дисклеймер на endcard і лендінгу",
+    "Financial SAC, 18+, без age/gender/ZIP, радіус ≥15 миль — у чеклісті",
+    "Білд-заборони зафіксовані: гроза/повінь, шкода фігуркам, псевдо-лоадер; ≤5MB без зовнішніх викликів",
+    "Хук перебудовано: подія ≤1.5с, ghost-finger поверх падіння, фідбек дотику <0.5с",
+    "Ескалація бітів (швидший дощ → два кластери/вітер); інтерактив ~18–20с",
+    "Near-miss інтерактивний (мікрокорекція гравця → золоте сердечко); листок/жолудь диференційовані",
+    "Occlusion вирішено: offset парасолі над пальцем, сім'я/сердечка вгорі",
+    "Sound-off first: squash/stretch + ripple як основний фідбек",
+    "buildPath перекваліфіковано: hand-build на makeArc+DifficultyController+plug-in-socket drag; 2 повні дні; фізичні guardrails (dt-clamp, хітбокс ×1.4); ассети ≤10 webp, Graphics-партикли, SFX ≤6"
+  ]
+}

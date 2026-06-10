@@ -1,0 +1,44 @@
+{
+  "vertical": "house",
+  "id": "dream-kitchen-three-picks",
+  "title": "Квіз «Зберіть кухню мрії» за 3 вибори (tap-picker конфігуратор)",
+  "coreAction": "pick",
+  "buildOrder": 8,
+  "mechanic": "Quiz-picker 3 кроки (стиль → стільниця → фартух), кожен тап миттєво перешкуровує кухню; «неправильних» відповідей нема, winBias 100%, але всі 8 комбінацій рендеряться видимо по-різному (модульні шари, QA-прогін усіх 8). Ескалація джусу по кроках: крок 2 — shimmer + push-in камери + SFX, крок 3 — cascade плитки + зміна освітлення. Reveal додає НЕвибрану бонус-дельту (пендант-лампи, пара/рослина, golden-hour світло) — єдиний variable-reward біт. Результат — улесливе архетипне ім'я («The Modern Purist») + рядок усіх 3 виборів («Modern · Quartz · Herringbone»). Idle-обробник на кожному кроці: після ~4с пульс свотчів + ghost-demo, який можна перехопити.",
+  "hook3s": "Спліт-екран modern/farmhouse, wipe-лінія САМА осцилює з перших кадрів (автономний стимул для пасивних глядачів); на ~2.5–3с без інпуту ghost-finger демонстративно тапає preview-перефарбування. Два великі свотчі знизу; перший тап повністю застосовує стиль на всю кухню.",
+  "flowBeats": [
+    "Hook: wipe-лінія авто-осцилює modern↔farmhouse; ghost-demo на ~2.5–3с без інпуту; перший тап перефарбовує всю кухню",
+    "Крок 2: свотчі стільниці — shimmer + push-in камери + камінний SFX; прогрес 2/3; idle-пульс після ~4с",
+    "Крок 3: фартух cascade плитка за плиткою (патерн укладання планок dream-floor) + зміна освітлення — ескалація замість спадання",
+    "Reveal: камера від'їжджає, бонус-дельта поза вибором (пендант-лампи, пара з чашки, golden-hour); банер-архетип «The Modern Purist» + рядок «Modern · Quartz · Herringbone» — всі 3 вибори видимі",
+    "Endcard: фон = ТОЧНО зібрана юзером кухня (персистенція стану); CTA + максимум 2 trust-слоти (professional designers; free consult); дисклеймер дрібним футером"
+  ],
+  "brand": {
+    "name": "DreamSlate Kitchens",
+    "tagline": "Designed by you. Built by us.",
+    "palette": "Вугільний #2B2B2B + латунь #B5915A + вершковий #F5EFE3 + теракотовий мікроакцент #C96F4A",
+    "logoIdea": "Три свотч-плашки внахлест (камінь/дерево/плитка), що утворюють літеру D; нижня плашка — стільниця в профіль"
+  },
+  "enCopy": {
+    "headline": "What's your dream kitchen?",
+    "instruction": "Tap your favorite",
+    "ctaButton": "Book My Free Consult",
+    "endcardLine": "Your style is set: The Modern Purist. Designed with professional designers — book your free consult.",
+    "disclaimer": "Free consult, no obligation. Visualization is illustrative."
+  },
+  "whyWins": "Quiz funnel — стандарт лідогенерації вертикалі + material comparison; AR-візуалізатори (ColorSnap, Dulux) привчили аудиторію до «tap a swatch — instant recolor» = нульова крива навчання. Кожна відповідь — видимий прогрес сцени; сегментація реалізується креатив-варіантами під Housing SAC.",
+  "buildPath": "База = labs/dream-floor/game.ts (FSM intro→кроки→reveal→end + spriteOr() шарова підміна + поетапне викладання планок як прецедент tile-cascade) + picker-патерн з src/assetgen/layouts/two-choice.ts / pick-hero.ts для ряду свотчів (посилання на word-guess grid прибрано — нерелевантне і відсутнє на main). Ассети модульними шарами, НЕ 8 пре-рендерів: 1 базова оболонка + 2 повнокадрові стильові шари + 2 region-crop стільниці + 2 тайл-текстури фартуха + 6 свотчів + 4–6 пропсів; ціль ~1.0–1.4MB. CTA-URL-сегментація прибрана (FbPlayableAd.onCTAClick без параметрів) — сегментація ad set-ами або 2–3 креатив-варіантами. +0.5 дня D1 на alignment-ітерації шарів (images.edit master-reference, верифікація sharp). Окремий lab за патерном build-dream-floor.ts; «pick» у CoreAction enum — follow-up.",
+  "riskNotes": "Housing SAC для US; instant form без віку/статі/сімейного стану/точної локації. QA усіх 8 комбінацій на видиму різницю — блокувальний критерій. «See My Kitchen Plan» як CTA можливий лише якщо ленд показує план/візуалізацію.",
+  "appliedFixes": [
+    "«NKBA-certified» і «3,400+» — verified-only; дефолт «professional designers» без числа",
+    "«saved» прибрано (onCTAClick без параметрів) → «Your style is set»; сегментація ad set-ами / креатив-варіантами",
+    "CTA за замовчуванням «Book My Free Consult»; «See My Kitchen Plan» лише з планом/візуалізацією на ленді",
+    "«this season» видалено з endcard",
+    "Reveal-банер показує всі 3 вибори (архетип + рядок виборів); QA усіх 8 комбінацій",
+    "Housing SAC + обмеження instant form",
+    "Хук автономний: wipe-лінія авто-осцилює з 0с; ghost-demo ~2.5–3с; idle-обробник на кожному кроці",
+    "Крива винагороди інвертована: ескалація по кроках + бонус-дельта поза вибором у Reveal",
+    "Endcard: фон = точна кухня юзера, CTA + максимум 2 trust-слоти",
+    "buildPath переписано: dream-floor + two-choice/pick-hero замість word-guess; модульні шари замість 8 пре-рендерів; +0.5 дня на alignment"
+  ]
+}

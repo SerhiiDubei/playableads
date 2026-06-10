@@ -1,0 +1,46 @@
+{
+  "vertical": "house",
+  "id": "budget-slider-bath-morph",
+  "title": "Бюджет-слайдер: ванна $6K→$25K (live-морф good/better/best)",
+  "coreAction": "slider",
+  "buildOrder": 7,
+  "mechanic": "Slider-калькулятор: горизонтальний повзунок бюджету (патерн dream-floor: pointerdown на ручці + stage.pointermove, thumb ≥44px, трек у bottom thumb-зоні); сцена реагує на КОЖЕН піксель драгу: дискретні пошарові кросфейди на порогах $8K/$15K/$22K з hysteresis (continuous-морф растрів заборонений) + дешеві безперервні канали між порогами — кодовий lerp температури світла, мікро-підміни фінішів delta-спрайтами, аксесуар-pop кожні ~$1.5K, безперервний цифровий тікер. Variable reward: на перетині порогу попається 1 із N випадкових designer-bonus об'єктів + прихований sweet-spot ($18.5K — бейдж «Best Value» зі sparkle). Усі цифри марковані «est.» з кадру 0. Фіксація тіру — явний tappable-чіп «Lock my style» після першого повного проходу (idle-fallback не раніше 6–8с); після reveal слайдер лишається повністю функціональним. Per-threshold SFX + haptic pulse — обов'язкова спека.",
+  "hook3s": "Ванна на весь екран, великий слайдер з цифрою «$9,500 est.»; тізер БЕЗ спойлера: мерехтить лише ЦИФРА ($9,500 → $24,000 → назад), максимальний тір прихований — правий край сцени за теплим світінням/затемненим контуром. Curiosity gap відкритий до першого драгу. Ghost-finger лягає на ручку; перший дотик миттєво перехоплює контроль.",
+  "flowBeats": [
+    "Hook (0–3с): мерехтить цифра бюджету (est.), макс-тір — затемнений силует; ghost-finger; перший дотик перехоплює контроль",
+    "Beat 1 (3–10с): безперервні мікро-зміни між порогами (світло, фініші, аксесуари ~$1.5K) + пороги $8K/$15K/$22K: плитка доміношкою (stripTexture), ванна→walk-in душова, LED-дзеркало; per-threshold SFX + haptic",
+    "Beat 2 (10–15с): випадковий designer-bonus на порозі + прихований sweet-spot $18.5K «Best Value» зі sparkle; потяг назад — чесний контраст",
+    "Commit: чіп «Lock my style» після першого повного проходу (idle-fallback 6–8с); банер «Your style: {tier}» + діапазон як ESTIMATE; слайдер не блокується",
+    "Endcard: заголовок повторює обраний тір і діапазон (est.), CTA continue-framed «See My {Tier} Estimate»; trust-слоти лише верифіковані; дисклеймер на інтерактивному екрані ТА endcard"
+  ],
+  "brand": {
+    "name": "RenoScope",
+    "tagline": "See your budget take shape.",
+    "palette": "Сланцево-синій #3D5A6C + мідний акцент #C77B4F + білий мармур #F4F1EC + темний графіт #26333B",
+    "logoIdea": "Ручка слайдера у формі двосхилого даху, що ковзає по треку-лінійці; трек переходить у контур ванни"
+  },
+  "enCopy": {
+    "headline": "$6K or $25K? Slide and see.",
+    "instruction": "Slide your budget",
+    "ctaButton": "See My {Tier} Estimate",
+    "endcardLine": "Your {Tier} bath is taking shape. Free consult includes a 3D design — licensed & insured in [State].",
+    "disclaimer": "Estimates only. Final pricing varies by project, materials, and location."
+  },
+  "whyWins": "Переносить доведений Lendi-патерн інтерактивного калькулятора (CPL −66%, +20% лідів) у вертикаль із CPL $30-70 — найбільший простір виграшу. Слайдер = самосегментація бюджету там, де Housing SAC обрізає таргетинг; тепер без мертвого ходу і з variable reward на порогах.",
+  "buildPath": "Labs-білд за шаблоном labs/fix-the-floor/game.ts (шар-стек room/objects/fx/hud, spriteOr, stripTexture для плитки, idle-таймер) — НЕ new-from-schema (генератор не має slider/configurator гілки). Слайдер — новий контрол на drag-патерні dream-floor (~80–120 LOC, hit ≥44px, цифра = Pixi Text на pointermove). Морф: дискретні кросфейди на порогах з hysteresis + кодові безперервні канали (tint-lerp, delta-спрайти, тікер). Ассети: один shared room shell + delta-спрайти на тір через images.edit з master-референсом (geometry coherence), ~18–22 webp ≤ ~800KB raw (рантайм ~590KB, base64 +33% → під 2MB).",
+  "riskNotes": "Housing SAC обов'язково (радіус ≥15 миль, без ZIP). Шкала $6K–$25K і пороги = ленд 1:1. Тір у CTA-URL лише де канал підтримує параметри, інакше сегментація ad set-ами. «Free 3D design» — лише як живий оффер без прихованих умов. Жодних government rebate.",
+  "appliedFixes": [
+    "endcardLine/CTA динамічні за тіром — хардкод «Premium» прибрано",
+    "Усі доларові цифри марковані «est.» з кадру 0; дисклеймер і на інтерактивному екрані",
+    "Auto-lock замінено явним чіпом «Lock my style»; після reveal слайдер функціональний",
+    "«1,800+ remodels» / «12 yrs» — verified-only слоти (дослівне дзеркало на лендінгу або видалення)",
+    "«Spring consults» прибрано; «free 3D design» — лише живий оффер",
+    "Шкала/пороги звіряються з лендінгом 1:1; тір передається де технічно можливо, інакше ad set-сегментація",
+    "Housing SAC у чеклісті запуску",
+    "Хук без спойлера: мерехтить лише цифра, макс-тір прихований — curiosity gap до першого драгу",
+    "Мертвий хід усунено: безперервні кодові канали між порогами + дискретні кросфейди з hysteresis (узгоджено engagement-вимогу з feasibility-забороною continuous-морфу)",
+    "Variable reward: designer-bonus + sweet-spot $18.5K «Best Value»",
+    "Per-threshold SFX + haptic — обов'язкова спека",
+    "buildPath перекласифіковано: labs-білд на fix-the-floor, слайдер на патерні dream-floor, shared shell + delta-спрайти через images.edit"
+  ]
+}

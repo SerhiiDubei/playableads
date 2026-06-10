@@ -1,0 +1,47 @@
+{
+  "vertical": "nutra",
+  "id": "greens-catch-glass",
+  "title": "Catch Your Greens — лови інгредієнти склянкою (drag по X)",
+  "coreAction": "drag",
+  "buildOrder": 6,
+  "mechanic": "Один input: drag склянки по X (touch-action:none на canvas + preventDefault на touchmove — мітигація конфлікту зі скролом iOS webview); зверху падають greens/ягоди/вітаміни. Рівно ОДИН rigged-біт: детермінований перший спавн точно на стартову x склянки (авто-перше попадання, один раз), далі input-gate — спавн призупиняється до першого drag гравця. Junk на спробу ловіння дає комедійний нейтральний фідбек (донат відскакує з «boing», склянка трясеться) — ніколи no-op чи проліт крізь склянку, без штрафу і підписів. Variable reward: golden-вітамін (x2 fill, окремий спалах/SFX) + streak-лічильник + ескалація темпу спавну на ~50%. Near-miss чесний: slow-mo (0.45–0.5) тригериться лише коли палець реально рухається до айтема на краю склянки (aim-at-x спавн) — читається як скіл. Fill-метр — masked rect у контурі склянки + GSAP-твін висоти (fluid-симуляція заборонена); метр не називається health score.",
+  "hook3s": "Передній край: на 0мс уже 2–3 айтеми в повітрі, єдиний авто-catch з партиклами ≤0.8с, ghost-finger ≤1.5с, перший власний catch гравця досяжний до ~3с; далі спавн чекає на інпут (input-gate знімає ефект «гра грає сама»). Інструкція «Catch the greens!» показується після 3с-хука — перші 3 секунди справді без тексту.",
+  "flowBeats": [
+    "Hook: 2–3 айтеми в повітрі на 0мс, єдиний авто-catch ≤0.8с, ghost-finger ≤1.5с, input-gate до першого drag",
+    "10–15с ловіння: squash-stretch склянки, SFX <200мс; golden-вітамін x2 fill + streak; ескалація темпу на ~50%",
+    "Junk-біт: спроба впіймати донат → boing-відскік + трясіння склянки, без штрафу і тексту",
+    "Near-miss: ківі на край склянки (aim-at-x), slow-mo лише при русі пальця до айтема",
+    "Склянка 100%: веселковий сплеш + бейджі в goal-framing «Your goals: Energy · Focus · Daily greens»",
+    "Endcard незалежно від результату: «Glass full! Get 20% off your first month» — оффер як стандартна промо, не приз; один меседж; FDA-дисклеймер + «Results may vary» читабельно на 360px"
+  ],
+  "brand": {
+    "name": "Brimful",
+    "tagline": "Fill up on good.",
+    "palette": "Аква #4ECDC4, манго #FFB627, вершково-білий, темно-синій #26547C для тексту — свіжо, грайливо, AA+ контраст",
+    "logoIdea": "Склянка по вінця, де лінія поверхні рідини вигинається в усмішку і читається як літера B"
+  },
+  "enCopy": {
+    "headline": "Fill your glass with good",
+    "instruction": "Catch the greens!",
+    "ctaButton": "Claim 20% Off",
+    "endcardLine": "Glass full! Get 20% off your first month — intro offer for new members. Results may vary.",
+    "disclaimer": "*These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease. Results may vary."
+  },
+  "whyWins": "Класичний brand-playable патерн із нульовими health-клеймами всередині геймплея — найнижчий компллаєнс-ризик трійки. Один input ідеально лягає на 9:16 thumb-зону, junk без шеймінгу обходить negative self-perception, висока juice-щільність, працює muted.",
+  "buildPath": "Донор — labs/fruit-ninja-gen/game.ts: реюз spawnOne/spawnTimer/DifficultyController, гравітації vy+=g*dt, spawnParticles, slowMo(), ghost-finger та endcard-патерну (tumble-slot прибрано зі шляху реюзу). Fill-метр — masked rect + GSAP. Rigged-спавн у спеці: біт 1 = детермінований спавн на x склянки (рівно один раз), near-miss = aim-at-x край склянки + slowMo(0.45–0.5) як у game.ts:315. Аудіо: 4–6 коротких SFX, BGM — опційний короткий луп з лімітом ваги; гейт ≤2MB (assetBudgetBytes 1468006). Повні ворота T-01: typecheck + check:layouts (дисклеймер у footer-зоні) + npm run visual (8 в'юпортів, координати лише у відносних W()/H()).",
+  "riskNotes": "18+ таргетинг у вимогах запуску. End-to-end QA: 20% off (і будь-який рейтинг/цифра) дослівно на лендінгу. Новий шаблон — найбільший QA-обсяг трійки, без запасу на день 2.",
+  "appliedFixes": [
+    "Каузальність «перемога→знижка» розірвано: endcard показується незалежно від результату, оффер — стандартна промо",
+    "CTA «Continue» → «Claim 20% Off» (конфлікт лінз вирішено на користь compliance)",
+    "«400,000+» і «4.8» прибрані з дефолтної копії — verified-only слоти з basis і «Results may vary» у тому ж блоці",
+    "Бейджі в goal-framing; «Immunity» як клейм прибрано («Daily greens»)",
+    "Лишився один rigged-біт (авто-catch ×1 + input-gate); near-miss став чесним (slow-mo лише при русі пальця)",
+    "Junk — комедійний boing-відскік, ніколи no-op/проліт крізь склянку",
+    "Variable reward: golden-вітамін x2 + streak + ескалація темпу",
+    "Хук ущільнено: айтеми в повітрі з 0мс, авто-catch ≤0.8с, власний catch ≤3с; інструкція після 3с",
+    "Мітигація drag-vs-scroll зафіксована (touch-action:none, preventDefault)",
+    "Дисклеймер специфіковано на endcard із читабельним кеглем на 360px",
+    "buildPath виправлено: донор labs/fruit-ninja-gen (не tumble-slot); fill-метр без fluid; аудіо-бюджет і гейт ≤2MB; ворота T-01",
+    "18+ + end-to-end QA лендінга в чеклісті"
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "vertical": "insurance",
+  "id": "health-planmatch-30s-quiz",
+  "title": "PlanMatch 30 — health/medicare-adjacent, квіз на 3 питання",
+  "coreAction": "pick",
+  "buildOrder": 5,
+  "mechanic": "3 quiz-картки з вибором із 3 великих карток-відповідей (Q1 = Dental/Vision/Rx — кількість узгоджена); замість rigged-countdown — stopwatch, що рахує ВГОРУ (Graphics.arc + GSAP, ~50 рядків) з копією «Most people finish in under 30 seconds» — жодного countdown-пресингу для 65+ аудиторії. Відповіді РЕАЛЬНО розгалужують результат: кожен пік ОДРАЗУ влітає іконкою у видимий profile-tray унизу (прогресивна збірка, окремий джус на слот), фінальна картка профілю складається ДИНАМІЧНО зі спрайтів-іконок обраних відповідей (усі комбінації; пре-рендери заборонені). Фідбек піку — «додано в профіль» (снап у tray), без зелених correct-чеків.",
+  "hook3s": "GSAP фліп-ін картки Q1 + пульс трьох варіантів у перші 0.5с — стимул, не читання; stopwatch стартує відлік угору. Чип «3 questions» графічно; hand-cue з'являється на ~2с бездіяльності. Свідомо нуль червоно-біло-синього, нуль слова Medicare, нуль печаток у кадрі.",
+  "flowBeats": [
+    "Hook: фліп-ін Q1 «What matters most?» (Dental/Vision/Rx) + пульс карток у 0.5с; stopwatch угору; hand-cue після ~2с idle",
+    "Q1–Q3: кожен пік → іконка снапиться у profile-tray з окремим джусом; GSAP-фліп наступної картки; Q3 у benefit-framing: «Pharmacy benefits: pickup perks or delivery perks?»",
+    "Reveal: іконки з tray злітаються у динамічно складену картку профілю (particle-джус) — кульмінація прогресивної збірки",
+    "Curiosity-міст: тізер «Plans with dental + vision benefits exist — see what's available» (у межах no-fake-functionality, без прив'язки до area)",
+    "Endcard: commitment + CTA домінують; authority «Licensed agents. We represent [X] organizations» (реальні числа) другорядно; TPMO-дисклеймер окремим блоком, читабельний, видимий без скролу"
+  ],
+  "brand": {
+    "name": "ClearPath Plans",
+    "tagline": "Options, explained.",
+    "palette": "Бірюзовий (#1FA39A) + кораловий (#FF7A59) + м'який білий (#F7F9F9) — дистанційовано від «державної» гами",
+    "logoIdea": "Звивиста стежка, що складається у галочку; жодних щитів/орлів/зірок"
+  },
+  "enCopy": {
+    "headline": "Compare 2026 plan options in minutes. No obligation.",
+    "instruction": "Pick what matters",
+    "ctaButton": "Check my options",
+    "endcardLine": "Nice picks. See plans that match what you chose — with a licensed agent.",
+    "disclaimer": "We do not offer every plan available in your area. Currently we represent [X] organizations which offer [Y] products in your area. Please contact Medicare.gov, 1-800-MEDICARE, or your local State Health Insurance Program to get information on all of your options. Not connected with or endorsed by the United States government or the federal Medicare program."
+  },
+  "whyWins": "Quiz — формат №1 страхового lead-gen (~71% start rate); питання-преференції самосегментують аудиторію там, де Special Ad Category вбила таргетинг. Stopwatch-челендж зберігає ігровий фрейм без CMS-ризикового countdown-пресингу. Всі питання у goal/benefit-framing — обходить Personal Attributes.",
+  "buildPath": "Pixi-шлях: клон скелета labs/fix-the-floor/game.ts (setState-ланцюжок intro→Q1→Q2→Q3→profile→end, GSAP timeline на крок, готові drawProgress/sparkle/puff); картки = Container+Sprite+pointertap; coreAction «pick» мапиться на tap у спеці. Stopwatch-кільце — новий компонент (~50 рядків, відлік угору; idle = ghost-finger hint). Ассети ≤13 зображень (card-frame 9-slice, 7 іконок одним шітом через sprite-icons.ts), 3–4 SFX через ElevenLabs; TPMO і весь текст — шрифтом (woff2), не запеченим. Блокувальний крок ДО запуску: carrier/HPMS-процес + документи regulatory authorization для Meta. Гейти: npm run visual + Meta validator (CTA в actions-зоні, 44px+).",
+  "riskNotes": "TPMO prominent display обов'язковий; Financial Products SAC; A/B-варіант без таймера для 64+ закладено; питання лише про преференції сервісу (мультимодальна модерація сканує і візуал); «with a licensed agent» — лише з ліцензією у кожному штаті показу.",
+  "appliedFixes": [
+    "Rigged-countdown прибрано повністю: stopwatch угору + «Most people finish in under 30 seconds»; чип «30 sec» знято (це скасовує engagement-пропозицію таймерного near-miss — компенсовано progressive profile-tray; A/B без таймера закладено)",
+    "Headline → «Compare 2026 plan options in minutes. No obligation.» (без недоказової доступності планів)",
+    "Endcard без «Profile complete»: «Nice picks. See plans that match what you chose» — onCTAClick не передає параметрів, handoff не обіцяємо",
+    "TPMO: реальні X/Y до сабміту, кегль ≥10–11px, видимий без скролу, обидва речення дослівно",
+    "«[X] carriers» — реальні числа; carrier/HPMS + regulatory authorization — блокувальний крок у buildPath",
+    "Rx-питання у benefit-framing (pickup perks / delivery perks)",
+    "Прогресивна збірка профілю в tray; correct-чеки замінені на «додано в профіль»",
+    "Хук-стимул: фліп-ін + пульс у 0.5с, hand-cue на ~2с; Q1 узгоджено на 3 варіанти",
+    "Endcard-ієрархія + curiosity-міст у межах no-fake-functionality",
+    "Стек зафіксовано: клон fix-the-floor FSM; pick→tap; динамічна profile-картка зі спрайтів; ассети ≤13; текст шрифтом; гейти visual + Meta validator"
+  ]
+}

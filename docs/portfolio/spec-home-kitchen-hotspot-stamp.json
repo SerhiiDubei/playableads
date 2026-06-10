@@ -1,0 +1,49 @@
+{
+  "vertical": "insurance",
+  "id": "home-kitchen-hotspot-stamp",
+  "title": "Spot & Stamp — home, hotspot-інспекція кухні",
+  "coreAction": "tap",
+  "buildOrder": 3,
+  "mechanic": "Hotspot-інспекція кухні: 3/4-вид з 5 точками — 4 однозначно sudden & accidental перили (раптовий розрив труби під мийкою, вікно розбите штормом, стеля пошкоджена раптовим протіканням труби згори, перелив посудомийки) + 1 decoy-точка зі старою плямою повільного просочування. Тап по перилу → мікро-reveal «полагоджено» (GSAP fade/dissolve damage-оверлея над чистою базою) + штамп TYPICALLY COVERED з on-screen кваліфікатором «varies by policy»; тап по decoy → чесний штамп «NOT TYPICALLY COVERED — ask about add-ons» (near-miss + освітній payoff). Кожен наступний reveal більший (ескалація: combo-spark → streak → full-room bloom + конфеті). Промахів нема — rigged-easy, кожна точка реально тапабельна.",
+  "hook3s": "Mute-proof кінетичний хук: у перші 800мс пляма на стелі видимо розповзається + крапля падає у відро (крапля/сплеск — Graphics+GSAP), точки пульсують scale+glow. Ghost-finger з'являється лише після 1.5–2с бездіяльності. Один рядок «Spot the damage». Тап по стельовій точці зупиняє крапання і прибирає відро — найдешевший causal-payoff сцени.",
+  "flowBeats": [
+    "Hook (0–3с): пляма розповзається, крапля у відро, 5 точок пульсують scale+glow; ghost-finger після 1.5–2с idle",
+    "Тап 1 (труба): спрей зникає, штамп TYPICALLY COVERED + кваліфікатор; інфо-рядок «Avg. repair: $2,400» (довідкова вартість ремонту з джерелом, не обіцянка виплати)",
+    "Тап 2 (вікно): combo-spark; тап 3 (стеля): крапання зупиняється, відро зникає — streak-біт",
+    "Decoy-біт: стара пляма просочування → «NOT TYPICALLY COVERED — ask about add-ons» (чесна сегментація + curiosity)",
+    "Тап 4 (посудомийка): full-room bloom — кухня переливається в after, сонце у вікні, конфеті",
+    "Reveal-картка без 100%-метра і без «4 of 4 covered»: «4 sudden risks spotted — 1 surprise» + кваліфікатор",
+    "Endcard: 2 trust-елементи — authority «Licensed agents in [State]» + reciprocity «Free home review»; дисклеймер видимий; idle: nudge 3с, авто-endcard 8–10с"
+  ],
+  "brand": {
+    "name": "HavenNest Home",
+    "tagline": "Your home, handled.",
+    "palette": "Тепла теракота (#D96C47) + шавлієвий зелений (#8FA888) + кремовий (#FAF3E7); штампи — насичений зелений, суто брендовий стиль без емблем",
+    "logoIdea": "Контур будиночка, дах якого утворений долонею, що накриває його, як щит"
+  },
+  "enCopy": {
+    "headline": "See what home coverage can handle.",
+    "instruction": "Spot the damage",
+    "ctaButton": "Check my home match",
+    "endcardLine": "You spotted all 5. Continue to your free home coverage review — licensed agents in [State].",
+    "disclaimer": "Coverage depends on your policy terms and state. Exclusions apply. Licensed agents in [State]."
+  },
+  "whyWins": "Reuse найдорожчої частини стеку — 3/4-view кімната з before/after, але не дублює флоу crowbar→plank: інша кімната, інша механіка (hotspot-штампи). Curiosity-hook «знайди пошкодження» + сатисфакція ремонту + чесний covered/not-covered контраст = і engagement, і освітній продуктовий аргумент.",
+  "buildPath": "Старт копією labs/dream-floor scaffold (boot hardening, spriteOr, фіксований 540×960 канвас, pulse/idle/auto-demo, ?dbg, standalone-білдер) з ВИКИНУТОЮ перспективною геометрією підлоги (~300 рядків); FSM → Set виконаних hotspot-ів. Ассети: 1 чистий after-master кухні + 5 прозорих damage-оверлеїв + відро (~250–350KB raw webp); штампи/лічильник — процедурно (Pixi Text + Graphics roundRect, back.out pop + shake); ~0.5 дня на вирівнювання оверлеїв через ?props-тюнер dream-floor. «Гілка у вікні» замінена на перелив посудомийки (дешевший оверлей, tap-target ≥44px).",
+  "riskNotes": "Housing SAC (Meta help 298000447747885) + Financial Products & Services з 21.01.2025 — підтвердити комбінацію з Meta rep, НЕ запускати як «Financial, не Housing». Пошкодження м'які (без потопу/пожежі). End-to-end блокувально: лендінг реально видає безкоштовний home coverage match.",
+  "appliedFixes": [
+    "Перили замінені на sudden & accidental; штамп → «TYPICALLY COVERED» з кваліфікатором; 100%-метр і «4 of 4 covered» прибрані",
+    "Headline пом'якшено: «really handles» → «can handle»",
+    "Класифікація виправлена: Housing SAC + Financial (з 21.01.2025)",
+    "Дисклеймер замінено на релевантний і видимо відрендерений на endcard",
+    "Social proof «[N] homeowners this month» видалено",
+    "«Licensed agents in [State]» з підготовленим підтвердженням ліцензії",
+    "Арт-бриф штампа: без емблем/гербів/канцелярської типографіки",
+    "Mismatch копії закрито: «Spot the damage» + 5-та decoy-точка NOT COVERED (near-miss + дві дірки одним фіксом)",
+    "Хук mute-proof кінетичний; ghost-finger лише після 1.5–2с; крапля пов'язана зі стельовим хотспотом",
+    "Ескалація reveal-ів + інфо-payload у штампах (довідкова вартість, не виплата)",
+    "Endcard скорочено до 2 trust-елементів; «2026 plans now available» видалено; idle-логіка специфікована",
+    "Ассет-план: 1 after-master + 5 оверлеїв, процедурні штампи, dream-floor scaffold без перспективної геометрії, 0.5 дня на ?props-вирівнювання, заміна гілки на посудомийку",
+    "End-to-end верифікація лендінга як блокувальний критерій"
+  ]
+}

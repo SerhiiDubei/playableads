@@ -1,0 +1,47 @@
+{
+  "vertical": "nutra",
+  "id": "routine-tower-stack",
+  "title": "Stack Your Morning — кран-вежа зі звичок",
+  "coreAction": "tap",
+  "buildOrder": 2,
+  "mechanic": "Crane-stack зі скриптованою послідовністю: вежа стартує з 2/5 уже складених блоків (Hydrate, Move — справжній progress-already-running), гравець 3 тапами скидає Scoop → Daylight → Sleep; позиція тапу реально впливає на офсет посадки, magnet-прощення (GSAP-твін blk.x до lower.cx — блок видимо «дотягується», ширина константна, slicing вимкнено) звужується з кожним блоком; тінь-підказка пульсує лише на першому блоці гравця; золотий «Scoop» має product-tag (банка+ложка, ~0.5с); near-miss умовний від інпуту: хитання рендериться лише за фактично неточного тапу, за ідеального — драм-біт пориву вітру; форсований win після 5-го блоку, lose-гілка недосяжна.",
+  "hook3s": "Вежа вже 2/5 з частково заповненим habit-метром, золотий блок «Scoop» гойдається на крані, тінь пульсує — справжній progress-already-running; ghost-finger лише показує tap-жест, НЕ завершуючи падіння: перший справжній drop із bounce виконує користувач. Конфеті в хуку немає — єдиний залп зарезервовано на win. Авто-старт без меню.",
+  "flowBeats": [
+    "Hook: вежа 2/5, золотий Scoop гойдається, ghost-finger показує жест без авто-дропу",
+    "Тап 1 — золотий «Scoop» з product-tag (банка+ложка): особливе сяйво і дзвін — demonstration-біт",
+    "Тап 2 «Daylight»: тінь-підказка звужується, прощення менше; неточний тап → блок видимо дотягується магнітом",
+    "Тап 3 «Sleep»: near-miss лише за реально неточного тапу (скриптований GSAP rotation-твін ±3° elastic, вежа вистоює); за ідеального — порив вітру",
+    "Win: streak-полум'я (спрайт + flicker), «Day 1 complete», єдиний конфеті-залп (порт confettiBurst з fruit-bonanza)",
+    "Endcard: Cialdini-слоти розведені по окремих елементах; social proof/authority — лише верифіковані"
+  ],
+  "brand": {
+    "name": "Habistack",
+    "tagline": "Small blocks. Big mornings.",
+    "palette": "Градієнт індиго-ніч #2D3047 → ранковий бурштин #FFB100, м'ятний акцент #93E1D8 — «з ночі в ранок»",
+    "logoIdea": "Чотири заокруглені блоки сходинками, з-за верхнього сходить маленьке сонце; силует читається як H"
+  },
+  "enCopy": {
+    "headline": "Build a morning that holds",
+    "instruction": "Tap to drop",
+    "ctaButton": "Continue My Routine",
+    "endcardLine": "Day 1 stacked! Join the morning builders community — your routine starts now.",
+    "disclaimer": "*These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease. Results may vary."
+  },
+  "whyWins": "Продає routine та identity — головний меседж-тренд вертикалі, повністю поза зоною health-claims. Продукт вбудований у геймплей як золотий блок із product-tag — demonstration, а не disconnected minigame. Реюз crane-модуля з керованим рефактором endless→scripted. «Day 1 complete» — найчистіший endowed progress і міст у Continue-framing.",
+  "buildPath": "tower-stack — рефактор templates/mad-mage-tower: (1) endless→scripted: фіксована послідовність, 2 пре-розміщені блоки + 3 тапи, форсований win, lose недосяжний (зі збереженням впливу інпуту на офсет); (2) slicing у land() замінено на magnet-прощення (твін blk.x до lower.cx, константна ширина, makeSlice вимкнено); (3) showMenu/СТАРТ видалено — авто-старт; (4) ghost-finger — новий спрайт руки + tap-твін (~1 год); (5) хитання = скриптований GSAP rotation-твін ±3° elastic навколо базового pivot, БЕЗ фізики, узгоджений із tower.pivot.y у screen-shake тікері; (6) confettiBurst — порт із templates/fruit-bonanza/game.ts:1013; streak-полум'я — спрайт/Graphics + flicker.",
+  "riskNotes": "Блокувально: «Day 1»/«streak»/Continue-framing лишаються лише якщо ленд має реальний streak/routine-механізм; інакше fallback «Routine stacked! Get your starter kit». Золотий Scoop — крок рутини, без імплікації миттєвого ефекту. 18+, health&wellness, mid/top-funnel.",
+  "appliedFixes": [
+    "З дисклеймера видалено «most people notice a difference in 4–6 weeks» → FDA-текст + «Results may vary.»",
+    "«500,000+» і «behavioral coaches» прибрані з дефолтної копії — verified-only слоти",
+    "Блокувальний критерій: Day 1/streak-framing лише за реального streak-механізму на ленді, інакше fallback-копія",
+    "Інпут реально впливає: тап → офсет, magnet-«дотягування» видиме, прощення звужується",
+    "Near-miss умовний від інпуту; за ідеального тапу — порив вітру (без зради інпуту)",
+    "Хук: вежа стартує 2/5 (справжній progress-already-running), ghost-finger лише жест, перший drop — гравця",
+    "Конфеті прибрано з хука — єдиний залп на win",
+    "Тінь-підказка лише на першому блоці гравця — повернуто ставки в середину",
+    "Золотий Scoop отримав продуктовий контекст (банка+ложка/product-tag)",
+    "Cialdini-слоти розведені по окремих візуальних елементах endcard",
+    "buildPath: рефактор endless→scripted, slicing→magnet, без меню, скриптований sway узгоджено зі screen-shake, confettiBurst портовано",
+    "Кампанія: 18+, mid/top-funnel"
+  ]
+}
