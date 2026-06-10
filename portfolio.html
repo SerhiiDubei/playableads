@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Playable Ads Portfolio — 3 Verticals × 3 Creatives</title>
+<style>
+:root {
+  --bg: #0d1117; --card: #161b22; --line: #30363d;
+  --text: #e6edf3; --dim: #8b949e; --accent: #ffb84d;
+  --nutra: #8ac926; --insurance: #5a78ff; --house: #d96c47;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5; padding: 40px 20px 80px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; }
+h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
+.sub { color: var(--dim); margin-bottom: 36px; font-size: 15px; }
+h2 {
+  font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em;
+  margin: 36px 0 14px; padding-left: 12px; border-left: 4px solid var(--accent);
+}
+h2.nutra { border-color: var(--nutra); }
+h2.insurance { border-color: var(--insurance); }
+h2.house { border-color: var(--house); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 14px; }
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+  padding: 18px; text-decoration: none; color: var(--text); display: block;
+  transition: border-color .15s, transform .15s;
+}
+.card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.brand { font-weight: 700; font-size: 17px; margin-bottom: 2px; }
+.title { color: var(--dim); font-size: 13px; margin-bottom: 10px; min-height: 38px; }
+.meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  font-size: 11px; padding: 3px 9px; border-radius: 999px;
+  background: rgba(255,255,255,.06); border: 1px solid var(--line); color: var(--dim);
+}
+.chip.input { color: var(--accent); border-color: var(--accent); }
+.play {
+  margin-top: 12px; display: inline-block; font-size: 13px; font-weight: 600;
+  color: var(--accent);
+}
+.foot { margin-top: 48px; color: var(--dim); font-size: 12px; border-top: 1px solid var(--line); padding-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Playable Ads Portfolio</h1>
+  <div class="sub">9 interactive creatives · 3 verticals · EN copy · Meta single-file spec (≤2MB, validated) · greybox stage (procedural art, AI-asset pass next)</div>
+
+  <h2 class="nutra">Nutra / Wellness</h2>
+  <div class="grid">
+    <a class="card" href="portfolio-slice-your-spark-smoothie.html">
+      <div class="brand">Zestful</div>
+      <div class="title">Slice Your Spark — swipe-to-slice ingredients fill your Morning Blend</div>
+      <div class="meta"><span class="chip input">swipe</span><span class="chip">combo ×2/×3</span><span class="chip">near-miss kiwi</span><span class="chip">FDA disclaimer</span></div>
+      <span class="play">▶ Play</span>
+    </a>
+    <a class="card" href="portfolio-routine-tower-stack.html">
+      <div class="brand">Habistack</div>
+      <div class="title">Stack Your Morning — crane-stack habit blocks, Day 1 complete</div>
+      <div class="meta"><span class="chip input">tap</span><span class="chip">endowed 2/5</span><span class="chip">magnet forgiveness</span><span class="chip">FDA disclaimer</span></div>
+      <span class="play">▶ Play</span>
+    </a>
+    <a class="card" href="portfolio-greens-catch-glass.html">
+      <div class="brand">Brimful</div>
+      <div class="title">Catch Your Greens — drag the glass, fill up on good</div>
+      <div class="meta"><span class="chip input">drag</span><span class="chip">golden vitamin ×2</span><span class="chip">no-shame junk</span><span class="chip">FDA disclaimer</span></div>
+      <span class="play">▶ Play</span>
+    </a>
+  </div>
+
+  <h2 class="insurance">Insurance (home · health · life)</h2>
+  <div class="grid">
+    <a class="card" href="portfolio-home-kitchen-hotspot-stamp.html">
+      <div class="brand">HavenNest Home</div>
+      <div class="title">Spot &amp; Stamp — kitchen inspection, TYPICALLY COVERED stamps + honest decoy</div>
+      <div class="meta"><span class="chip input">tap</span><span class="chip">home</span><span class="chip">5 hotspots</span><span class="chip">coverage qualifier</span></div>
+      <span class="play">▶ Play</span>
+    </a>
+    <a class="card" href="portfolio-health-planmatch-30s-quiz.html">
+      <div class="brand">ClearPath Plans</div>
+      <div class="title">PlanMatch 30 — 3-question quiz, profile tray, stopwatch counts UP</div>
+      <div class="meta"><span class="chip input">pick</span><span class="chip">health</span><span class="chip">TPMO disclaimer</span><span class="chip">no countdown pressure</span></div>
+      <span class="play">▶ Play</span>
+    </a>
+    <a class="card" href="portfolio-life-umbrella-drag-catch.html">
+      <div class="brand">Evergreen Life</div>
+      <div class="title">Keep Them Dry — drag the umbrella, protect the family</div>
+      <div class="meta"><span class="chip input">drag</span><span class="chip">life</span><span class="chip">kid-safe fail</span><span class="chip">golden heart near-miss</span></div>
+      <span class="play">▶ Play</span>
+    </a>
+  </div>
+
+  <h2 class="house">Home Improvement</h2>
+  <div class="grid">
+    <a class="card" href="portfolio-power-wash-patio-reveal.html">
+      <div class="brand">HydroHaven</div>
+      <div class="title">Power Wash Patio — oddly-satisfying clean-reveal (stamp-mask engine)</div>
+      <div class="meta"><span class="chip input">swipe</span><span class="chip">mosaic reveal</span><span class="chip">stubborn spot</span><span class="chip">string lights</span></div>
+      <span class="play">▶ Play</span>
+    </a>
+    <a class="card" href="portfolio-budget-slider-bath-morph.html">
+      <div class="brand">RenoScope</div>
+      <div class="title">Budget Slider — $6K→$25K bath morphs live, find the Best Value sweet spot</div>
+      <div class="meta"><span class="chip input">slider</span><span class="chip">3 tiers</span><span class="chip">est. labels</span><span class="chip">designer bonus</span></div>
+      <span class="play">▶ Play</span>
+    </a>
+    <a class="card" href="portfolio-dream-kitchen-three-picks.html">
+      <div class="brand">DreamSlate Kitchens</div>
+      <div class="title">Dream Kitchen — 3 picks configure your kitchen, archetype reveal</div>
+      <div class="meta"><span class="chip input">pick</span><span class="chip">8 combos</span><span class="chip">tile cascade</span><span class="chip">The Modern Purist</span></div>
+      <span class="play">▶ Play</span>
+    </a>
+  </div>
+
+  <div class="foot">
+    Pipeline: multi-agent hypothesis generation → adversarial validation (compliance / engagement / feasibility) →
+    spec with applied fixes → schema-driven build → Playwright QA (2 viewports, console-error gate, screenshot review) →
+    Meta single-file validation. Each creative: invented brand, EN copy, vertical-specific disclaimers,
+    Continue-framed endcard, works muted, CTA in thumb zone.
+  </div>
+</div>
+</body>
+</html>
