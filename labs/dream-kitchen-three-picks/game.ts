@@ -5,7 +5,7 @@
 // Step 3: Backsplash (Herringbone / Subway) — tinted overlay on backsplash band
 // Reveal: zoom-out + warm light wash + floating dust particles
 // Endcard: composed final scene + CTA
-import { Application, Container, Graphics, RenderTexture, Text, Texture, Sprite } from "pixi.js";
+import { Application, Container, Graphics, Rectangle, RenderTexture, Text, Texture, Sprite } from "pixi.js";
 import { gsap } from "gsap";
 import type { PlayableConfig } from "../../src/types.js";
 
@@ -275,12 +275,24 @@ async function main(): Promise<void> {
 
   // Pendants: static garnish, gentle swing.
   const tPend = tex("pendants.webp");
+  const pendantGlows: Graphics[] = [];
   if (tPend) {
     const pc = new Container();
     const sp = new Sprite(tPend);
     sp.anchor.set(0.5, 0);
-    sp.scale.set(230 / tPend.height);
+    const ps = 230 / tPend.height;
+    sp.scale.set(ps);
     pc.addChild(sp);
+    // Warm glow per globe — lit during the final reveal ("lights ON" beat)
+    const dispW = tPend.width * ps;
+    for (const gx of [-dispW * 0.25, dispW * 0.25]) {
+      const glow = new Graphics().circle(0, 0, 40).fill({ color: 0xffd890, alpha: 1 });
+      glow.position.set(gx, 188);
+      glow.alpha = 0;
+      glow.blendMode = "add";
+      pc.addChild(glow);
+      pendantGlows.push(glow);
+    }
     pc.position.set(132, -4);   // foreground pair left of the hood
     kitchenSpriteCont.addChild(pc);
     gsap.to(pc, { rotation: 0.008, duration: 2.8, yoyo: true, repeat: -1, ease: "sine.inOut" });
@@ -317,65 +329,248 @@ async function main(): Promise<void> {
     return sp;
   }
 
-  type LayerAnim = "none" | "slide-up" | "slide-down" | "drop" | "wipe";
+  // ═══ PER-ELEMENT SWAP CHOREOGRAPHY (research spec: Redecor/Playrix canon) ═══
+  // The unit of animation is a STRIP / CHUNK, never the whole row. Rows are
+  // sliced at runtime via Texture frame sub-rects; staggered cascades with
+  // anticipation → out (back.in) → in (back.out overshoot) → per-element FX.
 
-  // Swap ONE layer: the outgoing sprite animates out, the incoming animates in.
-  function setLayer(name: string, key: string, anim: LayerAnim, onDone?: () => void): void {
+  // Camera micro-punch on heavy landings (steps only — reveal owns the camera).
+  function camPunch(dy: number, ds: number): void {
+    if (state === "reveal" || state === "end") return;
+    gsap.killTweensOf(kitchenLayer);
+    gsap.killTweensOf(kitchenLayer.scale);
+    gsap.timeline()
+      .to(kitchenLayer, { y: dy, duration: 0.06, ease: "power2.out" })
+      .to(kitchenLayer, { y: 0, duration: 0.14, ease: "power3.out" });
+    if (ds > 0) {
+      gsap.timeline()
+        .to(kitchenLayer.scale, { x: 1 + ds, y: 1 + ds, duration: 0.07 })
+        .to(kitchenLayer.scale, { x: 1, y: 1, duration: 0.16, ease: "power2.out" });
+    }
+  }
+
+  function dustPuff(x: number, y: number): void {
+    const d = new Graphics().circle(0, 0, 26).fill({ color: 0xfff4e0, alpha: 0.45 });
+    d.position.set(x, y);
+    d.scale.set(0.6);
+    fxLayer.addChild(d);
+    gsap.to(d, { alpha: 0, duration: 0.4, ease: "power2.out" });
+    gsap.to(d.scale, { x: 1.4, y: 1.4, duration: 0.4, ease: "power2.out",
+      onComplete: () => { fxLayer.removeChild(d); d.destroy(); } });
+  }
+
+  // Slice a row texture into n vertical strips positioned over the row rect.
+  interface StripSet { sprites: Sprite[]; scale: number; }
+  function sliceRow(t: Texture, n: number, rowH: number, baseY: number, anchorY: 0 | 1, extraDy = 0): StripSet {
+    const s = rowH / t.height;
+    const dispW = t.width * s;
+    const left = DW / 2 - dispW / 2;
+    const stripTexW = t.width / n;
+    const sprites: Sprite[] = [];
+    for (let i = 0; i < n; i++) {
+      const sub = new Texture({ source: t.source, frame: new Rectangle(i * stripTexW, 0, stripTexW, t.height) });
+      const sp = new Sprite(sub);
+      sp.anchor.set(0.5, anchorY);
+      sp.scale.set(s);
+      sp.position.set(left + (i + 0.5) * stripTexW * s, baseY + extraDy);
+      sprites.push(sp);
+    }
+    return { sprites, scale: s };
+  }
+
+  function rowGeom(name: string, key: string): { h: number; y: number; anchorY: 0 | 1; dy: number } {
+    if (name === "uppers") return { h: UPPERS_H, y: UPPERS_TOP, anchorY: 0, dy: 0 };
+    if (name === "lowers") return { h: LOWERS_H, y: LOWERS_BASE, anchorY: 1, dy: 0 };
+    return { h: tex(key)!.height * ((DW + 60) / tex(key)!.width), y: COUNTER_BOT, anchorY: 1, dy: COUNTER_DY[key] ?? 0 };
+  }
+
+  function cleanupSlot(slot: LayerSlot): void {
+    for (const ch of [...slot.cont.children]) {
+      if (ch === splashMask) continue;
+      gsap.killTweensOf(ch);
+      gsap.killTweensOf((ch as Sprite).scale);
+      slot.cont.removeChild(ch);
+      ch.destroy();
+    }
+    slot.sprite = null;
+  }
+
+  // Cascade swap for cabinet rows + counter: strips fly out one-by-one and the
+  // new strips pop in behind them with overshoot; per-strip sparkles, dust on
+  // the row landing, camera punch for heavy rows.
+  interface CascadeOpts { n: number; stagger: number; outDy: number; inEase: string; rot: number; reverse: boolean; punch: boolean; glint: boolean; }
+  function cascadeSwap(name: string, newKey: string, o: CascadeOpts, onDone?: () => void): void {
     const slot = layerSlots[name];
-    const t = tex(key);
-    if (!t || slot.key === key) { onDone?.(); return; }
+    const oldKey = slot.key!;
+    slot.key = newKey;
+    const newT = tex(newKey)!;
+    const oldT = tex(oldKey);
+    cleanupSlot(slot);
+
+    const gNew = rowGeom(name, newKey);
+    const fresh = sliceRow(newT, o.n, gNew.h, gNew.y, gNew.anchorY, gNew.dy);
+    const olds = oldT ? sliceRow(oldT, o.n, rowGeom(name, oldKey).h, rowGeom(name, oldKey).y, gNew.anchorY, rowGeom(name, oldKey).dy) : null;
+
+    // New strips hidden at start
+    for (const sp of fresh.sprites) { sp.alpha = 0; }
+    if (olds) for (const sp of olds.sprites) slot.cont.addChild(sp);
+    for (const sp of fresh.sprites) slot.cont.addChild(sp);
+
+    const order = [...Array(o.n).keys()];
+    if (o.reverse) order.reverse();
+    const ANT = olds ? 0.08 : 0;
+
+    // A. anticipation: whole row squashes slightly (telegraph)
+    if (olds) {
+      for (const sp of olds.sprites) gsap.to(sp.scale, { y: olds.scale * 0.96, duration: 0.08, ease: "power2.in" });
+    }
+
+    let finished = 0;
+    order.forEach((idx, k) => {
+      const t0 = ANT + k * o.stagger;
+      const oldSp = olds?.sprites[idx];
+      const newSp = fresh.sprites[idx];
+      // B. out per strip
+      if (oldSp) {
+        gsap.to(oldSp, { y: oldSp.y + o.outDy, alpha: 0, duration: 0.16, ease: "back.in(1.7)", delay: t0 });
+        gsap.to(oldSp.scale, { x: olds!.scale * 0.75, y: olds!.scale * 0.75, duration: 0.16, ease: "back.in(1.7)", delay: t0 });
+      }
+      // C. in per strip (starts 0.09s after its own out)
+      const tIn = t0 + (oldSp ? 0.09 : 0);
+      newSp.scale.set(fresh.scale * 0.6);
+      newSp.rotation = (idx % 2 === 0 ? 1 : -1) * o.rot;
+      gsap.to(newSp, { alpha: 1, duration: 0.12, delay: tIn });
+      gsap.to(newSp, { rotation: 0, duration: 0.26, ease: o.inEase, delay: tIn });
+      gsap.to(newSp.scale, {
+        x: fresh.scale, y: fresh.scale, duration: 0.26, ease: o.inEase, delay: tIn,
+        onComplete: () => {
+          sparkle(newSp.x + slot.cont.x, gNew.anchorY === 0 ? newSp.y + gNew.h * 0.5 : newSp.y - gNew.h * 0.5, 4);
+          finished++;
+          if (finished === o.n) {
+            // E. row landing: dust + optional punch/glint, then consolidate
+            dustPuff(DW / 2 + slot.cont.x, gNew.anchorY === 0 ? gNew.y + gNew.h : gNew.y);
+            if (o.punch) camPunch(4, 0.006);
+            if (o.glint) shimmerBand(gNew.anchorY === 0 ? gNew.y : gNew.y - gNew.h, gNew.h);
+            cleanupSlot(slot);
+            const solo = buildLayerSprite(name, newT, newKey);
+            slot.sprite = solo;
+            slot.cont.addChild(solo);
+            onDone?.();
+          }
+        },
+      });
+    });
+  }
+
+  // Backsplash: 6×3 chunk grid, diagonal flip wave (scaleX 1→0, texture swap,
+  // 0→1 with overshoot) + shine sweep when the wave completes.
+  const GRID_C = 6, GRID_R = 3;
+  function flipGridSwap(newKey: string, onDone?: () => void): void {
+    const slot = layerSlots.splash;
+    const oldKey = slot.key!;
+    slot.key = newKey;
+    const newT = tex(newKey)!, oldT = tex(oldKey);
+    if (!oldT) { cleanupSlot(slot); const solo = buildLayerSprite("splash", newT, newKey); slot.sprite = solo; slot.cont.addChild(solo); onDone?.(); return; }
+    cleanupSlot(slot);
+
+    const bandH = SPLASH_BOT - SPLASH_TOP;
+    const cw = DW / GRID_C, ch = bandH / GRID_R;
+    // Cover-fit mapping band-rect → texture-rect for a given texture
+    function chunkTex(t: Texture, ci: number, ri: number): { sub: Texture; s: number } {
+      const s = Math.max(DW / t.width, bandH / t.height);
+      const texLeft = (t.width - DW / s) / 2;
+      const texTop = (t.height - bandH / s) / 2;
+      const fr = new Rectangle(texLeft + (ci * cw) / s, texTop + (ri * ch) / s, cw / s, ch / s);
+      return { sub: new Texture({ source: t.source, frame: fr }), s };
+    }
+
+    let finished = 0;
+    const total = GRID_C * GRID_R;
+    for (let ri = 0; ri < GRID_R; ri++) {
+      for (let ci = 0; ci < GRID_C; ci++) {
+        const oldC = chunkTex(oldT, ci, ri);
+        const sp = new Sprite(oldC.sub);
+        sp.anchor.set(0.5);
+        sp.scale.set(oldC.s);
+        sp.position.set((ci + 0.5) * cw, SPLASH_TOP + (ri + 0.5) * ch);
+        slot.cont.addChild(sp);
+        const delay = 0.06 + (ci + ri) * 0.03;        // diagonal wave from top-left
+        const baseS = oldC.s;
+        gsap.to(sp.scale, {
+          x: 0, duration: 0.09, ease: "power2.in", delay,
+          onComplete: () => {
+            const nc = chunkTex(newT, ci, ri);
+            sp.texture = nc.sub;
+            gsap.to(sp.scale, {
+              x: nc.s, duration: 0.13, ease: "back.out(1.7)",
+              onComplete: () => {
+                if ((ci + ri) % 3 === 0) sparkle(sp.x, sp.y, 2);
+                finished++;
+                if (finished === total) {
+                  shimmerBand(SPLASH_TOP, bandH);
+                  cleanupSlot(slot);
+                  const solo = buildLayerSprite("splash", newT, newKey);
+                  slot.sprite = solo;
+                  slot.cont.addChild(solo);
+                  onDone?.();
+                }
+              },
+            });
+          },
+        });
+        void baseS;
+      }
+    }
+  }
+
+  // Static (no-anim) set for init/jump-cuts.
+  function setLayerStatic(name: string, key: string): void {
+    const slot = layerSlots[name];
+    if (slot.key === key && slot.sprite) return;
     slot.key = key;
-    const old = slot.sprite;
-    const sp = buildLayerSprite(name, t, key);
-    slot.sprite = sp;
-
-    if (old && anim !== "none") {
-      gsap.killTweensOf(old);
-      const out = anim === "slide-up" ? { y: old.y - 46 } :
-                  anim === "slide-down" ? { y: old.y + 46 } : {};
-      gsap.to(old, { ...out, alpha: 0, duration: 0.3, ease: "power2.in",
-        onComplete: () => { slot.cont.removeChild(old); old.destroy(); } });
-    } else if (old) {
-      slot.cont.removeChild(old); old.destroy();
-    }
-
-    slot.cont.addChild(sp);
-    if (anim === "none") { onDone?.(); return; }
-
-    if (anim === "wipe") {
-      // Left→right wipe reveal of the new splash inside the band.
-      const wm = new Graphics();
-      splashCont.addChild(wm);
-      sp.mask = wm;
-      const proxy = { w: 0 };
-      gsap.to(proxy, { w: DW, duration: 0.55, ease: "power2.inOut",
-        onUpdate: () => { wm.clear(); wm.rect(0, SPLASH_TOP, proxy.w, SPLASH_BOT - SPLASH_TOP).fill({ color: 0xffffff }); },
-        onComplete: () => { sp.mask = null; splashCont.removeChild(wm); wm.destroy(); onDone?.(); } });
-      return;
-    }
-    if (anim === "drop") {
-      sp.alpha = 0; sp.y -= 44;
-      gsap.to(sp, { alpha: 1, duration: 0.16 });
-      gsap.to(sp, { y: sp.y + 44, duration: 0.45, ease: "bounce.out", onComplete: () => onDone?.() });
-      return;
-    }
-    // slide-up / slide-down (incoming arrives from the same direction)
-    const fromY = sp.y + (anim === "slide-up" ? -46 : 46);
-    const toY = sp.y;
-    sp.y = fromY; sp.alpha = 0;
-    gsap.to(sp, { y: toY, alpha: 1, duration: 0.38, ease: "back.out(1.6)", delay: 0.12, onComplete: () => onDone?.() });
+    cleanupSlot(slot);
+    const t = tex(key);
+    if (!t) return;
+    const solo = buildLayerSprite(name, t, key);
+    slot.sprite = solo;
+    slot.cont.addChild(solo);
   }
 
   // Pick-level helpers: each pick touches ONLY its own layers.
   function setStyle(s: number, animate: boolean, onDone?: () => void): void {
-    setLayer("uppers", STYLE_KEYS[s].uppers, animate ? "slide-up" : "none");
-    setLayer("lowers", STYLE_KEYS[s].lowers, animate ? "slide-down" : "none", onDone);
+    if (!animate || !layerSlots.uppers.key) {
+      setLayerStatic("uppers", STYLE_KEYS[s].uppers);
+      setLayerStatic("lowers", STYLE_KEYS[s].lowers);
+      onDone?.();
+      return;
+    }
+    if (layerSlots.uppers.key === STYLE_KEYS[s].uppers) { onDone?.(); return; }
+    // Uppers cascade L→R starts now; heavy lowers counter-flow R→L 0.28s later.
+    cascadeSwap("uppers", STYLE_KEYS[s].uppers,
+      { n: 6, stagger: 0.045, outDy: -14, inEase: "back.out(2.5)", rot: 0.035, reverse: false, punch: false, glint: false });
+    gsap.delayedCall(0.28, () => {
+      cascadeSwap("lowers", STYLE_KEYS[s].lowers,
+        { n: 6, stagger: 0.045, outDy: 12, inEase: "back.out(2.5)", rot: 0.035, reverse: true, punch: true, glint: false }, onDone);
+    });
   }
   function setCounter(c: number, animate: boolean, onDone?: () => void): void {
-    setLayer("counter", COUNTER_KEYS[c], animate ? "drop" : "none", onDone);
+    if (!animate || !layerSlots.counter.key) {
+      setLayerStatic("counter", COUNTER_KEYS[c]);
+      onDone?.();
+      return;
+    }
+    if (layerSlots.counter.key === COUNTER_KEYS[c]) { onDone?.(); return; }
+    cascadeSwap("counter", COUNTER_KEYS[c],
+      { n: 5, stagger: 0.035, outDy: 8, inEase: "back.out(2.2)", rot: 0, reverse: false, punch: true, glint: true }, onDone);
   }
   function setSplash(tIdx: number, animate: boolean, onDone?: () => void): void {
-    setLayer("splash", SPLASH_KEYS[tIdx], animate ? "wipe" : "none", onDone);
+    if (!animate || !layerSlots.splash.key) {
+      setLayerStatic("splash", SPLASH_KEYS[tIdx]);
+      onDone?.();
+      return;
+    }
+    if (layerSlots.splash.key === SPLASH_KEYS[tIdx]) { onDone?.(); return; }
+    flipGridSwap(SPLASH_KEYS[tIdx], onDone);
   }
 
   // ── Band positions for shimmer/sparkle FX targeting ───────────────────────
@@ -938,7 +1133,7 @@ async function main(): Promise<void> {
     stepLabel.text = "";          // no floating hint over the full-bleed scene
     bottomZoneBg.visible = false; // scene covers the whole frame now
 
-    // Reveal: slow zoom-out 1.06 → 1.0 + warm light wash + dust particles
+    // Reveal: full-bleed zoom + roll-call + lights ON + confetti
     cameraRevealZoomOut(() => {
       busy = false;
       stopDust();
@@ -946,6 +1141,47 @@ async function main(): Promise<void> {
     });
     warmLightWash();
     startDust();
+
+    // Roll-call cascade: each zone takes a bow (uppers → splash → counter → lowers)
+    const zones: Array<[Container, number, number]> = [
+      [uppersCont,  DW / 2, UPPERS_TOP + UPPERS_H / 2],
+      [splashCont,  DW / 2, (SPLASH_TOP + SPLASH_BOT) / 2],
+      [counterCont, DW / 2, COUNTER_BOT - 40],
+      [lowersCont,  DW / 2, LOWERS_BASE - LOWERS_H / 2],
+    ];
+    zones.forEach(([zc, zx, zy], i) => {
+      const d = 0.35 + i * 0.14;
+      zc.pivot.set(zx, zy); zc.position.set(zx + (zc === uppersCont || zc === lowersCont ? ROWS_X_SHIFT : 0), zy);
+      gsap.timeline({ delay: d })
+        .to(zc.scale, { x: 1.03, y: 1.03, duration: 0.11, ease: "sine.inOut" })
+        .to(zc.scale, { x: 1, y: 1, duration: 0.11, ease: "sine.inOut" });
+      gsap.delayedCall(d + 0.06, () => sparkle(zx, zy, 5));
+    });
+
+    // Pendant lights ON (staggered warm glow + flicker)
+    pendantGlows.forEach((glow, i) => {
+      gsap.timeline({ delay: 0.95 + i * 0.12 })
+        .to(glow, { alpha: 0.85, duration: 0.3, ease: "sine.out" })
+        .to(glow, { alpha: 0.7, duration: 0.06 })
+        .to(glow, { alpha: 0.85, duration: 0.06 });
+    });
+
+    // Confetti rain + camera punch
+    gsap.delayedCall(1.1, () => {
+      if (state !== "reveal") return;
+      for (let i = 0; i < 26; i++) {
+        const q = new Graphics().rect(-4, -6, 8, 12).fill({ color: [0xC96F4A, 0xB5915A, 0xF5EFE3, 0x7FB069][i % 4] });
+        q.position.set(40 + Math.random() * (DW - 80), -20 - Math.random() * 60);
+        q.rotation = Math.random() * Math.PI;
+        fxLayer.addChild(q);
+        gsap.to(q, {
+          y: DH + 30, rotation: q.rotation + (Math.random() < 0.5 ? -1 : 1) * 9,
+          duration: 1.0 + Math.random() * 0.4, ease: "power1.in",
+          onComplete: () => { fxLayer.removeChild(q); q.destroy(); },
+        });
+        gsap.to(q, { alpha: 0, duration: 0.2, delay: 0.9 + Math.random() * 0.3 });
+      }
+    });
 
     // Reveal banner
     const archetypeName = ARCHETYPES[pickStyle]?.[pickCt]?.[pickTile] ?? "The Modern Purist";
