@@ -45,13 +45,13 @@ const TXT     = cfg.style.colors.text;           // #F4F1EC marble white
 const FONT    = cfg.style.font.family;
 
 // ── Design canvas (fixed; scaled to fit viewport) ─────────────────────────────
-const DW = 400, DH = 720;
+const DW = 400, DH = 680;
 
-// Layout zones
+// Layout zones  — tightly packed so no dead band >25% of height
 const ROOM_TOP    = 0;     // room scene fills top portion
-const ROOM_BOTTOM = 480;   // floor level
-const WALL_SPLIT  = 340;   // wall/floor boundary inside room
-const TRACK_Y     = 580;   // slider track Y
+const ROOM_BOTTOM = 460;   // floor level
+const WALL_SPLIT  = 325;   // wall/floor boundary inside room
+const TRACK_Y     = 580;   // slider track Y (bottom CTA zone)
 const TRACK_L     = 32, TRACK_R = 368, TRACK_W = TRACK_R - TRACK_L;
 const THUMB_R     = 26;    // ≥44px touch diameter
 
@@ -114,6 +114,11 @@ async function main(): Promise<void> {
   app.stage.eventMode = "static";
   app.stage.hitArea   = app.screen;
 
+  // Fullscreen BG covers letterbox gutters.  Also two scene-extension rects
+  // (drawn inside root/bgLayer) that blend the room into the top/bottom gutters.
+  const fullscreenBgGfx = new Graphics();
+  app.stage.addChild(fullscreenBgGfx);
+
   // ── Layer stack ──────────────────────────────────────────────────────────
   const root         = new Container();
   const bgLayer      = new Container();
@@ -127,6 +132,10 @@ async function main(): Promise<void> {
   uiLayer.interactiveChildren = false;
 
   // ── Background graphics objects ──────────────────────────────────────────
+  // topExtGfx / botExtGfx are re-drawn in layout() to fill letterbox gutters
+  // with matching room colors so no dark bars show above or below the scene.
+  const topExtGfx    = new Graphics(); bgLayer.addChild(topExtGfx);
+  const botExtGfx    = new Graphics(); bgLayer.addChild(botExtGfx);
   const wallGfx      = new Graphics(); bgLayer.addChild(wallGfx);
   const floorGfx     = new Graphics(); bgLayer.addChild(floorGfx);
   const windowGfx    = new Graphics(); bgLayer.addChild(windowGfx);
@@ -149,20 +158,24 @@ async function main(): Promise<void> {
     style: { fill: TXT, fontFamily: FONT, fontWeight: "bold", fontSize: 18, align: "center" },
   });
   instrText.anchor.set(0.5);
-  instrText.position.set(DW/2, 22);
+  instrText.position.set(DW/2, 26);
   hudLayer.addChild(instrText);
 
   const disclaimerText = new Text({
     text: "Estimates only. Final pricing varies by project, materials, and location.",
-    style: { fill: TXT, fontFamily: FONT, fontWeight: "bold", fontSize: 10, align: "center",
+    style: { fill: TXT, fontFamily: FONT, fontWeight: "bold", fontSize: 11, align: "center",
       wordWrap: true, wordWrapWidth: DW - 32 },
   });
-  disclaimerText.anchor.set(0.5);
-  disclaimerText.alpha = 0.65;
-  disclaimerText.position.set(DW/2, DH - 10);
+  disclaimerText.anchor.set(0.5, 1);
+  disclaimerText.alpha = 0.7;
+  disclaimerText.position.set(DW/2, DH - 8);
   hudLayer.addChild(disclaimerText);
 
   // ── Ticker (large budget number) ──────────────────────────────────────────
+  // Zone: ROOM_BOTTOM(460) → TRACK_Y(580).  Ticker centred in this band.
+  const TICKER_CY = 498; // centre of ticker text
+  const CHIP_CY   = 536; // centre of tier chip
+
   const tickerBg = new Graphics();
   uiLayer.addChild(tickerBg);
 
@@ -171,7 +184,7 @@ async function main(): Promise<void> {
     style: { fill: TXT, fontFamily: FONT, fontWeight: "bold", fontSize: 40, align: "center" },
   });
   tickerText.anchor.set(0.5);
-  tickerText.position.set(DW/2, TRACK_Y - 90);
+  tickerText.position.set(DW/2, TICKER_CY);
   uiLayer.addChild(tickerText);
 
   // "est." superscript
@@ -229,7 +242,7 @@ async function main(): Promise<void> {
   const lockChipTxt = new Text({ text: "Lock my style", style: { fill: "#3a2418", fontFamily: FONT, fontWeight: "bold", fontSize: 17 } });
   lockChipTxt.anchor.set(0.5);
   lockChip.addChild(lockChipBg, lockChipTxt);
-  lockChip.position.set(DW/2, TRACK_Y - 42);
+  lockChip.position.set(DW/2, CHIP_CY);
   overlayLayer.addChild(lockChip);
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -424,24 +437,25 @@ async function main(): Promise<void> {
 
   function buildTickerBg(): void {
     tickerBg.clear();
-    tickerBg.roundRect(DW/2-110, TRACK_Y-130, 220, 58, 12).fill({color:shade(PRIMARY,-0.35),alpha:0.85});
+    tickerBg.roundRect(DW/2-114, TICKER_CY-28, 228, 60, 12).fill({color:shade(PRIMARY,-0.35),alpha:0.88});
   }
 
   function updateTicker(): void {
     const v = budget;
     tickerText.text = "$"+(v/1000).toFixed(1)+"K";
-    tickerText.position.set(DW/2 - 16, TRACK_Y-102);
-    estLabel.position.set(DW/2 + tickerText.width/2 - 18, TRACK_Y - 86);
+    tickerText.position.set(DW/2 - 16, TICKER_CY);
+    // "est." sits to the right of the ticker number, vertically centred
+    estLabel.position.set(DW/2 + tickerText.width/2 - 16, TICKER_CY + 14);
   }
 
   function updateTierChip(): void {
     const tier = computeTier(budget);
     tierChipText.text = TIER_NAMES[tier];
-    const cw = tierChipText.width+22, ch=26;
-    const cx=DW/2, cy=TRACK_Y-60;
+    const cw = tierChipText.width+24, ch=28;
+    const cx=DW/2, cy=CHIP_CY;
     tierChipGfx.clear();
-    tierChipGfx.roundRect(cx-cw/2, cy-ch/2, cw, ch, 13).fill({color:PRIMARY});
-    tierChipGfx.roundRect(cx-cw/2, cy-ch/2, cw, ch, 13).stroke({width:2,color:ACCENT});
+    tierChipGfx.roundRect(cx-cw/2, cy-ch/2, cw, ch, 14).fill({color:PRIMARY});
+    tierChipGfx.roundRect(cx-cw/2, cy-ch/2, cw, ch, 14).stroke({width:2,color:ACCENT});
     tierChipText.position.set(cx, cy);
   }
 
@@ -564,7 +578,7 @@ async function main(): Promise<void> {
     const t2=new Text({text:TIER_RANGES[lockedTier]+" estimate",style:{fill:cfg.style.colors.accent,fontFamily:FONT,fontWeight:"bold",fontSize:14,align:"center"}});
     t2.anchor.set(0.5,0); t2.position.set(bw/2,36);
     banner.addChild(bg,t1,t2);
-    banner.position.set(22, TRACK_Y-138); banner.alpha=0;
+    banner.position.set(22, TICKER_CY - 32); banner.alpha=0;
     overlayLayer.addChild(banner);
     gsap.to(banner,{alpha:1,duration:0.4,ease:"power2.out"});
     gsap.delayedCall(2.2,()=>{
@@ -821,7 +835,30 @@ async function main(): Promise<void> {
     const w=window.innerWidth, h=window.innerHeight;
     const s=Math.min(w/DW, h/DH);
     root.scale.set(s);
-    root.position.set((w-DW*s)/2, (h-DH*s)/2);
+    const ox=(w-DW*s)/2, oy=(h-DH*s)/2;
+    root.position.set(ox, oy);
+
+    // Letterbox gap in design coords above/below the canvas
+    const topGap    = oy / s;        // positive when viewport taller than scene
+    const botGap    = (h - DH*s - oy) / s;
+
+    // Fill letterbox/pillarbox gutters with scene BG so no dark bars appear
+    fullscreenBgGfx.clear();
+    fullscreenBgGfx.rect(0, 0, w, h).fill({ color: BG });
+
+    // Top extension: wall colour — extends room tiles upward
+    topExtGfx.clear();
+    if (topGap > 0.5) {
+      // Use same wall colour as current tier (approximated from WALL_COLORS[0..3])
+      const tier = computeTier(budget);
+      const wallC = WALL_COLORS[tier];
+      topExtGfx.rect(0, -topGap, DW, topGap + 1).fill({ color: shade(wallC, -0.06) });
+    }
+    // Bottom extension: dark panel colour — extends the UI strip downward
+    botExtGfx.clear();
+    if (botGap > 0.5) {
+      botExtGfx.rect(0, DH, DW, botGap + 1).fill({ color: shade(PRIMARY, -0.35) });
+    }
   }
 
   // ── Init ──────────────────────────────────────────────────────────────────

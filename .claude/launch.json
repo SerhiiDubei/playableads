@@ -60,6 +60,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["-y", "serve", "test/dream-floor", "-l", "5070"],
       "port": 5070
+    },
+    {
+      "name": "portfolio",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "test", "-l", "5071"],
+      "port": 5071
     }
   ]
 }

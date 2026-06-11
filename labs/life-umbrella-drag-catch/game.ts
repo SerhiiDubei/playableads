@@ -36,7 +36,7 @@ const AUTO_DEMO_AFTER = Number(cfg.params.autoDemoAfterIdles ?? 2);
 const DROP_SPEED_BASE = Number(cfg.params.dropSpeedBase ?? 0.38);
 const DROP_SPEED_BIT2 = Number(cfg.params.dropSpeedBit2 ?? 0.52);
 const DROP_SPEED_BIT3 = Number(cfg.params.dropSpeedBit3 ?? 0.68);
-const UMB_OFFSET_Y    = Number(cfg.params.umbrellaOffsetY ?? 90);
+const UMB_OFFSET_Y    = Number(cfg.params.umbrellaOffsetY ?? 100);
 const HIT_SCALE       = Number(cfg.params.hitRadiusScale  ?? 1.4);
 const REVEAL_HOLD_MS  = Number(cfg.params.revealHoldMs   ?? 2000);
 const GAMEPLAY_MS     = Number(cfg.params.gameplayDurationMs ?? 18000);
@@ -100,7 +100,7 @@ async function main(): Promise<void> {
   await app.init({
     width: window.innerWidth,
     height: window.innerHeight,
-    background: C_BG,
+    background: 0xbcdbef, // sky color, no cream bar
     antialias: false,
     preference: "webgl",
     resolution: 1,
@@ -108,6 +108,12 @@ async function main(): Promise<void> {
   });
   app.canvas.style.width  = window.innerWidth  + "px";
   app.canvas.style.height = window.innerHeight + "px";
+  // ensure no white gaps at edges
+  app.canvas.style.display = "block";
+  document.body.style.margin = "0";
+  document.body.style.padding = "0";
+  document.body.style.overflow = "hidden";
+  document.body.style.background = "#bcdbef";
   document.body.appendChild(app.canvas);
 
   app.stage.eventMode = "static";
@@ -123,7 +129,7 @@ async function main(): Promise<void> {
   app.stage.addChild(bgLayer, cloudLayer, gameLayer, fxLayer, uiLayer, overlayLayer);
   gameLayer.interactiveChildren = false;
 
-  // ── Sky + ground background ────────────────────────────────────────────────
+  // ── Sky gradient (full viewport top 60%) ──────────────────────────────────
   const skyGfx    = new Graphics();
   const groundGfx = new Graphics();
   bgLayer.addChild(skyGfx, groundGfx);
@@ -167,16 +173,15 @@ async function main(): Promise<void> {
   const treesGfx = new Graphics();
   bgLayer.addChild(treesGfx);
 
-  function drawTrees(w: number, groundY: number): void {
+  function drawTrees(ww: number, groundY: number): void {
     treesGfx.clear();
-    const positions = [0.08, 0.18, 0.78, 0.88, 0.95];
-    const heights   = [0.14, 0.10, 0.12, 0.09, 0.13];
+    const positions = [0.06, 0.14, 0.80, 0.88, 0.94];
+    const heights   = [0.12, 0.09, 0.10, 0.08, 0.11];
     for (let i = 0; i < positions.length; i++) {
-      const tx = w * positions[i];
-      const th = w * heights[i];
+      const tx = ww * positions[i];
+      const th = ww * heights[i];
       const ty = groundY;
       treesGfx.rect(tx - 4, ty - th * 0.5, 8, th * 0.55).fill({ color: num("#6b4c2a") });
-      treesGfx.circle(tx, ty - th * 0.62).fill({ color: 0 }); // dummy reset
       treesGfx.poly([tx - th * 0.38, ty - th * 0.55,
                      tx,             ty - th * 1.1,
                      tx + th * 0.38, ty - th * 0.55]).fill({ color: num("#3d7235") });
@@ -186,52 +191,71 @@ async function main(): Promise<void> {
     }
   }
 
-  // ── Paper card — drawn FIRST so family silhouettes appear on top ─────────
+  // ── Picnic paper indicator (small corner darkener, NOT the big card) ───────
   const paperGfx = new Graphics();
   gameLayer.addChild(paperGfx);
 
-  // ── Family silhouette ─────────────────────────────────────────────────────
+  // ── Family silhouette — 3 figures standing on grass ───────────────────────
+  // Parent L (64px tall), Parent R (60px tall), Child center (40px)
   const familyCont = new Container();
-  const familyGfx  = new Graphics();   // inside familyCont (no direct rotation on gfx)
-  const familyWrap = new Container();  // wrapper for pivot-based tilt
+  const familyGfx  = new Graphics();
+  const familyWrap = new Container();
   familyWrap.addChild(familyGfx);
   familyCont.addChild(familyWrap);
   gameLayer.addChild(familyCont);
 
-  function drawFamilyShape(unit: number): void {
+  function drawFamilyShape(ww: number): void {
     familyGfx.clear();
-    // Adults (green silhouettes)
-    const au = unit;
-    familyGfx.circle(-au * 1.8, -au * 3.8, au * 0.8).fill({ color: C_PRI });
-    familyGfx.roundRect(-au * 2.6, -au * 3.0, au * 1.6, au * 3.0, au * 0.3).fill({ color: C_PRI });
-    familyGfx.circle(au * 1.8,  -au * 3.8, au * 0.8).fill({ color: C_PRI });
-    familyGfx.roundRect(au * 1.0, -au * 3.0, au * 1.6, au * 3.0, au * 0.3).fill({ color: C_PRI });
-    // Child (gold, center)
-    familyGfx.circle(0, -au * 2.5, au * 0.6).fill({ color: C_ACC });
-    familyGfx.roundRect(-au * 0.7, -au * 1.9, au * 1.4, au * 1.9, au * 0.25).fill({ color: C_ACC });
-    // Shadow line on ground
-    familyGfx.ellipse(0, 0, au * 3.0, au * 0.5).fill({ color: 0x000000, alpha: 0.10 });
+    // Parent Left — warm terracotta, 64px body total
+    const pLH = 64;
+    const pLHd = pLH * 0.22;  // head radius
+    // Parent Right — slightly shorter warm brown, 60px
+    const pRH = 60;
+    const pRHd = pRH * 0.22;
+    // Child — warm gold/amber, 40px
+    const cH = 40;
+    const cHd = cH * 0.24;
+
+    // spacing between figures
+    const spacing = ww * 0.09;
+
+    // Parent Left (x = -spacing)
+    const plx = -spacing;
+    familyGfx.circle(plx, -pLH + pLHd, pLHd).fill({ color: num("#d4845a") }); // warm skin
+    familyGfx.roundRect(plx - pLHd * 1.4, -pLH + pLHd * 2, pLHd * 2.8, pLH - pLHd * 2, pLHd * 0.5).fill({ color: num("#c06a38") });
+
+    // Parent Right (x = +spacing)
+    const prx = spacing;
+    familyGfx.circle(prx, -pRH + pRHd, pRHd).fill({ color: num("#b87050") });
+    familyGfx.roundRect(prx - pRHd * 1.4, -pRH + pRHd * 2, pRHd * 2.8, pRH - pRHd * 2, pRHd * 0.5).fill({ color: num("#8b4c28") });
+
+    // Child center (x = 0)
+    familyGfx.circle(0, -cH + cHd, cHd).fill({ color: num("#f0c080") });
+    familyGfx.roundRect(-cHd * 1.3, -cH + cHd * 2, cHd * 2.6, cH - cHd * 2, cHd * 0.5).fill({ color: C_ACC });
+
+    // Ground shadow
+    familyGfx.ellipse(0, 0, spacing * 1.8, 5).fill({ color: 0x000000, alpha: 0.12 });
   }
 
-  function drawPaper(cx: number, cy: number, pw: number, ph: number): void {
+  // Picnic paper corner indicator — small postcard-size element below family, visible only on miss
+  function drawPaperCorner(cx: number, cy: number, pw: number): void {
     paperGfx.clear();
-    paperGfx.roundRect(cx - pw / 2, cy - ph, pw, ph, 10).fill({ color: 0xfff8ec });
-    // Lines
-    for (let i = 1; i <= 3; i++) {
-      const lx1 = cx - pw * 0.38, lx2 = cx + pw * 0.38, ly = cy - ph * (i / 4);
-      paperGfx.moveTo(lx1, ly).lineTo(lx2, ly).stroke({ width: 1, color: C_PRI, alpha: 0.1 });
-    }
-    // Darkened corner on miss
-    if (paperCorner > 0.02) {
-      const cs = pw * 0.36 * paperCorner;
+    if (paperCorner < 0.02) return;
+    // Small picnic paper in corner
+    const ph = pw * 0.55;
+    const px = cx + pw * 0.28;
+    const py = cy - ph * 0.5;
+    paperGfx.roundRect(px, py, pw * 0.28, ph, 4).fill({ color: num("#fff0d0"), alpha: 0.9 });
+    if (paperCorner > 0.05) {
+      // darkened corner
+      const cs = pw * 0.1 * paperCorner;
       paperGfx.poly([
-        cx + pw / 2 - cs, cy - ph,
-        cx + pw / 2,      cy - ph,
-        cx + pw / 2,      cy - ph + cs,
-      ]).fill({ color: num("#7a5010"), alpha: 0.5 * paperCorner });
+        px + pw * 0.28 - cs, py,
+        px + pw * 0.28,      py,
+        px + pw * 0.28,      py + cs,
+      ]).fill({ color: num("#7a5010"), alpha: 0.6 * paperCorner });
     }
-    // Paper stroke
-    paperGfx.roundRect(cx - pw / 2, cy - ph, pw, ph, 10).stroke({ width: 2, color: C_PRI, alpha: 0.12 });
+    paperGfx.roundRect(px, py, pw * 0.28, ph, 4).stroke({ width: 1.5, color: C_PRI, alpha: 0.15 });
   }
 
   // ── Umbrella ───────────────────────────────────────────────────────────────
@@ -244,37 +268,38 @@ async function main(): Promise<void> {
 
   function drawUmbrella(r: number): void {
     umbrellaGfx.clear();
-    // Dome panels (alternating shades)
-    const panels = 7;
+    // Green canopy — half-ellipse dome, alternating panel shades
+    const panels = 6;
     for (let i = 0; i < panels; i++) {
       const a0 = Math.PI + (i / panels) * Math.PI;
       const a1 = Math.PI + ((i + 1) / panels) * Math.PI;
-      const mid = (a0 + a1) / 2;
       const pts: number[] = [0, 0];
       for (let s = 0; s <= 8; s++) {
         const a = a0 + (s / 8) * (a1 - a0);
-        pts.push(r * Math.cos(a), r * Math.sin(a) * 0.52);
+        pts.push(r * Math.cos(a), r * Math.sin(a) * 0.5);
       }
       const shade = i % 2 === 0 ? C_PRI : num("#3a7f60");
       umbrellaGfx.poly(pts).fill({ color: shade });
-      void mid;
     }
-    // Ribs
+    // Canopy outline ribs
     for (let i = 0; i <= panels; i++) {
       const a = Math.PI + (i / panels) * Math.PI;
-      umbrellaGfx.moveTo(0, 0).lineTo(r * Math.cos(a), r * Math.sin(a) * 0.52)
-        .stroke({ width: 1.5, color: 0xffffff, alpha: 0.22 });
+      umbrellaGfx.moveTo(0, 0).lineTo(r * Math.cos(a), r * Math.sin(a) * 0.5)
+        .stroke({ width: 1.5, color: 0xffffff, alpha: 0.25 });
     }
-    // Dome outline
+    // Canopy border
     const dpts: number[] = [];
     for (let i = 0; i <= 24; i++) {
       const a = Math.PI + (i / 24) * Math.PI;
-      dpts.push(r * Math.cos(a), r * Math.sin(a) * 0.52);
+      dpts.push(r * Math.cos(a), r * Math.sin(a) * 0.5);
     }
-    umbrellaGfx.poly(dpts).stroke({ width: 2, color: 0xffffff, alpha: 0.35 });
-    // Handle (shorter — just past the dome skirt, not long enough to occlude family)
-    umbrellaGfx.rect(-3.5, 0, 7, r * 0.42).fill({ color: num("#6b4c2a") });
-    umbrellaGfx.circle(-3.5, r * 0.42, 5).fill({ color: num("#5a3a1a") });
+    umbrellaGfx.poly(dpts).stroke({ width: 2, color: 0xffffff, alpha: 0.4 });
+    // Straight handle going down from center
+    const handleLen = r * 0.6;
+    umbrellaGfx.rect(-3.5, 0, 7, handleLen).fill({ color: num("#6b4c2a") });
+    // Hook at bottom of handle
+    umbrellaGfx.arc(-3.5, handleLen, 7, Math.PI * 0.5, Math.PI * 1.5)
+      .stroke({ width: 4, color: num("#5a3a1a") });
     // Tip at top
     umbrellaGfx.circle(0, 0, 5).fill({ color: C_ACC });
   }
@@ -284,27 +309,33 @@ async function main(): Promise<void> {
   const meterFill = new Graphics();
   uiLayer.addChild(meterBg, meterFill);
 
-  function drawMeter(w: number, h: number): void {
-    const mw = w * 0.52, mh = 14;
-    const mx = (w - mw) / 2, my = h * 0.055;
-    meterBg.clear().roundRect(mx, my, mw, mh, 7).fill({ color: 0x000000, alpha: 0.12 });
+  function drawMeter(ww: number, hh: number): void {
+    const mw = ww * 0.52, mh = 14;
+    const mx = (ww - mw) / 2;
+    const my = hh * 0.05;
+    meterBg.clear().roundRect(mx, my, mw, mh, 7).fill({ color: 0x000000, alpha: 0.15 });
     meterFill.clear();
-    const fw = Math.max(10, mw * (protection / 100));
+    const fw = Math.max(8, mw * (protection / 100));
     meterFill.roundRect(mx, my, fw, mh, 7).fill({ color: C_PRI });
+    // bright overlay to show fill clearly
+    if (fw > 12) {
+      meterFill.roundRect(mx + 3, my + 3, Math.max(0, fw - 6), 4, 2).fill({ color: 0xffffff, alpha: 0.2 });
+    }
   }
 
   // ── UI text elements ───────────────────────────────────────────────────────
-  const titleTxt = new Text({
+  const instructionTxt = new Text({
     text: "Keep them dry",
-    style: { fill: C_TXT, fontFamily: FONT, fontWeight: "bold", fontSize: 20, align: "center" },
+    style: { fill: C_TXT, fontFamily: FONT, fontWeight: "bold", fontSize: 18, align: "center" },
   });
-  titleTxt.anchor.set(0.5, 0);
-  uiLayer.addChild(titleTxt);
+  instructionTxt.anchor.set(0.5, 0);
+  uiLayer.addChild(instructionTxt);
 
   const meterLabel = new Text({
     text: "Protection",
-    style: { fill: C_PRI, fontFamily: FONT, fontWeight: "bold", fontSize: 13 },
+    style: { fill: C_PRI, fontFamily: FONT, fontWeight: "bold", fontSize: 12 },
   });
+  meterLabel.anchor.set(0.5, 1);
   uiLayer.addChild(meterLabel);
 
   const nudgeTxt = new Text({
@@ -343,114 +374,112 @@ async function main(): Promise<void> {
 
   // ── Layout function ─────────────────────────────────────────────────────────
   function layout(): void {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const ww = window.innerWidth;
+    const hh = window.innerHeight;
 
-    app.canvas.style.width  = w + "px";
-    app.canvas.style.height = h + "px";
+    app.canvas.style.width  = ww + "px";
+    app.canvas.style.height = hh + "px";
 
-    // Sky (upper 62% of screen)
-    const skyH = h * 0.62;
+    // Sky occupies top 75% (light blue → grey-blue gradient)
+    // Ground/grass strip at ~75% height
+    const grassY = hh * 0.75;
+
+    // Sky: full gradient fill (two layers for gradient approximation)
     skyGfx.clear()
-      .rect(0, 0, w, skyH).fill({ color: 0xbcdbef })
-      .rect(0, skyH * 0.7, w, skyH * 0.3).fill({ color: 0xcde4f0, alpha: 0.7 });
+      .rect(0, 0, ww, grassY).fill({ color: 0xbcdbef })            // light blue
+      .rect(0, grassY * 0.5, ww, grassY * 0.5).fill({ color: 0xa8c8e0, alpha: 0.45 }) // grey-blue lower
+      ;
 
-    // Ground + grass (lower 38%)
-    const groundY = h * 0.62;
+    // Ground fill (below grass strip)
     groundGfx.clear()
-      // earth fill
-      .rect(0, groundY, w, h - groundY).fill({ color: 0xd4c69c })
+      // soil/earth
+      .rect(0, grassY + hh * 0.038, ww, hh - grassY - hh * 0.038).fill({ color: num("#8b6914"), alpha: 0.6 })
       // grass strip
-      .rect(0, groundY, w, h * 0.042).fill({ color: C_GRASS })
-      // darker grass edge
-      .rect(0, groundY + h * 0.042, w, h * 0.018).fill({ color: num("#4a7226"), alpha: 0.55 })
-      // stone path running down the lower half
-      .roundRect(w * 0.38, groundY + h * 0.06, w * 0.24, h * 0.32, 4).fill({ color: num("#c8bda6"), alpha: 0.85 })
-      // path edge lines
-      .roundRect(w * 0.38, groundY + h * 0.06, w * 0.24, h * 0.32, 4).stroke({ width: 2, color: num("#b0a48c"), alpha: 0.6 });
-    // Path stone seams
-    for (let si = 1; si <= 5; si++) {
-      const sy = groundY + h * 0.06 + (h * 0.32 / 6) * si;
-      groundGfx.moveTo(w * 0.38, sy).lineTo(w * 0.62, sy)
-        .stroke({ width: 1, color: num("#b0a48c"), alpha: 0.5 });
-    }
-    // Flower spots on grass (decorative)
-    const flowerSpots = [[0.15, 0.63], [0.22, 0.65], [0.72, 0.64], [0.82, 0.63]];
+      .rect(0, grassY, ww, hh * 0.038).fill({ color: C_GRASS })
+      // grass top edge (darker blade)
+      .rect(0, grassY, ww, hh * 0.012).fill({ color: num("#4a7226") })
+      // flower spots
+    ;
+    // Flower spots decorative
+    const flowerSpots = [[0.12, 0.755], [0.20, 0.765], [0.74, 0.755], [0.84, 0.762]];
     for (const [fx2, fy2] of flowerSpots) {
-      groundGfx.circle(w * fx2, h * fy2, 5).fill({ color: C_ACC, alpha: 0.7 });
-      groundGfx.circle(w * fx2, h * fy2, 3).fill({ color: 0xffffff, alpha: 0.5 });
+      groundGfx.circle(ww * fx2, hh * fy2, 5).fill({ color: C_ACC, alpha: 0.8 });
+      groundGfx.circle(ww * fx2, hh * fy2, 2.5).fill({ color: 0xffffff, alpha: 0.7 });
     }
 
-    // Decorative trees left and right
-    drawTrees(w, groundY);
+    // Decorative trees left/right (slim, outside family zone)
+    drawTrees(ww, grassY);
 
     // Sun
-    sunCont.position.set(w * 0.72, h * 0.09);
+    sunCont.position.set(ww * 0.72, hh * 0.09);
 
-    // Clouds
-    cloud1.position.set(w * 0.12, h * 0.11);
-    cloud2.position.set(w * 0.58, h * 0.07);
-    cloud3.position.set(w * 0.36, h * 0.16);
+    // Clouds in upper 30% of sky
+    cloud1.position.set(ww * 0.12, hh * 0.10);
+    cloud2.position.set(ww * 0.58, hh * 0.07);
+    cloud3.position.set(ww * 0.34, hh * 0.16);
 
-    // Family centered in upper zone, feet near ground line
-    const unit = w * 0.048;
-    drawFamilyShape(unit);
-    familyCont.position.set(w / 2, groundY - h * 0.01);
+    // Family stands ON the grass: feet at grassY, figures at 65-72% height
+    // Family positioned at grassY so their feet touch the green strip
+    const famUnit = ww * 0.045;
+    drawFamilyShape(ww);
+    familyCont.position.set(ww / 2, grassY);  // family origin at grass level (feet)
 
-    // Paper behind family
-    const pw = w * 0.44, ph = h * 0.26;
-    drawPaper(w / 2, groundY - h * 0.01, pw, ph);
+    // Paper corner indicator near family (small, only visible on miss)
+    drawPaperCorner(ww / 2, grassY, ww * 0.36);
 
-    // Umbrella radius
-    umbRadius = w * 0.21;
+    // Umbrella: green canopy half-ellipse ~120px wide (radius 60px at min width)
+    umbRadius = Math.max(60, ww * 0.17);
     drawUmbrella(umbRadius);
 
-    // Initial umbrella position (above family)
+    // Initial umbrella position: canopy at pointer.y - UMB_OFFSET_Y (above family)
     if (!pointerDown) {
-      umbTargetX = w / 2;
-      umbTargetY = groundY - h * 0.22;
+      umbTargetX = ww / 2;
+      umbTargetY = grassY - hh * 0.28;  // well above family heads
     }
     umbX = umbTargetX;
     umbY = umbTargetY;
     umbrellaCont.position.set(umbX, umbY);
 
-    // Meter (top area below title)
-    const my = h * 0.055;
-    drawMeter(w, h);
-    meterLabel.position.set((w - w * 0.52) / 2, my - 18);
+    // UI: top HUD strip
+    // Meter label above meter
+    const meterY = hh * 0.05;
+    meterLabel.position.set(ww / 2, meterY - 4);
+    drawMeter(ww, hh);
 
-    // Title below meter
-    titleTxt.style.wordWrapWidth = w * 0.76;
-    titleTxt.position.set(w / 2, h * 0.078);
+    // Instruction below meter
+    instructionTxt.style.wordWrapWidth = ww * 0.76;
+    instructionTxt.position.set(ww / 2, meterY + 18);
 
-    // Nudge
-    nudgeTxt.position.set(w / 2, groundY - h * 0.32);
+    // Nudge text in middle area (above family heads)
+    nudgeTxt.position.set(ww / 2, grassY - hh * 0.28);
 
-    // Ghost hint start pos (will animate in startGhostDemo) — lower play zone
-    ghostCont.position.set(w * 0.35, groundY + h * 0.12);
+    // Ghost hint start pos
+    ghostCont.position.set(ww * 0.35, grassY - hh * 0.12);
 
     // CTA button bottom thumb zone
-    const bw = Math.min(w * 0.76, 280);
+    const bw = Math.min(ww * 0.76, 280);
     const bh = 56;
-    const bx = (w - bw) / 2;
-    const by = h - bh - h * 0.04;
+    const bx = (ww - bw) / 2;
+    const by = hh - bh - hh * 0.04;
     ctaBg.clear().roundRect(bx, by, bw, bh, 28).fill({ color: C_ACC });
-    ctaTxt.position.set(w / 2, by + bh / 2);
+    ctaTxt.position.set(ww / 2, by + bh / 2);
+
+    void famUnit;
 
     // Endcard panel
-    buildEndcard(w, h);
+    buildEndcard(ww, hh);
   }
 
   // ── Endcard builder ────────────────────────────────────────────────────────
-  function buildEndcard(w: number, h: number): void {
+  function buildEndcard(ww: number, hh: number): void {
     endcardCont.removeChildren();
     // Scrim
-    endcardCont.addChild(new Graphics().rect(0, 0, w, h).fill({ color: 0x000000, alpha: 0.5 }));
+    endcardCont.addChild(new Graphics().rect(0, 0, ww, hh).fill({ color: 0x000000, alpha: 0.5 }));
 
-    const pw = Math.min(w * 0.88, 360);
-    const ph = h * 0.65;
-    const px = (w - pw) / 2;
-    const py = (h - ph) / 2 - h * 0.04;
+    const pw = Math.min(ww * 0.88, 360);
+    const ph = hh * 0.65;
+    const px = (ww - pw) / 2;
+    const py = (hh - ph) / 2 - hh * 0.04;
 
     endcardCont.addChild(
       new Graphics()
@@ -465,18 +494,15 @@ async function main(): Promise<void> {
       style: { fill: C_PRI, fontFamily: FONT, fontWeight: "bold", fontSize: 26, align: "center" },
     });
     brandTxt.anchor.set(0.5, 0);
-    brandTxt.position.set(w / 2, py + 20);
+    brandTxt.position.set(ww / 2, py + 20);
     endcardCont.addChild(brandTxt);
 
     // Brand tree/umbrella icon
     const iconG = new Graphics();
-    const ix = w / 2, iy = py + 80;
-    // Canopy dome
+    const ix = ww / 2, iy = py + 80;
     iconG.poly([ix - 30, iy, ix, iy - 40, ix + 30, iy]).fill({ color: C_PRI });
     iconG.poly([ix - 22, iy - 16, ix, iy - 50, ix + 22, iy - 16]).fill({ color: num("#3a7f60") });
-    // Trunk
     iconG.rect(ix - 4, iy, 8, 20).fill({ color: num("#6b4c2a") });
-    // Two small figures
     iconG.circle(ix - 16, iy + 28, 6).fill({ color: C_PRI });
     iconG.roundRect(ix - 20, iy + 34, 10, 18, 2).fill({ color: C_PRI });
     iconG.circle(ix + 16, iy + 28, 6).fill({ color: C_PRI });
@@ -485,7 +511,7 @@ async function main(): Promise<void> {
 
     // "Protected" badge
     const badgeG = new Graphics()
-      .roundRect(w / 2 - 68, py + 136, 136, 28, 10)
+      .roundRect(ww / 2 - 68, py + 136, 136, 28, 10)
       .fill({ color: C_PRI });
     endcardCont.addChild(badgeG);
     const badgeTxt = new Text({
@@ -493,7 +519,7 @@ async function main(): Promise<void> {
       style: { fill: 0xffffff, fontFamily: FONT, fontWeight: "bold", fontSize: 16, align: "center" },
     });
     badgeTxt.anchor.set(0.5);
-    badgeTxt.position.set(w / 2, py + 150);
+    badgeTxt.position.set(ww / 2, py + 150);
     endcardCont.addChild(badgeTxt);
 
     // Endcard line
@@ -510,10 +536,10 @@ async function main(): Promise<void> {
       },
     });
     lineTxt.anchor.set(0.5, 0);
-    lineTxt.position.set(w / 2, py + 176);
+    lineTxt.position.set(ww / 2, py + 176);
     endcardCont.addChild(lineTxt);
 
-    // Disclaimer (≥10px, readable)
+    // Disclaimer
     const discTxt = new Text({
       text: "Coverage varies by state. Licensed agents in [State]. No obligation.",
       style: {
@@ -526,22 +552,23 @@ async function main(): Promise<void> {
       },
     });
     discTxt.anchor.set(0.5, 1);
-    discTxt.position.set(w / 2, py + ph - 8);
+    discTxt.position.set(ww / 2, py + ph - 8);
     endcardCont.addChild(discTxt);
   }
 
   // ── Drop factory ────────────────────────────────────────────────────────────
-  function spawnDrop(w: number, h: number, type: "rain" | "leaf" | "acorn" = "rain", fromX?: number): void {
-    const r = type === "rain" ? 5 : type === "leaf" ? 8 : 7;
+  // Rain drops: 3px × 12px rounded rects, alpha 0.7 per spec
+  function spawnDrop(ww: number, hh: number, type: "rain" | "leaf" | "acorn" = "rain", fromX?: number): void {
     const spd = phase === "bit3" ? DROP_SPEED_BIT3
               : phase === "bit2" ? DROP_SPEED_BIT2
               : DROP_SPEED_BASE;
-    const baseVY = spd * h;
+    const baseVY = spd * hh;
 
     const cont = new Container();
     const gfx  = new Graphics();
     if (type === "rain") {
-      gfx.ellipse(0, 0, r, r * 1.55).fill({ color: C_RAIN, alpha: 0.9 });
+      // Spec: 3px wide × 12px tall rounded rect, alpha 0.7
+      gfx.roundRect(-1.5, 0, 3, 12, 1.5).fill({ color: C_RAIN, alpha: 0.7 });
     } else if (type === "leaf") {
       gfx.poly([0, -9, 7, 0, 0, 9, -7, 0]).fill({ color: num("#5a9a3c"), alpha: 0.92 });
     } else {
@@ -550,21 +577,22 @@ async function main(): Promise<void> {
     }
     cont.addChild(gfx);
 
-    const sx = fromX !== undefined ? fromX : w * (0.08 + Math.random() * 0.84);
-    const windVX = phase === "bit3" ? (Math.random() - 0.5) * w * 0.14 : 0;
+    const sx = fromX !== undefined ? fromX : ww * (0.08 + Math.random() * 0.84);
+    const windVX = phase === "bit3" ? (Math.random() - 0.5) * ww * 0.14 : 0;
     cont.position.set(sx, -18);
     gameLayer.addChild(cont);
 
+    const r = type === "rain" ? 3 : type === "leaf" ? 8 : 7;
     drops.push({ cont, x: sx, y: -18, vx: windVX, vy: baseVY, r, alive: true, type, bounced: false, bounceTimer: 0 });
   }
 
   // ── Bounce effect ──────────────────────────────────────────────────────────
-  function doBounce(drop: Drop, w: number, h: number): void {
+  function doBounce(drop: Drop, ww: number, hh: number): void {
     drop.bounced = true;
     drop.bounceTimer = 0.38;
     // Squash/stretch the umbrella wrapper
     gsap.to(umbrellaWrap.scale, { x: 1.09, y: 0.92, duration: 0.07, yoyo: true, repeat: 1, ease: "power2.out" });
-    // Ripple
+    // Ripple at bounce point
     const rip = new Graphics()
       .circle(0, 0, umbRadius * 0.38)
       .stroke({ width: 3, color: 0xffffff, alpha: 0.65 });
@@ -572,25 +600,28 @@ async function main(): Promise<void> {
     fxLayer.addChild(rip);
     gsap.to(rip.scale, { x: 1.7, y: 1.7, duration: 0.32, ease: "power1.out" });
     gsap.to(rip, { alpha: 0, duration: 0.32, ease: "power1.in",
-      onComplete: () => { fxLayer.removeChild(rip); rip.destroy(); } });
+      onComplete: () => { if (rip.parent) fxLayer.removeChild(rip); rip.destroy(); } });
     if (!meterPaused) protection = Math.min(100, protection + 1.8);
-    drawMeter(w, h);
+    drawMeter(ww, hh);
+    // Spawn heart to show the family is protected
+    spawnHeart(drop.x, umbrellaCont.y - 10);
   }
 
   // ── Miss effect ────────────────────────────────────────────────────────────
-  function doMiss(w: number, h: number): void {
+  function doMiss(ww: number, hh: number): void {
     meterPaused   = true;
     meterPauseTimer = 2.2;
     protection = Math.max(20, protection - 7);
-    drawMeter(w, h);
-    // Paper corner darkens
+    drawMeter(ww, hh);
+    // Paper corner darkens (small picnic paper in corner)
     paperCorner = Math.min(1, paperCorner + 0.45);
-    drawPaper(w / 2, h * 0.62 - h * 0.01, w * 0.44, h * 0.26);
+    const grassY = hh * 0.75;
+    drawPaperCorner(ww / 2, grassY, ww * 0.36);
     gsap.to({ v: paperCorner }, {
       v: 0, duration: 1.9,
       onUpdate: function() {
         paperCorner = (this.targets() as Array<{v: number}>)[0].v;
-        drawPaper(w / 2, h * 0.62 - h * 0.01, w * 0.44, h * 0.26);
+        drawPaperCorner(ww / 2, hh * 0.75, ww * 0.36);
       },
     });
     // Family shiver
@@ -609,11 +640,10 @@ async function main(): Promise<void> {
     protection = Math.min(100, protection + 4.5);
     drop.bounced = true;
     drop.bounceTimer = 0.55;
-    // Different arc per type
     drop.vx = (Math.random() - 0.5) * window.innerWidth * 0.3;
     drop.vy = drop.type === "leaf"
-      ? -window.innerHeight * 0.22   // leaf floats gently
-      : -window.innerHeight * 0.32;  // acorn pops
+      ? -window.innerHeight * 0.22
+      : -window.innerHeight * 0.32;
     // Gold sparkle
     const sp = new Container();
     const sg = new Graphics().star(0, 0, 5, 11, 5).fill({ color: C_ACC });
@@ -621,14 +651,13 @@ async function main(): Promise<void> {
     sp.position.set(drop.x, drop.y);
     fxLayer.addChild(sp);
     gsap.to(sp, { y: sp.y - 55, alpha: 0, duration: 0.55, ease: "power2.out",
-      onComplete: () => { fxLayer.removeChild(sp); sp.destroy(); } });
+      onComplete: () => { if (sp.parent) fxLayer.removeChild(sp); sp.destroy(); } });
   }
 
-  // ── Near-miss: gold heart ─────────────────────────────────────────────────
+  // ── Heart FX ─────────────────────────────────────────────────────────────
   function spawnHeart(x: number, y: number): void {
     const cont = new Container();
     const g    = new Graphics();
-    // Heart using two circles + triangle
     g.circle(-6, -6, 6).fill({ color: C_ACC });
     g.circle( 6, -6, 6).fill({ color: C_ACC });
     g.poly([-12, -4, 12, -4, 0, 10]).fill({ color: C_ACC });
@@ -642,12 +671,13 @@ async function main(): Promise<void> {
   }
 
   // ── Ghost finger demo ──────────────────────────────────────────────────────
-  function startGhostDemo(w: number, h: number): void {
+  function startGhostDemo(ww: number, hh: number): void {
+    const grassY = hh * 0.75;
     ghostCont.alpha = 0.75;
-    ghostCont.position.set(w * 0.32, h * 0.68);
+    ghostCont.position.set(ww * 0.32, grassY - hh * 0.18);
     gsap.killTweensOf(ghostCont);
     gsap.to(ghostCont, {
-      x: w * 0.68, y: h * 0.48,
+      x: ww * 0.68, y: grassY - hh * 0.38,
       duration: 1.8, ease: "sine.inOut",
       yoyo: true, repeat: -1,
       onUpdate: () => {
@@ -675,7 +705,7 @@ async function main(): Promise<void> {
     if (!hasInteracted) {
       hasInteracted = true;
       stopGhostDemo();
-      gsap.to(titleTxt, { alpha: 0, duration: 0.5, delay: 2.0 });
+      gsap.to(instructionTxt, { alpha: 0, duration: 0.5, delay: 2.0 });
     }
     idleTimer = 0;
     idleCount = 0;
@@ -695,22 +725,27 @@ async function main(): Promise<void> {
   function enterReveal(): void {
     if (phase === "reveal" || phase === "end") return;
     phase = "reveal";
-    // Clear drops
+    // Clear drops defensively
     for (const d of drops) {
-      if (d.alive) { d.alive = false; gameLayer.removeChild(d.cont); d.cont.destroy(); }
+      if (d.alive) {
+        d.alive = false;
+        gsap.killTweensOf(d.cont);
+        if (d.cont.parent) gameLayer.removeChild(d.cont);
+        d.cont.destroy();
+      }
     }
     drops.length = 0;
     // Clouds part
-    gsap.to(cloud1, { x: -w() * 0.6, duration: 1.3, ease: "power2.in" });
-    gsap.to(cloud2, { x: w() * 1.5,  duration: 1.1, ease: "power2.in" });
-    gsap.to(cloud3, { y: -h() * 0.2, duration: 0.9, ease: "power2.in" });
+    gsap.to(cloud1.position, { x: -w() * 0.6, duration: 1.3, ease: "power2.in" });
+    gsap.to(cloud2.position, { x: w() * 1.5,  duration: 1.1, ease: "power2.in" });
+    gsap.to(cloud3.position, { y: -h() * 0.2, duration: 0.9, ease: "power2.in" });
     // Sun rises
     gsap.to(sunCont, { alpha: 1, duration: 1.3, delay: 0.5, ease: "power1.out" });
     gsap.to(sunCont.scale, { x: 1.12, y: 1.12, duration: 2.0, delay: 0.5, ease: "sine.inOut", yoyo: true, repeat: -1 });
-    // Umbrella fades (family now safe)
+    // Umbrella fades
     gsap.to(umbrellaCont, { alpha: 0, duration: 0.8, delay: 0.3 });
     // Hide UI
-    gsap.to(titleTxt, { alpha: 0, duration: 0.3 });
+    gsap.to(instructionTxt, { alpha: 0, duration: 0.3 });
     gsap.delayedCall(REVEAL_HOLD_MS / 1000, showEndcard);
   }
 
@@ -731,21 +766,27 @@ async function main(): Promise<void> {
   layout();
   window.addEventListener("resize", layout);
 
-  // Hook: scripted first drop at 0.8s + ghost finger
+  // Start ghost demo immediately for first-time users
   gsap.delayedCall(0.4, () => {
     if (!hasInteracted) {
       startGhostDemo(window.innerWidth, window.innerHeight);
     }
   });
-  gsap.delayedCall(0.8, () => {
-    spawnDrop(window.innerWidth, window.innerHeight, "rain", window.innerWidth * 0.5);
-  });
+
+  // Spawn first rain drops IMMEDIATELY (t=0) so rain is visible from start
+  // This ensures rain is visible at t0/t1 per spec
+  spawnDrop(window.innerWidth, window.innerHeight, "rain", window.innerWidth * 0.3);
+  spawnDrop(window.innerWidth, window.innerHeight, "rain", window.innerWidth * 0.6);
+  spawnDrop(window.innerWidth, window.innerHeight, "rain", window.innerWidth * 0.5);
+
+  // Continue spawning during hook phase too
+  spawnTimer = spawnInterval * 0.5; // start half-way through first interval
 
   app.ticker.add((ticker) => {
     const dt = Math.min(0.05, ticker.deltaMS / 1000);
     const W = window.innerWidth;
     const H = window.innerHeight;
-    const groundY = H * 0.62;
+    const grassY = H * 0.75;
 
     if (phase === "end") { app.renderer.render(app.stage); return; }
 
@@ -753,9 +794,6 @@ async function main(): Promise<void> {
     phaseTimer += dt;
 
     // ── Idle tracking ────────────────────────────────────────────────────────
-    // Two paths:
-    //  • Never interacted: enterReveal after AUTO_DEMO_AFTER × IDLE_HINT_MS
-    //  • Interacted then went idle: enterReveal after 3.5s of no pointermove
     if (phase !== "reveal" && phase !== "end") {
       idleTimer += dt;
       const idleLimit = hasInteracted ? 2.8 : IDLE_HINT_MS / 1000;
@@ -763,7 +801,7 @@ async function main(): Promise<void> {
         idleTimer = 0;
         idleCount++;
         if (!hasInteracted && idleCount < AUTO_DEMO_AFTER) {
-          // just a tick, not yet reveal
+          // just a tick
         } else {
           enterReveal();
         }
@@ -781,6 +819,9 @@ async function main(): Promise<void> {
     const ls = Math.min(1, 18 * dt);
     umbX += (umbTargetX - umbX) * ls;
     umbY += (umbTargetY - umbY) * ls;
+    // Clamp umbrella: never below family heads (top of tallest parent is ~64px above grass)
+    const minUmbY = grassY - 70;
+    if (umbY > minUmbY) umbY = minUmbY;
     umbrellaCont.position.set(umbX, umbY);
 
     // ── Wind (bit3) ───────────────────────────────────────────────────────────
@@ -789,8 +830,8 @@ async function main(): Promise<void> {
       if (windTimer > 1.6) { windTimer = 0; windX = (Math.random() - 0.5) * W * 0.25; }
     }
 
-    // ── Spawn drops ───────────────────────────────────────────────────────────
-    if (phase !== "hook" && phase !== "reveal" && phase !== "end") {
+    // ── Spawn drops — spawn in ALL phases (including hook) ────────────────────
+    if (phase !== "reveal" && phase !== "end") {
       spawnTimer += dt;
       if (spawnTimer >= spawnInterval) {
         spawnTimer = 0;
@@ -807,6 +848,7 @@ async function main(): Promise<void> {
     }
 
     // ── Update drops ─────────────────────────────────────────────────────────
+    // Umbrella hit radius from current umbrella position
     const hitR = umbRadius * HIT_SCALE;
 
     for (let i = drops.length - 1; i >= 0; i--) {
@@ -816,31 +858,35 @@ async function main(): Promise<void> {
       if (phase === "bit3") d.vx += windX * dt * 0.3;
       d.x += d.vx * dt;
       d.y += d.vy * dt;
+      if (d.cont.destroyed) { drops.splice(i, 1); continue; }
       d.cont.position.set(d.x, d.y);
 
       // Bounced drops fade out
       if (d.bounced) {
         d.bounceTimer -= dt;
-        d.cont.alpha = Math.max(0, d.bounceTimer / 0.38);
+        if (!d.cont.destroyed) d.cont.alpha = Math.max(0, d.bounceTimer / 0.38);
         if (d.bounceTimer <= 0) {
-          d.alive = false; gameLayer.removeChild(d.cont); d.cont.destroy(); drops.splice(i, 1);
+          d.alive = false;
+          if (!d.cont.destroyed) {
+            if (d.cont.parent) gameLayer.removeChild(d.cont);
+            d.cont.destroy();
+          }
+          drops.splice(i, 1);
         }
         continue;
       }
 
-      // Dome hit test
+      // Dome hit test (umbrella ellipse — rx=hitR, ry=hitR*0.5)
       const dx = d.x - umbX;
       const dy = d.y - umbY;
-      const domeRy = hitR * 0.52; // dome is an ellipse, ry ≈ 0.52 * rx
-      // Expand hitbox by velocity*dt against tunneling
+      const domeRy = hitR * 0.5;
       const expand = (Math.abs(d.vx) + Math.abs(d.vy)) * dt * 0.4;
       const inDome =
         (dx * dx) / ((hitR + expand) * (hitR + expand)) +
         (dy * dy) / ((domeRy + expand) * (domeRy + expand)) <= 1.0 &&
-        dy <= 0; // only upper hemisphere
+        dy <= 0;
 
       if (inDome) {
-        // Reflect: rotate normal at dome edge
         const nx = dx / (hitR + 0.001);
         d.vx = nx * Math.abs(d.vy) * 0.45 + d.vx * 0.25;
         d.vy = -Math.abs(d.vy) * 0.5;
@@ -849,36 +895,53 @@ async function main(): Promise<void> {
         } else {
           doBounce(d, W, H);
         }
-        // Near-miss check (drop near rim)
         const rim = Math.sqrt((dx * dx) / (hitR * hitR) + (dy * dy) / (domeRy * domeRy));
         if (rim > 0.72 && rim <= 1.02) {
-          spawnHeart(d.x, d.y);
+          spawnHeart(d.x, d.y - 10);
         }
         continue;
       }
 
-      // Miss zone: drop hits the family
-      const famY0 = groundY - H * 0.30;
-      const famY1 = groundY + H * 0.02;
-      if (d.y > famY0 && d.y < famY1 && Math.abs(d.x - W / 2) < W * 0.26) {
-        d.alive = false; gameLayer.removeChild(d.cont); d.cont.destroy(); drops.splice(i, 1);
+      // Miss zone: drop passes family zone
+      // Family feet at grassY, tallest figure head ~64px above
+      const famY0 = grassY - 70;
+      const famY1 = grassY + 10;
+      if (d.y > famY0 && d.y < famY1 && Math.abs(d.x - W / 2) < W * 0.22) {
+        d.alive = false;
+        if (!d.cont.destroyed) {
+          if (d.cont.parent) gameLayer.removeChild(d.cont);
+          d.cont.destroy();
+        }
+        drops.splice(i, 1);
         doMiss(W, H);
         continue;
       }
 
       // Off screen
       if (d.y > H + 20 || d.x < -40 || d.x > W + 40) {
-        d.alive = false; gameLayer.removeChild(d.cont); d.cont.destroy(); drops.splice(i, 1);
+        d.alive = false;
+        if (!d.cont.destroyed) {
+          if (d.cont.parent) gameLayer.removeChild(d.cont);
+          d.cont.destroy();
+        }
+        drops.splice(i, 1);
       }
     }
 
     // ── Hearts ────────────────────────────────────────────────────────────────
     for (let i = hearts.length - 1; i >= 0; i--) {
       const hrt = hearts[i];
+      if (hrt.cont.destroyed) { hearts.splice(i, 1); continue; }
       hrt.timer -= dt;
       hrt.cont.y += hrt.vy * dt;
       hrt.cont.alpha = Math.max(0, hrt.timer / 1.2);
-      if (hrt.timer <= 0) { fxLayer.removeChild(hrt.cont); hrt.cont.destroy(); hearts.splice(i, 1); }
+      if (hrt.timer <= 0) {
+        if (!hrt.cont.destroyed) {
+          if (hrt.cont.parent) fxLayer.removeChild(hrt.cont);
+          hrt.cont.destroy();
+        }
+        hearts.splice(i, 1);
+      }
     }
 
     // ── Meter decay ───────────────────────────────────────────────────────────

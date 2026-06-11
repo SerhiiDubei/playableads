@@ -42,10 +42,11 @@ const FONT = cfg.style.font.family;
 // ── Design canvas — portrait 9:16 ─────────────────────────────────────────────
 const DW = 540, DH = 960;
 
-// The kitchen scene occupies the top 60% (y 0..576); bottom 40% = swatch zone.
-const KITCHEN_H = 576;
-// Swatch zone starts just below kitchen scene.
-const SWATCH_ZONE_Y = KITCHEN_H; // 576
+// The kitchen scene occupies the top ~67% (y 0..640); bottom ~33% = swatch zone.
+// Increased kitchen height so scene fills more of the screen; bottom strip = 160px.
+const KITCHEN_H = 800;
+// Swatch zone starts just below kitchen scene (160px reserved for swatches).
+const SWATCH_ZONE_Y = KITCHEN_H; // 800
 
 // ── Kitchen palette per combination ──────────────────────────────────────────
 interface KitchenPalette {
@@ -176,30 +177,40 @@ async function main(): Promise<void> {
   let kitchenCont = new Container();
   kitchenLayer.addChild(kitchenCont);
 
+  // Safe horizontal padding keeps scene away from left/right edges
+  const SAFE_PAD = 10;
+  // Kitchen scene inner width (with safe padding applied)
+  const KW = DW - SAFE_PAD * 2;
+
   function buildKitchen(sIdx: number, cIdx: number, tIdx: number, withBonus = false): Container {
     const pal  = kitchenPalette(sIdx, cIdx);
     const [tA, tB] = tileColors(tIdx, sIdx);
     const isModern = sIdx === 0;
     const c = new Container();
 
-    // Floor (bottom 30% of kitchen zone)
-    const floorY = KITCHEN_H * 0.67;
+    // Kitchen scene rendered at full DW × KITCHEN_H, then clipped and offset inward by SAFE_PAD.
+    // We draw in local [0..KW] × [0..KITCHEN_H] coords, then shift the container right by SAFE_PAD.
+    c.x = SAFE_PAD;
+
+    // Floor (bottom ~30% of kitchen zone)
+    const floorY = Math.round(KITCHEN_H * 0.67);
     const floorG = new Graphics();
-    floorG.rect(0, floorY, DW, KITCHEN_H - floorY).fill({ color: pal.floor });
-    floorG.rect(0, floorY, DW, 8).fill({ color: shade(pal.floor, -0.12) }); // baseboard shadow
+    floorG.rect(0, floorY, KW, KITCHEN_H - floorY).fill({ color: pal.floor });
+    floorG.rect(0, floorY, KW, 8).fill({ color: shade(pal.floor, -0.12) }); // baseboard shadow
     c.addChild(floorG);
 
     // Wall
-    const wallG = new Graphics().rect(0, 0, DW, floorY).fill({ color: pal.wall });
+    const wallG = new Graphics().rect(0, 0, KW, floorY).fill({ color: pal.wall });
     c.addChild(wallG);
 
     // Golden-hour bonus overlay
     if (withBonus) {
-      c.addChild(new Graphics().rect(0, 0, DW, KITCHEN_H).fill({ color: num("#FFD080"), alpha: 0.16 }));
+      c.addChild(new Graphics().rect(0, 0, KW, KITCHEN_H).fill({ color: num("#FFD080"), alpha: 0.16 }));
     }
 
-    // Window (upper centre)
-    const winX = DW / 2 - 80, winY = 8, winW = 160, winH = 120;
+    // Window (upper centre) — scaled proportionally to KW
+    const winW = Math.round(KW * 0.30), winH = Math.round(KITCHEN_H * 0.15);
+    const winX = Math.round(KW / 2 - winW / 2), winY = 10;
     const winG = new Graphics();
     winG.roundRect(winX, winY, winW, winH, 6).fill({ color: num("#B8D8F0"), alpha: 0.88 });
     winG.roundRect(winX, winY, winW, winH, 6).stroke({ width: 7, color: isModern ? num("#DDDBD8") : num("#F0E8D8") });
@@ -214,25 +225,30 @@ async function main(): Promise<void> {
     // Pendant lights (bonus delta)
     if (withBonus) {
       for (let p = 0; p < 2; p++) {
-        const px = DW * 0.32 + p * DW * 0.36;
+        const px = KW * 0.32 + p * KW * 0.36;
+        const pendTopY = Math.round(KITCHEN_H * 0.07);
+        const pendMidY = Math.round(KITCHEN_H * 0.20);
+        const pendBotY = Math.round(KITCHEN_H * 0.25);
+        const pendEndY = Math.round(KITCHEN_H * 0.265);
         const pg = new Graphics();
-        pg.moveTo(px, 55).lineTo(px, 155).stroke({ width: 2.5, color: num("#8A7A6A") });
-        pg.poly([px - 22, 155, px + 22, 155, px + 16, 196, px - 16, 196]).fill({ color: num("#C8A860") });
-        pg.poly([px - 16, 196, px + 16, 196, px + 11, 207, px - 11, 207]).fill({ color: num("#9A7A30") });
-        c.addChild(new Graphics().ellipse(px, 212, 68, 22).fill({ color: num("#FFE080"), alpha: 0.22 }));
+        pg.moveTo(px, pendTopY).lineTo(px, pendMidY).stroke({ width: 2.5, color: num("#8A7A6A") });
+        pg.poly([px - 22, pendMidY, px + 22, pendMidY, px + 16, pendBotY, px - 16, pendBotY]).fill({ color: num("#C8A860") });
+        pg.poly([px - 16, pendBotY, px + 16, pendBotY, px + 11, pendEndY, px - 11, pendEndY]).fill({ color: num("#9A7A30") });
+        c.addChild(new Graphics().ellipse(px, pendEndY + 16, 68, 22).fill({ color: num("#FFE080"), alpha: 0.22 }));
         c.addChild(pg);
       }
     }
 
     // Backsplash zone (between upper cabinets and counter)
-    const splashY = 220, splashH = 130;
+    // Scale relative positions to KITCHEN_H
+    const splashY = Math.round(KITCHEN_H * 0.285), splashH = Math.round(KITCHEN_H * 0.17);
     const splashCont = new Container();
     const tileG = new Graphics();
     if (tIdx === 0) {
       // Herringbone
       const bw = 36, bh = 14;
       for (let row = 0; row < Math.ceil(splashH / bh) + 1; row++) {
-        for (let col = -1; col < Math.ceil(DW / bw) + 2; col++) {
+        for (let col = -1; col < Math.ceil(KW / bw) + 2; col++) {
           const xo = row % 2 === 0 ? 0 : bw / 2;
           tileG.roundRect(col * bw + xo + 1, row * bh + 1, bw - 2, bh - 2, 2)
             .fill({ color: (col + row) % 2 === 0 ? tA : tB });
@@ -243,7 +259,7 @@ async function main(): Promise<void> {
       const bw = 64, bh = 28;
       for (let row = 0; row < Math.ceil(splashH / bh) + 1; row++) {
         const xo = row % 2 === 0 ? 0 : bw / 2;
-        for (let col = -1; col < Math.ceil(DW / bw) + 2; col++) {
+        for (let col = -1; col < Math.ceil(KW / bw) + 2; col++) {
           tileG.roundRect(col * bw + xo + 1, row * bh + 2, bw - 2, bh - 4, 3)
             .fill({ color: (col + row) % 2 === 0 ? tA : tB });
         }
@@ -251,50 +267,51 @@ async function main(): Promise<void> {
     }
     splashCont.addChild(tileG);
     splashCont.position.set(0, splashY);
-    const sM = new Graphics().rect(0, splashY, DW, splashH).fill({ color: 0xffffff });
+    const sM = new Graphics().rect(0, splashY, KW, splashH).fill({ color: 0xffffff });
     splashCont.mask = sM;
     c.addChild(sM, splashCont);
 
     // Upper cabinets — flanking the window
-    const ucY = 55, ucH = KITCHEN_H * 0.25;
+    const ucY = Math.round(KITCHEN_H * 0.07);
+    const ucH = Math.round(KITCHEN_H * 0.20);
     const ucG = new Graphics();
-    // Left block
-    ucG.roundRect(0, ucY, DW * 0.28, ucH, isModern ? 2 : 8).fill({ color: pal.cabinet });
-    ucG.moveTo(DW * 0.14, ucY + 10).lineTo(DW * 0.14, ucY + ucH - 10).stroke({ width: 2, color: pal.cabinetDark, alpha: 0.35 });
-    // Right block
-    ucG.roundRect(DW * 0.72, ucY, DW * 0.28, ucH, isModern ? 2 : 8).fill({ color: pal.cabinet });
-    ucG.moveTo(DW * 0.86, ucY + 10).lineTo(DW * 0.86, ucY + ucH - 10).stroke({ width: 2, color: pal.cabinetDark, alpha: 0.35 });
+    // Left block (does NOT reach left edge — inset 0, already SAFE_PAD away from screen edge)
+    ucG.roundRect(0, ucY, KW * 0.28, ucH, isModern ? 2 : 8).fill({ color: pal.cabinet });
+    ucG.moveTo(KW * 0.14, ucY + 10).lineTo(KW * 0.14, ucY + ucH - 10).stroke({ width: 2, color: pal.cabinetDark, alpha: 0.35 });
+    // Right block (does NOT reach right edge — ends at KW = DW - 2*SAFE_PAD)
+    ucG.roundRect(KW * 0.72, ucY, KW * 0.28, ucH, isModern ? 2 : 8).fill({ color: pal.cabinet });
+    ucG.moveTo(KW * 0.86, ucY + 10).lineTo(KW * 0.86, ucY + ucH - 10).stroke({ width: 2, color: pal.cabinetDark, alpha: 0.35 });
     // Handles
     if (isModern) {
-      ucG.roundRect(DW * 0.08, ucY + ucH / 2 - 3, 40, 6, 3).fill({ color: num("#B5915A") });
-      ucG.roundRect(DW * 0.76, ucY + ucH / 2 - 3, 40, 6, 3).fill({ color: num("#B5915A") });
+      ucG.roundRect(KW * 0.08, ucY + ucH / 2 - 3, 40, 6, 3).fill({ color: num("#B5915A") });
+      ucG.roundRect(KW * 0.76, ucY + ucH / 2 - 3, 40, 6, 3).fill({ color: num("#B5915A") });
     } else {
-      ucG.circle(DW * 0.14, ucY + ucH / 2, 8).fill({ color: num("#B5915A") });
-      ucG.circle(DW * 0.86, ucY + ucH / 2, 8).fill({ color: num("#B5915A") });
+      ucG.circle(KW * 0.14, ucY + ucH / 2, 8).fill({ color: num("#B5915A") });
+      ucG.circle(KW * 0.86, ucY + ucH / 2, 8).fill({ color: num("#B5915A") });
     }
     // Under-cabinet light strip
-    ucG.rect(0, ucY + ucH, DW * 0.28, 5).fill({ color: num("#FFF5E0"), alpha: 0.65 });
-    ucG.rect(DW * 0.72, ucY + ucH, DW * 0.28, 5).fill({ color: num("#FFF5E0"), alpha: 0.65 });
+    ucG.rect(0, ucY + ucH, KW * 0.28, 5).fill({ color: num("#FFF5E0"), alpha: 0.65 });
+    ucG.rect(KW * 0.72, ucY + ucH, KW * 0.28, 5).fill({ color: num("#FFF5E0"), alpha: 0.65 });
     c.addChild(ucG);
 
-    // Countertop
-    const ctY = 355, ctH = 26;
+    // Countertop — y proportional to KITCHEN_H
+    const ctY = Math.round(KITCHEN_H * 0.455), ctH = 26;
     const ctG = new Graphics();
-    ctG.roundRect(0, ctY, DW, ctH, 3).fill({ color: pal.counter });
+    ctG.roundRect(0, ctY, KW, ctH, 3).fill({ color: pal.counter });
     for (let i = 0; i < 7; i++) {
-      const vx = 30 + i * 70 + Math.sin(i * 1.9) * 18;
+      const vx = 30 + i * Math.round(KW / 8) + Math.sin(i * 1.9) * 18;
       ctG.moveTo(vx, ctY + 2).lineTo(vx + 32 + i * 6, ctY + ctH - 2)
         .stroke({ width: 1 + (i % 2), color: pal.counterVein, alpha: 0.5 });
     }
-    ctG.rect(0, ctY + ctH, DW, 7).fill({ color: shade(pal.counter, -0.14) });
+    ctG.rect(0, ctY + ctH, KW, 7).fill({ color: shade(pal.counter, -0.14) });
     c.addChild(ctG);
 
     // Lower cabinets
     const lcY = ctY + ctH + 7, lcH = floorY - lcY;
     const lcG = new Graphics();
-    lcG.rect(0, lcY, DW, lcH).fill({ color: pal.cabinet });
+    lcG.rect(0, lcY, KW, lcH).fill({ color: pal.cabinet });
     // Door panels (4 evenly spaced)
-    const dw = (DW - 32) / 4;
+    const dw = (KW - 32) / 4;
     for (let d = 0; d < 4; d++) {
       const dx = 8 + d * (dw + 8);
       lcG.roundRect(dx + 4, lcY + 10, dw - 8, lcH - 20, isModern ? 2 : 6)
@@ -305,21 +322,21 @@ async function main(): Promise<void> {
         lcG.circle(dx + dw / 2, lcY + 22, 8).fill({ color: num("#B5915A") });
       }
     }
-    lcG.rect(0, lcY + lcH - 10, DW, 10).fill({ color: shade(pal.cabinet, -0.18) }); // kickboard
+    lcG.rect(0, lcY + lcH - 10, KW, 10).fill({ color: shade(pal.cabinet, -0.18) }); // kickboard
     c.addChild(lcG);
 
     // Sink (centre)
     const sk = new Graphics();
-    sk.roundRect(DW / 2 - 72, ctY - 12, 144, 28, 4).fill({ color: shade(pal.counter, -0.07) });
-    sk.roundRect(DW / 2 - 68, ctY - 8, 136, 22, 3).fill({ color: num("#C0BCBA"), alpha: 0.55 });
+    sk.roundRect(KW / 2 - 72, ctY - 12, 144, 28, 4).fill({ color: shade(pal.counter, -0.07) });
+    sk.roundRect(KW / 2 - 68, ctY - 8, 136, 22, 3).fill({ color: num("#C0BCBA"), alpha: 0.55 });
     // Faucet
-    sk.rect(DW / 2 - 4, ctY - 38, 8, 30).fill({ color: isModern ? num("#909090") : num("#B5915A") });
-    sk.ellipse(DW / 2, ctY - 38, 16, 7).fill({ color: isModern ? num("#808080") : num("#9A7840") });
+    sk.rect(KW / 2 - 4, ctY - 38, 8, 30).fill({ color: isModern ? num("#909090") : num("#B5915A") });
+    sk.ellipse(KW / 2, ctY - 38, 16, 7).fill({ color: isModern ? num("#808080") : num("#9A7840") });
     c.addChild(sk);
 
     // Stove (left of sink)
     const stove = new Graphics();
-    const stX = 60;
+    const stX = Math.round(KW * 0.10);
     stove.roundRect(stX, ctY - 10, 120, 26, 3).fill({ color: isModern ? num("#3A3A3A") : num("#EEE6D8") });
     stove.circle(stX + 30, ctY + 3, 14).fill({ color: isModern ? num("#252525") : num("#D8D0C0") });
     stove.circle(stX + 90, ctY + 3, 14).fill({ color: isModern ? num("#252525") : num("#D8D0C0") });
@@ -329,7 +346,7 @@ async function main(): Promise<void> {
 
     // Cup with steam (bonus delta)
     if (withBonus) {
-      const cupX = DW - 110, cupY = ctY - 48;
+      const cupX = KW - 110, cupY = ctY - 48;
       const cupG = new Graphics();
       cupG.roundRect(cupX, cupY + 22, 42, 32, 4).fill({ color: isModern ? num("#2E2E2E") : num("#F0E8D8") });
       cupG.roundRect(cupX, cupY + 22, 42, 32, 4).stroke({ width: 2, color: num("#B5915A") });
@@ -364,20 +381,24 @@ async function main(): Promise<void> {
 
   function buildWipeRight(splitX: number): void {
     wipeCont.removeChildren().forEach(cc => cc.destroy());
-    if (splitX >= DW - 4) return;
-    const sliceW = DW - splitX;
-    // Farmhouse wall slice
+    // splitX is in local kitchen scene coords (KW wide, offset SAFE_PAD from left)
+    // We draw the wipe overlay on top of the kitchen at offset SAFE_PAD
+    const absX = splitX + SAFE_PAD; // absolute x in DW coords
+    if (absX >= DW - 4) return;
+    const sliceW = KW - splitX;
+    // Farmhouse wall slice — drawn in local KW coords, positioned at SAFE_PAD
     const g = new Graphics();
     g.rect(splitX, 0, sliceW, KITCHEN_H).fill({ color: num("#F2ECE0") });
     // Upper cabinets hint (cream shaker)
-    const ucY = 55, ucH = KITCHEN_H * 0.25;
-    g.roundRect(DW * 0.72, ucY, DW * 0.28, ucH, 8).fill({ color: num("#E8E0D0") });
+    const ucY  = Math.round(KITCHEN_H * 0.07);
+    const ucH  = Math.round(KITCHEN_H * 0.20);
+    g.roundRect(KW * 0.72, ucY, KW * 0.28, ucH, 8).fill({ color: num("#E8E0D0") });
     // Backsplash hint (subway tile)
-    const splY = 220, splH = 130;
+    const splY = Math.round(KITCHEN_H * 0.285), splH = Math.round(KITCHEN_H * 0.17);
     const sw = 64, sh = 28;
     for (let row = 0; row <= Math.ceil(splH / sh); row++) {
       const xo = row % 2 === 0 ? 0 : sw / 2;
-      for (let col = -1; col <= Math.ceil(DW / sw) + 1; col++) {
+      for (let col = -1; col <= Math.ceil(KW / sw) + 1; col++) {
         const bx = col * sw + xo + 1;
         if (bx + sw - 2 < splitX) continue;
         g.roundRect(bx + 1, splY + row * sh + 2, sw - 2, sh - 4, 3)
@@ -385,16 +406,20 @@ async function main(): Promise<void> {
       }
     }
     // Counter
-    g.roundRect(splitX, 355, sliceW, 26, 0).fill({ color: num("#F5EDE0") });
+    const ctY = Math.round(KITCHEN_H * 0.455);
+    g.roundRect(splitX, ctY, sliceW, 26, 0).fill({ color: num("#F5EDE0") });
     // Lower cabs
-    g.rect(splitX, 355 + 26 + 7, sliceW, KITCHEN_H * 0.67 - (355 + 26 + 7)).fill({ color: num("#E8E0D0") });
+    const floorY = Math.round(KITCHEN_H * 0.67);
+    g.rect(splitX, ctY + 26 + 7, sliceW, floorY - (ctY + 26 + 7)).fill({ color: num("#E8E0D0") });
     // Floor
-    g.rect(splitX, KITCHEN_H * 0.67, sliceW, KITCHEN_H * 0.33).fill({ color: num("#B8A880") });
+    g.rect(splitX, floorY, sliceW, KITCHEN_H - floorY).fill({ color: num("#B8A880") });
+    // Position the overlay to match the kitchen scene (which is also offset by SAFE_PAD)
+    g.x = SAFE_PAD;
     wipeCont.addChild(g);
-    // Divider line + arrow
+    // Divider line + arrow (in absolute DW coords)
     const line = new Graphics();
-    line.rect(splitX - 2, 0, 4, KITCHEN_H).fill({ color: PRIMARY });
-    line.poly([splitX - 14, KITCHEN_H / 2 - 22, splitX + 14, KITCHEN_H / 2, splitX - 14, KITCHEN_H / 2 + 22])
+    line.rect(absX - 2, 0, 4, KITCHEN_H).fill({ color: PRIMARY });
+    line.poly([absX - 14, KITCHEN_H / 2 - 22, absX + 14, KITCHEN_H / 2, absX - 14, KITCHEN_H / 2 + 22])
       .fill({ color: 0xffffff, alpha: 0.85 });
     wipeCont.addChild(line);
     // Style labels
@@ -408,20 +433,21 @@ async function main(): Promise<void> {
       lc.position.set(x - 50, KITCHEN_H / 2 + 36);
       wipeCont.addChild(lc);
     };
-    if (splitX > 60)  mkLabel("Modern",    splitX / 2);
-    if (splitX < DW - 60) mkLabel("Farmhouse", splitX + (DW - splitX) / 2);
+    if (absX > 60 + SAFE_PAD)  mkLabel("Modern",    absX / 2);
+    if (absX < DW - 60 - SAFE_PAD) mkLabel("Farmhouse", absX + (DW - SAFE_PAD - absX) / 2);
   }
 
-  let wipeX = DW / 2;
+  // wipeX is in KW (local kitchen scene) coords: 0..KW
+  let wipeX = KW / 2;
   let wipeTween: gsap.core.Tween | null = null;
 
   function startWipe(): void {
-    wipeX = DW / 2;
+    wipeX = KW / 2;
     buildWipeRight(wipeX);
-    // Proxy object so we can tween wipeX
+    // Proxy object so we can tween wipeX (in local KW coords)
     const proxy = { x: wipeX };
     wipeTween = gsap.to(proxy, {
-      x: DW * 0.28,
+      x: KW * 0.28,
       duration: WIPE_SPEED,
       ease: "sine.inOut",
       yoyo: true,
@@ -459,8 +485,9 @@ async function main(): Promise<void> {
     progBg.roundRect(0, 0, DW, 8, 0).fill({ color: 0x000000, alpha: 0.22 });
     hudCont.addChild(progBg, progFill);
     uiLayer.addChild(hudCont);
-    // Step label is placed in the bottom zone (above swatch cards)
-    stepLabel.position.set(DW / 2, SWATCH_ZONE_Y + 28);
+    // Step instruction label in the bottom zone — centred between separator and cards
+    // SWATCH_ZONE_Y = 800; CARDS_Y = 846; midpoint ≈ 823
+    stepLabel.position.set(DW / 2, SWATCH_ZONE_Y + 22);
     uiLayer.addChild(stepLabel);
   }
 
@@ -476,25 +503,26 @@ async function main(): Promise<void> {
   }
 
   // ── Bottom zone background ────────────────────────────────────────────────
-  // The bottom zone (below the kitchen scene) needs a warm background so it
-  // doesn't look like empty void — use the brand charcoal with a slight texture.
+  // The bottom 160px zone hosts swatches + instruction text.
   const bottomZoneBg = new Graphics();
   bottomZoneBg.rect(0, KITCHEN_H, DW, DH - KITCHEN_H).fill({ color: num("#1E1E1E") });
-  // Subtle warm gradient hint via stacked rects
-  bottomZoneBg.rect(0, KITCHEN_H, DW, 6).fill({ color: PRIMARY, alpha: 0.45 }); // separator line
+  // Separator line
+  bottomZoneBg.rect(0, KITCHEN_H, DW, 4).fill({ color: PRIMARY, alpha: 0.55 });
   bgLayer.addChild(bottomZoneBg);
 
-  // ── Swatch cards (bottom zone, below SWATCH_ZONE_Y) ──────────────────────
+  // ── Swatch cards (bottom zone 160px, starts at SWATCH_ZONE_Y = 800) ──────
   let swatchCont: Container | null = null;
   let _pickHandler: ((e: { global: { x: number; y: number } }) => void) | null = null;
 
-  // Card geometry — two cards side by side in the bottom zone
-  // Bottom zone height: DH - KITCHEN_H = 384px.
-  // Zone layout: 44px separator+label → 10px gap → cards (274px max) → some padding
-  const CARD_W = 224, CARD_H = 178;
-  const CARD_GAP = 16;
-  const CARDS_Y = SWATCH_ZONE_Y + 50; // 50px below separator (leaves room for step label above)
-  const CARD_L_X = (DW - CARD_W * 2 - CARD_GAP) / 2;
+  // Bottom zone = 160px (KITCHEN_H to DH = 800..960).
+  // Layout: 4px separator → 20px "Tap your favorite" instruction → 8px gap → 72px tall cards → padding.
+  // Cards start at SWATCH_ZONE_Y + 28 (label area) + 8 gap = SWATCH_ZONE_Y + 36.
+  const CARD_H = 80;   // ≥72px per spec
+  const CARD_GAP = 14;
+  // Card width: fit two cards with gap inside DW-40 (20px side padding each)
+  const CARD_W = Math.floor((DW - 40 - CARD_GAP) / 2);
+  const CARDS_Y = SWATCH_ZONE_Y + 46; // leaves ~46px for label+gap above cards
+  const CARD_L_X = 20;
   const CARD_R_X = CARD_L_X + CARD_W + CARD_GAP;
 
   function buildSwatchCard(idx: number, step: number): Container {
@@ -517,62 +545,60 @@ async function main(): Promise<void> {
       subCol = idx === 0 ? num("#C8C0B8") : num("#D8D0C8");
     }
 
-    // Card background
+    // Card background — full CARD_H height
     const bg = new Graphics()
-      .roundRect(0, 0, CARD_W, CARD_H, 14)
+      .roundRect(0, 0, CARD_W, CARD_H, 10)
       .fill({ color: num("#F5EFE3"), alpha: 0.18 })
-      .stroke({ width: 3, color: PRIMARY });
+      .stroke({ width: 2.5, color: PRIMARY });
     sC.addChild(bg);
 
-    // Colour sample
-    const sampleH = CARD_H - 60;
-    const sG = new Graphics().roundRect(10, 10, CARD_W - 20, sampleH, 8).fill({ color: col });
-    // Pattern hint overlay
+    // Horizontal layout: left swatch strip (40px wide) + label on right
+    const swatchW = Math.round(CARD_W * 0.38);
+    const sG = new Graphics().roundRect(6, 6, swatchW, CARD_H - 12, 6).fill({ color: col });
+    // Pattern hint overlay inside swatch
     if (step === 1 && idx === 0) {
-      // Modern: horizontal lines
       for (let l = 0; l < 3; l++)
-        sG.moveTo(18, 30 + l * 22).lineTo(CARD_W - 18, 30 + l * 22)
-          .stroke({ width: 2, color: subCol, alpha: 0.38 });
+        sG.moveTo(10, 16 + l * 18).lineTo(swatchW - 4, 16 + l * 18)
+          .stroke({ width: 1.5, color: subCol, alpha: 0.38 });
     } else if (step === 1 && idx === 1) {
-      // Farmhouse: shaker panel inset
-      sG.roundRect(20, 18, CARD_W - 40, sampleH - 26, 5).stroke({ width: 2, color: subCol, alpha: 0.45 });
+      sG.roundRect(10, 12, swatchW - 16, CARD_H - 36, 4).stroke({ width: 1.5, color: subCol, alpha: 0.45 });
     } else if (step === 2) {
-      // Countertop veins
-      for (let v = 0; v < 5; v++)
-        sG.moveTo(18 + v * 38, 10).lineTo(28 + v * 36, sampleH - 4)
+      for (let v = 0; v < 4; v++)
+        sG.moveTo(8 + v * 24, 8).lineTo(14 + v * 22, CARD_H - 20)
           .stroke({ width: 1.5, color: subCol, alpha: 0.52 });
     } else if (step === 3 && idx === 0) {
-      // Herringbone mini
-      const bw = 28, bh = 12;
-      for (let r = 0; r < 7; r++)
-        for (let cc = -1; cc < Math.ceil((CARD_W - 20) / bw) + 1; cc++) {
+      const bw = 18, bh = 8;
+      for (let r = 0; r < Math.ceil((CARD_H - 12) / bh) + 1; r++)
+        for (let cc = -1; cc < Math.ceil(swatchW / bw) + 1; cc++) {
           const xo = r % 2 === 0 ? 0 : bw / 2;
-          sG.roundRect(cc * bw + xo, r * bh, bw - 2, bh - 2, 1)
+          sG.roundRect(cc * bw + xo, r * bh, bw - 1, bh - 1, 1)
             .fill({ color: (cc + r) % 2 === 0 ? subCol : shade(subCol, 0.12), alpha: 0.55 });
         }
     } else if (step === 3 && idx === 1) {
-      // Subway mini
-      const bw = 44, bh = 20;
-      for (let r = 0; r < 6; r++) {
+      const bw = 28, bh = 12;
+      for (let r = 0; r < Math.ceil((CARD_H - 12) / bh) + 1; r++) {
         const xo = r % 2 === 0 ? 0 : bw / 2;
-        for (let cc = -1; cc < Math.ceil((CARD_W - 20) / bw) + 1; cc++)
+        for (let cc = -1; cc < Math.ceil(swatchW / bw) + 1; cc++)
           sG.roundRect(cc * bw + xo + 1, r * bh + 2, bw - 2, bh - 4, 2)
             .fill({ color: subCol, alpha: 0.5 });
       }
     }
     sC.addChild(sG);
 
-    // Label text
-    const lbl = new Text({ text: label, style: { fill: TXT, fontFamily: FONT, fontWeight: "bold", fontSize: 22, align: "center" } });
-    lbl.anchor.set(0.5, 0);
-    lbl.position.set(CARD_W / 2, sampleH + 16);
-    fit(lbl, CARD_W - 16);
+    // Label text — right side of card
+    const lblX = swatchW + 10;
+    const lblAreaW = CARD_W - swatchW - 16;
+    const lbl = new Text({ text: label, style: { fill: TXT, fontFamily: FONT, fontWeight: "bold", fontSize: 20, align: "center" } });
+    lbl.anchor.set(0.5, 0.5);
+    lbl.position.set(lblX + lblAreaW / 2, CARD_H / 2 - 8);
+    fit(lbl, lblAreaW);
     sC.addChild(lbl);
 
-    // "Tap" sub-label
-    const tapLbl = new Text({ text: "Tap to pick", style: { fill: TXT, fontFamily: FONT, fontSize: 14, align: "center", alpha: 0.68 } });
+    // "Tap to pick" sub-label
+    const tapLbl = new Text({ text: "Tap to pick", style: { fill: TXT, fontFamily: FONT, fontSize: 12, align: "center" } });
+    tapLbl.alpha = 0.68;
     tapLbl.anchor.set(0.5, 0);
-    tapLbl.position.set(CARD_W / 2, sampleH + 44);
+    tapLbl.position.set(lblX + lblAreaW / 2, CARD_H / 2 + 10);
     sC.addChild(tapLbl);
 
     // Bounce pulse
@@ -673,7 +699,7 @@ async function main(): Promise<void> {
 
   // ── Tile cascade effect on backsplash area ─────────────────────────────────
   function tileCascade(onDone: () => void): void {
-    const splY = 220, splH = 130;
+    const splY = Math.round(KITCHEN_H * 0.285), splH = Math.round(KITCHEN_H * 0.17);
     const tw = 50, th = 20;
     const cols = Math.ceil(DW / tw) + 1;
     const rows = Math.ceil(splH / th) + 1;
@@ -741,7 +767,7 @@ async function main(): Promise<void> {
       shimmer(DW, KITCHEN_H);
       setKitchen(pickStyle, pickCt, 0);
       cameraPushIn(() => {
-        sparkle(DW / 2, 380);
+        sparkle(DW / 2, Math.round(KITCHEN_H * 0.455));
         drawProgress(0.66);
         gsap.delayedCall(0.3, goStep3);
       });
@@ -761,7 +787,7 @@ async function main(): Promise<void> {
       clearSwatches();
       tileCascade(() => {
         setKitchen(pickStyle, pickCt, pickTile);
-        sparkle(DW / 2, 280);
+        sparkle(DW / 2, Math.round(KITCHEN_H * 0.285));
         // Lighting warmth flash
         const warm = new Graphics().rect(0, 0, DW, KITCHEN_H).fill({ color: num("#FFE080"), alpha: 0 });
         fxLayer.addChild(warm);
@@ -961,9 +987,14 @@ async function main(): Promise<void> {
     }
   });
 
-  // ── Hook: wipe-line split-screen ──────────────────────────────────────────
+  // ── Hook: wipe-line split-screen + swatches immediately visible ──────────
+  // Per spec: NO intro panel, NO "Tap to Begin". From second 0 the player sees:
+  //   - full kitchen with oscillating wipe (Modern ↔ Farmhouse)
+  //   - two style swatches in the bottom 160px strip
+  //   - ghost finger taps one swatch at ~2.5s idle
+  //   - first tap on a swatch applies the style and advances to step 2
   function startHook(): void {
-    state     = "hook";
+    state     = "step1";   // go straight to step1 (hook IS step1)
     busy      = false;
     idleAccum = idleCount = 0;
     clearSwatches();
@@ -973,48 +1004,27 @@ async function main(): Promise<void> {
     swatchLayer.removeChildren();
 
     buildHud();
-    setKitchen(0, 0, 0);    // Modern as the base
-    drawProgress(0);
-    setHint("Tap to pick your style");
-    startWipe();
+    setKitchen(0, 0, 0);   // Modern as the base (wipe shows Farmhouse half)
+    drawProgress(0.05);
+    setHint("Tap your favorite style");
+    startWipe();             // start oscillating wipe immediately
 
-    // "What's your dream kitchen?" headline in the bottom zone
-    const headlineTxt = new Text({ text: cfg.copy.title,
-      style: { fill: TXT, fontFamily: FONT, fontWeight: "bold", fontSize: 30, align: "center", wordWrap: true, wordWrapWidth: DW - 48 } });
-    headlineTxt.anchor.set(0.5);
-    headlineTxt.position.set(DW / 2, SWATCH_ZONE_Y + 90);
-    fit(headlineTxt, DW - 48);
-    swatchLayer.addChild(headlineTxt);
-
-    // Large CTA-style tap prompt
-    const tapBg = new Graphics().roundRect(0, 0, 300, 60, 30).fill({ color: ACCENT });
-    const tapT  = new Text({ text: "Tap to Begin",
-      style: { fill: "#FFFFFF", fontFamily: FONT, fontWeight: "bold", fontSize: 26 } });
-    tapT.anchor.set(0.5);
-    tapT.position.set(150, 30);
-    const tapBtn = new Container();
-    tapBtn.addChild(tapBg, tapT);
-    tapBtn.position.set((DW - 300) / 2, SWATCH_ZONE_Y + 150);
-    swatchLayer.addChild(tapBtn);
-    gsap.to(tapBtn.scale, { x: 1.05, y: 1.05, duration: 0.7, yoyo: true, repeat: -1, ease: "sine.inOut" });
-
-    // Ghost-finger over the wipe line after ~2.5s without input
-    const ghostDelay = gsap.delayedCall(2.5, () => {
-      if (state === "hook") showGhostFinger(wipeX, KITCHEN_H * 0.55);
-    });
-    // Auto-advance after 5s
-    const autoAdv = gsap.delayedCall(5, () => { if (state === "hook") { hideGhostFinger(); goStep1(); } });
-
-    const hookTap = () => {
-      if (state !== "hook") return;
-      app.stage.off("pointertap", hookTap);
-      ghostDelay.kill();
-      autoAdv.kill();
+    // Show swatches right away — tapping one picks the style and advances
+    showSwatches(1, (idx) => {
+      if (busy || state !== "step1") return;
+      busy = true;
       hideGhostFinger();
+      pickStyle = idx;
+      clearSwatches();
       stopWipe();
-      goStep1();
-    };
-    app.stage.on("pointertap", hookTap);
+      setKitchen(pickStyle, 0, 0);
+      sparkle(DW / 2, KITCHEN_H / 2);
+      gsap.delayedCall(0.3, () => {
+        drawProgress(0.33);
+        gsap.delayedCall(0.2, goStep2);
+      });
+    });
+    // Idle ticker handles ghost-finger + auto-demo from here
   }
 
   // ── Layout (design canvas → viewport, contain) ────────────────────────────

@@ -47,7 +47,7 @@ const ITEM_COLORS = [
 const JUNK_COLOR = 0xf5a623; // donut = orange-ish
 
 // Tunable params
-const GLASS_W = Number(cfg.params.glassW ?? 90);
+const GLASS_W = Number(cfg.params.glassW ?? 96);
 const GLASS_H = Number(cfg.params.glassH ?? 140);
 const ITEM_R = Number(cfg.params.itemRadius ?? 22);
 const SPAWN_INTERVAL = Number(cfg.params.spawnIntervalSec ?? 1.2);
@@ -57,7 +57,8 @@ const GOLDEN_CHANCE = Number(cfg.params.goldenChance ?? 0.12);
 const JUNK_CHANCE = Number(cfg.params.junkChance ?? 0.18);
 const NEAR_MISS_MARGIN = Number(cfg.params.nearMissMarginPx ?? 30);
 const SLOW_MO_DUR = Number(cfg.params.slowMoDuration ?? 1.2);
-const IDLE_AUTO_DEMO = Number(cfg.params.idleAutoDemoSec ?? 4.0);
+const IDLE_AUTO_DEMO = Number(cfg.params.idleAutoDemoSec ?? 2.0);
+const CTA_STRIP_H = 90; // px reserved at bottom — items despawn before entering this zone
 const GAME_DURATION = Number(cfg.params.gameDurationSec ?? 22);
 
 async function main(): Promise<void> {
@@ -98,13 +99,9 @@ async function main(): Promise<void> {
     bgGraphics.clear();
     // Dark teal background
     bgGraphics.rect(0, 0, w, h).fill(C_BG);
-    // Subtle radial glow at top centre
-    for (let i = 4; i >= 0; i--) {
-      const r = w * (0.3 + i * 0.12);
-      bgGraphics
-        .circle(w / 2, h * 0.18, r)
-        .fill({ color: 0x1a4a5e, alpha: 0.07 * (5 - i) });
-    }
+    // Subtle top-centre highlight (very soft, two rings max, ≤8% alpha total)
+    bgGraphics.circle(w / 2, h * 0.12, w * 0.55).fill({ color: 0x1e5470, alpha: 0.06 });
+    bgGraphics.circle(w / 2, h * 0.12, w * 0.30).fill({ color: 0x1e5470, alpha: 0.06 });
     // Decorative dots (ambient sparkle)
     const dots = [
       [0.1, 0.08], [0.88, 0.12], [0.06, 0.35], [0.93, 0.42],
@@ -333,6 +330,8 @@ async function main(): Promise<void> {
     pointerDown = true;
     lastPointerX = e.global.x;
     idleTime = 0;
+    // Any tap/touch wakes up auto-demo and counts as player interaction
+    if (autoDemoActive) stopAutoDemo();
     if (!playerHasDragged) {
       playerHasDragged = true;
       // Kill ghost finger and show instruction after 3s mark
@@ -364,7 +363,7 @@ async function main(): Promise<void> {
 
   function checkNearMiss(fingerX: number, dx: number): void {
     const h = window.innerHeight;
-    const glassYPos = h - GLASS_H / 2 - 88;
+    const glassYPos = h * 0.70 + GLASS_H / 2;
     const glassTop = glassYPos - GLASS_H / 2;
     for (const item of [...items]) {
       if (!item.alive || item.caught || !item.cont || item.cont.destroyed) continue;
@@ -497,7 +496,7 @@ async function main(): Promise<void> {
   function tryHitTest(item: Item): boolean {
     if (!item.cont || item.cont.destroyed) return false;
     const h = window.innerHeight;
-    const glassYPos = h - GLASS_H / 2 - 88;   // glass center Y (matches layout)
+    const glassYPos = h * 0.70 + GLASS_H / 2;  // glass center Y (matches layout)
     const glassTop = glassYPos - GLASS_H / 2;   // top of glass
     const ix = item.cont.x;
     const iy = item.cont.y;
@@ -515,16 +514,20 @@ async function main(): Promise<void> {
     item.caught = true;
     item.alive = false;
 
+    // Capture position BEFORE destroying the container
+    const capturedX = (!item.cont || item.cont.destroyed) ? glassX : item.cont.x;
+    const capturedY = (!item.cont || item.cont.destroyed) ? glassWrap.y : item.cont.y;
+
     const idx = items.indexOf(item);
     if (idx >= 0) items.splice(idx, 1);
-    if (!item.cont.destroyed) {
+    if (item.cont && !item.cont.destroyed) {
       gameLayer.removeChild(item.cont);
       item.cont.destroy({ children: true });
     }
 
     if (item.kind === "junk") {
       // Boing — junk bounces off, glass shakes, no penalty
-      spawnBoing(item.cont.x, item.cont.y);
+      spawnBoing(capturedX, capturedY);
       shakeGlass();
       return;
     }
@@ -533,7 +536,8 @@ async function main(): Promise<void> {
     const fillIncrease = item.kind === "golden" ? 0.1 : 0.05;
     setFill(fillLevel + fillIncrease, true);
 
-    const catchY = window.innerHeight - GLASS_H / 2 - 88 - GLASS_H / 2;
+    const h = window.innerHeight;
+    const catchY = h * 0.70; // glass rim Y
     spawnParticles(glassX, catchY, item.kind === "golden" ? C_ACCENT : C_PRIMARY, 10, true);
     squashGlass();
 
@@ -542,7 +546,7 @@ async function main(): Promise<void> {
     if (item.kind === "golden") {
       showStreakBanner("x2 FILL!", C_ACCENT);
       // Extra sparkle ring
-      spawnGoldenSpark(glassX, window.innerHeight - GLASS_H / 2 - 88 - GLASS_H / 2);
+      spawnGoldenSpark(glassX, catchY);
     } else if (streak >= 3) {
       showStreakBanner("Streak x" + streak + "!", C_PRIMARY);
     }
@@ -628,7 +632,7 @@ async function main(): Promise<void> {
   function triggerGlassFull(): void {
     const w = window.innerWidth;
     const h = window.innerHeight;
-    spawnRainbowSplash(glassX, h - GLASS_H / 2 - 88 - GLASS_H / 2);
+    spawnRainbowSplash(glassX, h * 0.70);
     // Goal badges appear briefly
     const badgeCont = new Container();
     const badgeTexts = ["Energy", "Focus", "Daily greens"];
@@ -680,6 +684,8 @@ async function main(): Promise<void> {
     endcardShown = true;
     ended = true;
     gameRunning = false;
+    // Hide the stage-level CTA so it doesn't bleed through the endcard overlay
+    ctaCont.visible = false;
 
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -911,11 +917,14 @@ async function main(): Promise<void> {
     // Glass: centered initially if not yet positioned
     if (glassX === 0) glassX = w / 2;
 
-    // Layout zones (from bottom):
-    //   CTA band  : 72px  (h-72 to h)
-    //   Glass zone: GLASS_H + 20px padding above CTA
+    // Layout zones:
+    //   Top HUD strip  : ~10% of height
+    //   Play area      : middle, glass rim at ~70% height
+    //   CTA strip      : bottom 90px
     const ctaY = h - 44;                               // CTA center (44px from bottom edge)
-    const glassYPos = h - GLASS_H / 2 - 88;           // glass center, above CTA band
+    // Glass rim (top edge of glass) at 70% height → glassCenter = 70%*h + GLASS_H/2
+    const glassRimY = h * 0.70;
+    const glassYPos = glassRimY + GLASS_H / 2;
     glassWrap.x = 0;
     glassWrap.y = glassYPos;
 
@@ -952,6 +961,8 @@ async function main(): Promise<void> {
   }
 
   layout();
+  // Force-render immediately after layout to pre-upload all text textures
+  app.renderer.render(app.stage);
   window.addEventListener("resize", layout);
 
   // CTA pulse from start
@@ -969,7 +980,8 @@ async function main(): Promise<void> {
 
     // Update glass wrap position to follow glassX
     const h = window.innerHeight;
-    const glassYPos = h - GLASS_H / 2 - 88;
+    const glassRimY = h * 0.70;
+    const glassYPos = glassRimY + GLASS_H / 2;
     glassWrap.x = glassX;
     glassWrap.y = glassYPos;
     // Also update fill label position
@@ -998,16 +1010,12 @@ async function main(): Promise<void> {
         gsap.to(instructText, { alpha: 0, duration: 0.4, delay: 3.0 });
       }
 
-      // Auto-demo after IDLE_AUTO_DEMO seconds
-      if (idleTime >= IDLE_AUTO_DEMO && !autoDemoActive && playerHasDragged) {
-        runAutoDemo();
-      }
-      // Non-interacting users: auto demo from start after 5s
-      if (!playerHasDragged && idleTime >= 5.0 && !autoDemoActive) {
+      // Auto-demo after IDLE_AUTO_DEMO seconds (or after 2s for non-dragged users)
+      if (idleTime >= IDLE_AUTO_DEMO && !autoDemoActive) {
         runAutoDemo();
       }
 
-      // Spawning
+      // Spawning — always spawn (no gate); glass slides under items in auto-demo
       // Rigged first spawn: at 0.2s, exactly on glass position
       if (!riggedBitDone && now >= 0.2) {
         spawnRiggedFirst();
@@ -1017,15 +1025,13 @@ async function main(): Promise<void> {
         spawnItem(window.innerWidth * 0.75);
       }
 
-      // Regular spawning: gate on player having dragged (or auto-demo)
+      // Regular spawning: always active from the start so screen is never empty
       if (riggedBitDone) {
         spawnTimer -= rawDt;
         if (spawnTimer <= 0) {
           // Escalation: spawn interval shrinks after 8s
           const baseInterval = now > 12 ? SPAWN_INTERVAL * 0.6 : now > 8 ? SPAWN_INTERVAL * 0.8 : SPAWN_INTERVAL;
-          if (playerHasDragged || autoDemoActive) {
-            spawnItem();
-          }
+          spawnItem();
           spawnTimer = baseInterval + (Math.random() - 0.5) * 0.3;
         }
       }
@@ -1052,8 +1058,9 @@ async function main(): Promise<void> {
         continue;
       }
 
-      // Gone off screen
-      if (item.cont.y > h + item.r + 20) {
+      // Despawn as soon as item bottom edge touches the CTA strip or goes off screen
+      const ctaStripTop = h - CTA_STRIP_H;
+      if (item.cont.y + item.r > ctaStripTop || item.cont.y > h + item.r + 20) {
         // Missed: reset streak
         streak = 0;
         if (!item.cont.destroyed) {
@@ -1081,11 +1088,16 @@ async function main(): Promise<void> {
     }
   });
 
-  // ── Second paint: Pixi v8 shader-race workaround ─────────────────────────────
+  // ── Multi-paint: Pixi v8 shader-race + text-texture workaround ──────────────
+  // Force text texture upload by rendering 3 frames before ticker takes over.
+  // Without this, headless SwiftShader sometimes skips text on the very first frame.
   app.renderer.render(app.stage);
   requestAnimationFrame(() => {
     layout();
     app.renderer.render(app.stage);
+    requestAnimationFrame(() => {
+      app.renderer.render(app.stage);
+    });
   });
 }
 

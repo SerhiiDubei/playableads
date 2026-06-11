@@ -22,19 +22,19 @@ const COL_TEXT    = num(cfg.style.colors.text);        // #ffffff
 const COL_LIME    = 0x8AC926;
 const COL_WHITE   = 0xffffff;
 
-// Fruit ingredient definitions (procedural Graphics only)
+// ── Defect 7: Readable fruit definitions — solid saturated fills, ≥56px diameter ──
 const FRUITS = [
-  { name: "Vitamin C",  color: 0xFF9F1C, r: 42, shape: "circle"  },   // orange
-  { name: "Greens",     color: 0x5cb85c, r: 38, shape: "diamond" },   // spinach leaf
-  { name: "Protein",    color: 0x9b59b6, r: 36, shape: "circle"  },   // berry
-  { name: "Vitamin C",  color: 0xFFD700, r: 40, shape: "circle"  },   // lemon
-  { name: "Greens",     color: 0x2ecc71, r: 44, shape: "diamond" },   // kiwi flesh
+  { name: "Vitamin C",  color: 0xFF6B00, r: 30, shape: "orange"  },   // bold orange
+  { name: "Greens",     color: 0x2ECC40, r: 28, shape: "spinach" },   // bright green blob
+  { name: "Protein",    color: 0xC0392B, r: 28, shape: "berry"   },   // deep red berry cluster
+  { name: "Vitamin C",  color: 0xFFD700, r: 30, shape: "circle"  },   // bright lemon
+  { name: "Greens",     color: 0x27AE60, r: 32, shape: "spinach" },   // kiwi flesh
 ] as const;
 
 // Junk items: donut, soda can — react with bounce/poof
 const JUNK = [
-  { color: 0xe91e8c, r: 38, shape: "donut" },
-  { color: 0x1565C0, r: 32, shape: "can"   },
+  { color: 0xe91e8c, r: 28, shape: "donut" },
+  { color: 0x1565C0, r: 26, shape: "can"   },
 ] as const;
 
 async function main(): Promise<void> {
@@ -67,18 +67,32 @@ async function main(): Promise<void> {
   app.stage.hitArea   = app.screen;
 
   // ─────────────────────── BACKGROUND ───────────────────────
+  // Defect 2: One continuous vertical gradient — no hard seam
   const bgGrad = new Graphics();
   bgLayer.addChild(bgGrad);
 
   function drawBg(): void {
     const w = window.innerWidth, h = window.innerHeight;
     bgGrad.clear();
-    // Deep petrol → slightly lighter petrol gradient via layered rects
-    bgGrad.rect(0, 0, w, h).fill(COL_BG);
-    bgGrad.rect(0, h * 0.55, w, h * 0.45).fill({ color: 0x0d3840, alpha: 0.5 });
-    // Decorative citrus slice hint at top-right
-    drawCitrusSlice(bgGrad, w * 0.88, h * 0.07, 54, 0xFF9F1C, 0.18);
-    drawCitrusSlice(bgGrad, w * 0.1, h * 0.88, 38, COL_LIME, 0.13);
+    // Continuous vertical gradient: top lighter petrol → middle petrol → bottom deep dark
+    // Use many thin rects to simulate smooth gradient (no hard seam)
+    const STEPS = 40;
+    for (let i = 0; i < STEPS; i++) {
+      const t = i / (STEPS - 1);
+      // Top: 0x2B7A85 (lighter), Bottom: 0x0A2830 (darkest)
+      const tr = 0x2B, tg = 0x7A, tb = 0x85;
+      const br = 0x0A, bg = 0x28, bb = 0x30;
+      const r = Math.round(tr + (br - tr) * t);
+      const g = Math.round(tg + (bg - tg) * t);
+      const b = Math.round(tb + (bb - tb) * t);
+      const col = (r << 16) | (g << 8) | b;
+      const y0 = Math.floor((i / STEPS) * h);
+      const y1 = Math.ceil(((i + 1) / STEPS) * h);
+      bgGrad.rect(0, y0, w, y1 - y0 + 1).fill(col);
+    }
+    // Decorative citrus slice hint at top-right (subtle)
+    drawCitrusSlice(bgGrad, w * 0.88, h * 0.07, 44, 0xFF9F1C, 0.12);
+    drawCitrusSlice(bgGrad, w * 0.1, h * 0.88, 32, COL_LIME, 0.09);
   }
 
   function drawCitrusSlice(g: Graphics, cx: number, cy: number, r: number, col: number, alpha: number): void {
@@ -93,13 +107,14 @@ async function main(): Promise<void> {
   }
 
   // ─────────────────────── GLASS METER ───────────────────────
+  // Defects 3 & 4: Glass fully inset from right edge, lives in play area only
   const glassCont   = new Container();
   const glassBody   = new Graphics();
   const liquidMask  = new Graphics();
   const liquidFill  = new Graphics();
   const glassShine  = new Graphics();
   const meterLabel  = new Text({ text: "Morning\nBlend", style: { fill: COL_TEXT, fontFamily: cfg.style.font.family, fontSize: 11, fontWeight: "700", align: "center", lineHeight: 14 } });
-  meterLabel.anchor.set(0.5, 1);
+  meterLabel.anchor.set(0.5, 0);
   glassCont.addChild(glassBody, liquidFill, glassShine, meterLabel);
   liquidFill.mask = liquidMask;
   glassCont.addChild(liquidMask);
@@ -109,9 +124,23 @@ async function main(): Promise<void> {
   let meterPct = METER_START;
   let meterTarget = METER_START;
 
+  // Zone constants — computed each layout call
+  let ZONE_HEADER_H = 80;   // px: brand row + headline row
+  let ZONE_INSTR_H  = 50;   // px: instruction text band
+  let ZONE_CTA_H    = 80;   // px: CTA bottom zone
+
   function drawGlass(w: number, h: number): void {
-    const gw = 54, gh = h * 0.34;
-    const gx = w - gw - 20, gy = h * 0.16;
+    const gw = 52;
+    // Defect 4: glass lives in play area only — below header + instr zone
+    const playTop = ZONE_HEADER_H + ZONE_INSTR_H + 10;
+    const playBot = h - ZONE_CTA_H - 16;
+    const availH  = playBot - playTop;
+    const gh = Math.min(availH * 0.55, h * 0.32);
+
+    // Defect 3: right edge ≥ 12px from screen edge
+    const gx = w - gw - 14;
+    const gy = playTop + (availH - gh) * 0.08; // slight top of play area
+
     glassCont.x = gx; glassCont.y = gy;
 
     glassBody.clear();
@@ -128,18 +157,13 @@ async function main(): Promise<void> {
 
     liquidFill.clear();
     liquidFill.poly([1, 0, gw - 1, 0, gw - 1, gh, 1, gh]).fill({ color: 0xFF9F1C, alpha: 0.88 });
-    // Slosh wave on top of liquid
-    const waveY = gh - fillH;
-    for (let i = 0; i <= gw; i += 4) {
-      const wave = Math.sin((i / gw) * Math.PI * 3 + Date.now() * 0.003) * 2.5;
-      if (i === 0) liquidFill.moveTo(i, waveY + wave);
-      else liquidFill.lineTo(i, waveY + wave);
-    }
 
     glassShine.clear();
     glassShine.rect(gw * 0.18, 4, gw * 0.12, gh * 0.72).fill({ color: COL_WHITE, alpha: 0.12 });
 
-    meterLabel.x = gw / 2; meterLabel.y = gh + 22;
+    // Label ABOVE the glass (inside safe area)
+    meterLabel.x = gw / 2;
+    meterLabel.y = -28;
   }
 
   function animateMeter(delta: number): void {
@@ -182,27 +206,66 @@ async function main(): Promise<void> {
   const halves: HalfFruit[] = [];
 
   // ─────────────────────── DRAWING HELPERS ───────────────────────
+  // Defect 7: Solid saturated fruits, dark outline, ≥56px diameter
   function drawFruitShape(g: Graphics, fi: number, r: number, crit: boolean): void {
     const f = FRUITS[fi % FRUITS.length];
     const col = f.color;
-    if (f.shape === "diamond") {
-      // Diamond / leaf shape
-      g.poly([0, -r, r * 0.7, 0, 0, r, -r * 0.7, 0]).fill(col);
-      g.poly([0, -r, r * 0.7, 0, 0, r, -r * 0.7, 0]).stroke({ width: 2, color: darken(col, 0.7), alpha: 1 });
-      // Center pip
-      g.circle(0, 0, r * 0.22).fill({ color: COL_WHITE, alpha: 0.35 });
-    } else {
-      // Circle fruit
-      g.circle(0, 0, r).fill(col);
-      g.circle(0, 0, r).stroke({ width: 2.5, color: darken(col, 0.7), alpha: 1 });
+    const shape = f.shape;
+
+    if (shape === "spinach") {
+      // Green spinach blob — irregular pentagon with rounded feel
+      const pts: number[] = [];
+      const N = 7;
+      for (let i = 0; i < N; i++) {
+        const a = (i / N) * Math.PI * 2 - Math.PI / 2;
+        const rr = r * (0.82 + Math.sin(i * 2.3) * 0.18);
+        pts.push(Math.cos(a) * rr, Math.sin(a) * rr);
+      }
+      g.poly(pts).fill(col);
+      g.poly(pts).stroke({ width: 3, color: darken(col, 0.55), alpha: 1 });
+      // Center vein
+      g.moveTo(0, -r * 0.5).lineTo(0, r * 0.5).stroke({ width: 2, color: darken(col, 0.65), alpha: 0.7 });
       // Shine
-      g.circle(-r * 0.28, -r * 0.3, r * 0.2).fill({ color: COL_WHITE, alpha: 0.45 });
+      g.circle(-r * 0.2, -r * 0.25, r * 0.18).fill({ color: COL_WHITE, alpha: 0.5 });
+
+    } else if (shape === "orange") {
+      // Solid orange circle with leaf nub and citrus pattern
+      g.circle(0, 0, r).fill(col);
+      g.circle(0, 0, r).stroke({ width: 3, color: darken(col, 0.55), alpha: 1 });
+      // Inner segment lines
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        g.moveTo(0, 0).lineTo(Math.cos(a) * r * 0.75, Math.sin(a) * r * 0.75)
+          .stroke({ width: 1.5, color: darken(col, 0.65), alpha: 0.5 });
+      }
+      g.circle(0, 0, r * 0.18).fill({ color: COL_WHITE, alpha: 0.6 });
+      // Shine
+      g.circle(-r * 0.3, -r * 0.32, r * 0.22).fill({ color: COL_WHITE, alpha: 0.55 });
+      // Leaf at top
+      g.ellipse(r * 0.1, -r * 0.92, r * 0.22, r * 0.32).fill(0x2ECC40);
+
+    } else if (shape === "berry") {
+      // Red berry cluster — 3 overlapping circles
+      const offsets = [[-r * 0.28, -r * 0.22], [r * 0.28, -r * 0.22], [0, r * 0.28]] as const;
+      for (const [ox, oy] of offsets) {
+        g.circle(ox, oy, r * 0.62).fill(col);
+        g.circle(ox, oy, r * 0.62).stroke({ width: 2.5, color: darken(col, 0.55), alpha: 1 });
+        g.circle(ox - r * 0.12, oy - r * 0.15, r * 0.15).fill({ color: COL_WHITE, alpha: 0.5 });
+      }
+
+    } else {
+      // Circle fruit (lemon etc)
+      g.circle(0, 0, r).fill(col);
+      g.circle(0, 0, r).stroke({ width: 3, color: darken(col, 0.55), alpha: 1 });
+      // Shine
+      g.circle(-r * 0.28, -r * 0.3, r * 0.22).fill({ color: COL_WHITE, alpha: 0.5 });
       // Texture dots
-      for (let i = 0; i < 3; i++) {
-        const a = (i / 3) * Math.PI * 2 + 0.5;
-        g.circle(Math.cos(a) * r * 0.45, Math.sin(a) * r * 0.45, r * 0.07).fill({ color: COL_WHITE, alpha: 0.2 });
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2 + 0.5;
+        g.circle(Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5, r * 0.07).fill({ color: COL_WHITE, alpha: 0.25 });
       }
     }
+
     if (crit) {
       // Golden glow ring for crit
       g.circle(0, 0, r + 10).stroke({ width: 5, color: 0xFFD700, alpha: 0.85 });
@@ -235,7 +298,7 @@ async function main(): Promise<void> {
     // Kiwi: brown outer + green inner + seeds
     g.circle(0, 0, 44).fill(0x6d4c41);  // brown skin
     g.circle(0, 0, 36).fill(0x8BC34A);  // green flesh
-    g.circle(0, 0, 36).stroke({ width: 1, color: 0x558B2F });
+    g.circle(0, 0, 36).stroke({ width: 2, color: 0x558B2F });
     // White center
     g.circle(0, 0, 10).fill({ color: COL_WHITE, alpha: 0.8 });
     // Seeds
@@ -256,7 +319,8 @@ async function main(): Promise<void> {
     const fromX = opts?.fromX ?? w * (0.15 + Math.random() * 0.7);
     const isCrit = !isKiwi && Math.random() < 0.18;
     const fruitIdx = Math.floor(Math.random() * FRUITS.length);
-    const r = isKiwi ? 44 : (FRUITS[fruitIdx].r + (isCrit ? 8 : 0));
+    // Defect 7: min radius 28 → diameter ≥56px
+    const r = isKiwi ? 44 : Math.max(28, FRUITS[fruitIdx].r + (isCrit ? 8 : 0));
 
     const cont = new Container();
     const body = new Graphics();
@@ -272,12 +336,16 @@ async function main(): Promise<void> {
     gameLayer.addChild(cont);
 
     const hiArc = opts?.hiArc ?? false;
+
+    // Defect 6: Fruits arc through MIDDLE + LOWER play area
+    // Use lower apexFraction so apex lands in middle 60% of screen
+    const apexFrac = hiArc ? 0.68 : 0.58;
     const p = makeArc({
       fromX,
       fromY: h + 80,
       screenH: h,
-      timeAloftSec: hiArc ? 2.8 : 2.3,
-      apexFraction: hiArc ? 0.82 : 0.72,
+      timeAloftSec: hiArc ? 2.4 : 1.9,
+      apexFraction: apexFrac,
       angleDeg: randomLaunchAngle(Math.random()),
       spinRadPerSec: (Math.random() - 0.5) * 3,
     });
@@ -301,8 +369,8 @@ async function main(): Promise<void> {
       fromX: cont.x,
       fromY: h + 60,
       screenH: h,
-      timeAloftSec: 2.1,
-      apexFraction: 0.65,
+      timeAloftSec: 1.8,
+      apexFraction: 0.55,
       angleDeg: randomLaunchAngle(Math.random()),
       spinRadPerSec: (Math.random() - 0.5) * 2,
     });
@@ -311,8 +379,11 @@ async function main(): Promise<void> {
   }
 
   function removeFruit(f: FruitObj): void {
+    if (!f.alive && fruits.indexOf(f) < 0) return; // already removed
     const i = fruits.indexOf(f);
     if (i >= 0) fruits.splice(i, 1);
+    gsap.killTweensOf(f.cont);
+    gsap.killTweensOf(f.cont.scale);
     gameLayer.removeChild(f.cont);
     f.cont.destroy({ children: true });
   }
@@ -334,9 +405,13 @@ async function main(): Promise<void> {
 
   function spawnJuiceToGlass(x: number, y: number, color: number): void {
     const w = window.innerWidth, h = window.innerHeight;
-    const gw = 54, gh = h * 0.34;
-    const gx = (w - gw - 20) + gw / 2; // center of glass
-    const gy = h * 0.16 + gh * (1 - meterTarget);
+    const gw = 52;
+    const playTop = ZONE_HEADER_H + ZONE_INSTR_H + 10;
+    const playBot = h - ZONE_CTA_H - 16;
+    const availH  = playBot - playTop;
+    const gh = Math.min(availH * 0.55, h * 0.32);
+    const gx = (w - gw - 14) + gw / 2; // center of glass
+    const gy = playTop + (availH - gh) * 0.08 + gh * (1 - meterTarget);
     const g = new Graphics();
     g.circle(0, 0, 6).fill({ color, alpha: 0.85 });
     g.x = x; g.y = y;
@@ -346,7 +421,7 @@ async function main(): Promise<void> {
       x: gx, y: gy,
       duration: 0.5, ease: "power1.in",
       onComplete: () => {
-        fxLayer.removeChild(g);
+        if (fxLayer.children.includes(g)) fxLayer.removeChild(g);
         g.destroy();
         const idx = juiceDrops.findIndex(d => d.g === g);
         if (idx >= 0) juiceDrops.splice(idx, 1);
@@ -390,28 +465,29 @@ async function main(): Promise<void> {
   // ─────────────────────── UI ELEMENTS ───────────────────────
   const fam = cfg.style.font.family;
 
-  // Title / headline
-  const titleText = new Text({ text: cfg.copy.title, style: { fill: COL_TEXT, fontFamily: fam, fontSize: 20, fontWeight: "900", align: "center" } });
-  titleText.anchor.set(0.5, 0);
-  uiLayer.addChild(titleText);
-
-  // Instruction
-  const instrText = new Text({ text: "Slice the fruit!", style: { fill: COL_WHITE, fontFamily: fam, fontSize: 28, fontWeight: "900", align: "center", dropShadow: { color: 0x000000, blur: 6, distance: 2 } } });
-  instrText.anchor.set(0.5, 0.5);
-  uiLayer.addChild(instrText);
-
-  // Brand name / "Z" logo (procedural)
+  // ── Defects 1: Brand chip on its own row, headline below it ──
+  // Brand name / "Z" logo (procedural) — ROW 1
   const brandCont = new Container();
   const brandBg = new Graphics();
-  const brandText = new Text({ text: "Zestful", style: { fill: COL_PRIMARY, fontFamily: fam, fontSize: 18, fontWeight: "900" } });
+  const brandText = new Text({ text: "Zestful", style: { fill: COL_PRIMARY, fontFamily: fam, fontSize: 16, fontWeight: "900" } });
   brandText.anchor.set(0, 0.5);
   brandCont.addChild(brandBg, brandText);
   uiLayer.addChild(brandCont);
 
   function drawBrandBg(): void {
     brandBg.clear();
-    brandBg.roundRect(-6, -14, brandText.width + 16, 28, 6).fill({ color: 0x000000, alpha: 0.35 });
+    brandBg.roundRect(-6, -13, brandText.width + 16, 26, 6).fill({ color: 0x000000, alpha: 0.35 });
   }
+
+  // Title / headline — ROW 2 (below brand chip, guaranteed 8px gap)
+  const titleText = new Text({ text: cfg.copy.title, style: { fill: COL_TEXT, fontFamily: fam, fontSize: 18, fontWeight: "900", align: "center" } });
+  titleText.anchor.set(0.5, 0);
+  uiLayer.addChild(titleText);
+
+  // Instruction — ROW 3
+  const instrText = new Text({ text: "Slice the fruit!", style: { fill: COL_WHITE, fontFamily: fam, fontSize: 26, fontWeight: "900", align: "center", dropShadow: { color: 0x000000, blur: 6, distance: 2 } } });
+  instrText.anchor.set(0.5, 0.5);
+  uiLayer.addChild(instrText);
 
   // Combo / banner text
   const bannerText = new Text({ text: "", style: { fill: COL_PRIMARY, fontFamily: fam, fontSize: 44, fontWeight: "900", align: "center", dropShadow: { color: 0x000000, blur: 8, distance: 3 } } });
@@ -452,7 +528,7 @@ async function main(): Promise<void> {
     gsap.to(bannerText, { alpha: 0, duration: 0.55, delay: 0.65 });
   }
 
-  // CTA button (always visible, bottom zone)
+  // Defect 5: CTA hidden during gameplay — only shown in endcard
   const cta = new Container();
   const ctaBg = new Graphics();
   const ctaText = new Text({ text: cfg.copy.cta, style: { fill: COL_WHITE, fontFamily: fam, fontSize: 24, fontWeight: "900", align: "center" } });
@@ -469,23 +545,29 @@ async function main(): Promise<void> {
   drawCta();
   function doCTA(): void { window.FbPlayableAd.onCTAClick(); }
   cta.on("pointertap", doCTA);
+  // Defect 5: hide CTA completely during gameplay
+  cta.visible = false;
   uiLayer.addChild(cta);
-  gsap.to(cta.scale, { x: 1.06, y: 1.06, duration: 0.75, yoyo: true, repeat: -1, ease: "sine.inOut" });
 
   // ─────────────────────── GHOST FINGER HINT ───────────────────────
   const hint = new Container();
   const hintFinger = new Graphics();
   hintFinger.circle(0, 0, 24).fill({ color: COL_WHITE, alpha: 0.8 });
   hintFinger.circle(0, 0, 24).stroke({ width: 4, color: COL_PRIMARY, alpha: 1 });
-  // Swipe trail on hint
+  // Swipe arc arrow on hint — shows intended swipe direction
   const hintTrail = new Graphics();
-  hintTrail.moveTo(-60, 30).lineTo(60, -30).stroke({ width: 6, color: COL_WHITE, alpha: 0.45, cap: "round" });
+  // Draw a curved swipe arc with arrowhead (top-left to bottom-right arc)
+  hintTrail.moveTo(-50, 20).bezierCurveTo(-20, -30, 20, -30, 50, 20)
+    .stroke({ width: 5, color: COL_WHITE, alpha: 0.5, cap: "round" });
+  // Arrowhead
+  hintTrail.poly([42, 8, 54, 28, 60, 14]).fill({ color: COL_WHITE, alpha: 0.5 });
   hint.addChild(hintTrail, hintFinger);
   uiLayer.addChild(hint);
 
   let hintVisible = true;
-  gsap.to(hintFinger, { x: 120, y: -60, duration: 1.1, yoyo: true, repeat: -1, ease: "sine.inOut" });
-  gsap.to(hint, { alpha: 0.6, duration: 0.55, yoyo: true, repeat: -1, ease: "sine.inOut" });
+  // Animate finger moving diagonally (swipe gesture), hintTrail stays fixed behind it
+  gsap.to(hintFinger, { x: 100, y: -50, duration: 1.1, yoyo: true, repeat: -1, ease: "sine.inOut" });
+  gsap.to(hint, { alpha: 0.75, duration: 0.7, yoyo: true, repeat: -1, ease: "sine.inOut" });
 
   function hideHint(): void {
     if (!hintVisible) return;
@@ -496,11 +578,15 @@ async function main(): Promise<void> {
   }
 
   // ─────────────────────── TRAIL ───────────────────────
+  // Defect 8: short-lived white streak with fade (alpha tween 0.3s), only while pointer moves
   type TrailPt = { x: number; y: number; t: number };
   const trail: TrailPt[] = [];
   const trailG = new Graphics();
   trailG.eventMode = "none";
   fxLayer.addChild(trailG);
+  // Track last pointer-move time to show trail only while moving
+  let lastMoveTime = -9999;
+  const TRAIL_SHOW_DURATION = 0.3; // seconds trail stays visible after last move
 
   // ─────────────────────── SCREEN SHAKE ───────────────────────
   function screenShake(intensity = 14, dur = 0.45): void {
@@ -550,7 +636,7 @@ async function main(): Promise<void> {
     bottle.scale.set(0);
     fxLayer.addChild(bottle);
     gsap.to(bottle.scale, { x: 1.5, y: 1.5, duration: 0.5, ease: "back.out(2.5)", delay: 0.2 });
-    gsap.to(bottle, { alpha: 0, duration: 0.4, delay: 1.8, onComplete: () => { fxLayer.removeChild(bottle); bottle.destroy({ children: true }); } });
+    gsap.to(bottle, { alpha: 0, duration: 0.4, delay: 1.8, onComplete: () => { if (fxLayer.children.includes(bottle)) fxLayer.removeChild(bottle); bottle.destroy({ children: true }); } });
   }
 
   // ─────────────────────── ENDCARD ───────────────────────
@@ -612,9 +698,10 @@ async function main(): Promise<void> {
     uiLayer.addChild(ov);
     gsap.to(ov, { alpha: 1, duration: 0.4, delay: 0.3 });
 
-    // Bring CTA to top and update it
+    // Defect 5: Show CTA only in endcard — bring to top, make visible, animate
     uiLayer.removeChild(cta);
     uiLayer.addChild(cta);
+    cta.visible = true;
     cta.scale.set(1);
     gsap.killTweensOf(cta.scale);
     gsap.to(cta.scale, { x: 1.08, y: 1.08, duration: 0.6, yoyo: true, repeat: -1, ease: "sine.inOut" });
@@ -638,7 +725,6 @@ async function main(): Promise<void> {
   let nearMissKiwiAlive = false;
   let nearMissPhase: "none" | "spawn" | "miss" | "second" = "none";
   let nearMissTimer = 0;
-  let nearMissRef: FruitObj | null = null;
 
   // Combo tracking
   let comboCount = 0;
@@ -659,7 +745,11 @@ async function main(): Promise<void> {
 
   app.stage.on("pointermove", (e: any) => {
     const x = e.global.x, y = e.global.y;
-    trail.push({ x, y, t: now });
+    // Defect 8: only add trail points while pointer button is held (pDown)
+    if (pDown) {
+      trail.push({ x, y, t: now });
+      lastMoveTime = now;
+    }
     if (!pDown || !running) { lastPx = x; lastPy = y; return; }
 
     const moved = Math.hypot(x - lastPx, y - lastPy);
@@ -746,10 +836,11 @@ async function main(): Promise<void> {
     f.alive = false;
     const col = JUNK[f.fruitIdx % JUNK.length].color;
     spawnJunkPoof(f.cont.x, f.cont.y, col);
-    // Bounce animation
-    gsap.to(f.cont.scale, { x: 1.5, y: 1.5, duration: 0.12, yoyo: true, repeat: 1, ease: "power1.out" });
-    gsap.to(f.cont, { y: f.cont.y - 40, duration: 0.18, yoyo: true, repeat: 1, ease: "power2.out",
-      onComplete: () => removeFruit(f) });
+    // Bounce animation — guard against destroyed container
+    const fc = f.cont;
+    gsap.to(fc.scale, { x: 1.5, y: 1.5, duration: 0.12, yoyo: true, repeat: 1, ease: "power1.out" });
+    gsap.to(fc, { y: fc.y - 40, duration: 0.18, yoyo: true, repeat: 1, ease: "power2.out",
+      onComplete: () => { if (fc && !fc.destroyed) removeFruit(f); } });
   }
 
   let tScale = 1;
@@ -774,33 +865,41 @@ async function main(): Promise<void> {
     app.canvas.style.width  = w + "px";
     app.canvas.style.height = h + "px";
 
-    drawBg();
-    drawGlass(w, h);
-    drawBrandBg();
-
-    // Brand name top-left
-    brandCont.x = 12; brandCont.y = 10;
+    // ── Defect 1: Brand chip row 1, headline row 2, 8px min gap ──
+    // Brand chip — row 1, top-left
+    const BRAND_H = 28; // height of brand chip
+    brandCont.x = 12; brandCont.y = 10 + BRAND_H / 2;
     brandText.y = 0;
     drawBrandBg();
 
-    // Title top-center (offset right of brand)
-    titleText.x = w / 2 + 30; titleText.y = 10;
+    // Title — row 2, centered, starts below brand chip
+    const titleY = 10 + BRAND_H + 8; // 8px gap after brand
+    titleText.x = w / 2; titleText.y = titleY;
+    ZONE_HEADER_H = titleY + (titleText.height || 22) + 4;
 
-    // Instruction mid-screen
-    instrText.x = w / 2; instrText.y = h * 0.14;
+    // Instruction — row 3
+    ZONE_INSTR_H = 44;
+    instrText.x = w / 2; instrText.y = ZONE_HEADER_H + ZONE_INSTR_H / 2;
 
-    // Banner center-ish
-    bannerText.x = w / 2; bannerText.y = h * 0.32;
+    // CTA zone height
+    ZONE_CTA_H = 80;
 
-    // Badge below banner
-    badgeCont.x = w / 2; badgeCont.y = h * 0.41;
+    drawBg();
+    drawGlass(w, h);
 
-    // CTA bottom thumb zone — must be ≥44px tall
-    cta.x = w / 2; cta.y = h - 52;
+    // Banner center of play area
+    const playMid = ZONE_HEADER_H + ZONE_INSTR_H + (h - ZONE_HEADER_H - ZONE_INSTR_H - ZONE_CTA_H) * 0.35;
+    bannerText.x = w / 2; bannerText.y = playMid;
+
+    // Badge slightly below banner
+    badgeCont.x = w / 2; badgeCont.y = playMid + 58;
+
+    // CTA bottom thumb zone — hidden during gameplay, positioned for endcard
+    cta.x = w / 2; cta.y = h - 44;
     drawCta();
 
-    // Ghost finger hint mid-screen
-    hint.x = w / 2; hint.y = h * 0.38;
+    // Ghost finger hint in play area
+    hint.x = w / 2; hint.y = h * 0.55;
 
     // Trail graphics
     trailG.x = 0; trailG.y = 0;
@@ -889,6 +988,7 @@ async function main(): Promise<void> {
 
     // Update fruits
     for (const f of [...fruits]) {
+      if (f.cont.destroyed) { removeFruit(f); continue; }
       f.p.update(dt);
       f.cont.x = f.p.x; f.cont.y = f.p.y;
       // Rotate the body container, not Graphics with fills — use cont wrapper
@@ -903,6 +1003,7 @@ async function main(): Promise<void> {
     // Update halves
     for (let i = halves.length - 1; i >= 0; i--) {
       const hf = halves[i];
+      if (hf.cont.destroyed) { halves.splice(i, 1); continue; }
       hf.vy += 900 * dt;
       hf.cont.x += hf.vx * dt;
       hf.cont.y += hf.vy * dt;
@@ -910,31 +1011,42 @@ async function main(): Promise<void> {
       hf.life += rawDt;
       if (hf.life > 1.2) hf.cont.alpha = Math.max(0, 1 - (hf.life - 1.2) * 4);
       if (hf.life > 1.6 || hf.cont.y > h + 200) {
-        fxLayer.removeChild(hf.cont); hf.cont.destroy({ children: true }); halves.splice(i, 1);
+        if (!hf.cont.destroyed) { fxLayer.removeChild(hf.cont); hf.cont.destroy({ children: true }); }
+        halves.splice(i, 1);
       }
     }
 
     // Update particles
     for (let i = particles.length - 1; i >= 0; i--) {
       const pt = particles[i];
+      if (pt.g.destroyed) { particles.splice(i, 1); continue; }
       pt.vy += 800 * dt;
       pt.g.x += pt.vx * dt;
       pt.g.y += pt.vy * dt;
       pt.life += rawDt;
       pt.g.alpha = Math.max(0, 1 - pt.life / pt.maxLife);
       if (pt.life >= pt.maxLife) {
-        fxLayer.removeChild(pt.g); pt.g.destroy(); particles.splice(i, 1);
+        if (!pt.g.destroyed) { fxLayer.removeChild(pt.g); pt.g.destroy(); }
+        particles.splice(i, 1);
       }
     }
 
-    // Trail draw
-    while (trail.length && now - trail[0].t > 0.18) trail.shift();
+    // Defect 8: Trail — only draw while pointer is held and for TRAIL_SHOW_DURATION after last move
+    // Expire old points faster (0.3s)
+    while (trail.length && now - trail[0].t > TRAIL_SHOW_DURATION) trail.shift();
     trailG.clear();
-    for (let i = 1; i < trail.length; i++) {
-      const a = trail[i - 1], b = trail[i];
-      const age = (now - b.t) / 0.18;
-      const al = Math.max(0, 1 - age);
-      trailG.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: 12 * al + 2, color: COL_WHITE, alpha: 0.45 * al, cap: "round" });
+    const timeSinceMove = now - lastMoveTime;
+    if (timeSinceMove < TRAIL_SHOW_DURATION && trail.length >= 2) {
+      for (let i = 1; i < trail.length; i++) {
+        const a = trail[i - 1], b = trail[i];
+        // age of this segment relative to TRAIL_SHOW_DURATION
+        const age = (now - b.t) / TRAIL_SHOW_DURATION;
+        const al = Math.max(0, 1 - age) * Math.max(0, 1 - timeSinceMove / TRAIL_SHOW_DURATION);
+        if (al > 0.01) {
+          trailG.moveTo(a.x, a.y).lineTo(b.x, b.y)
+            .stroke({ width: 10 * al + 2, color: COL_WHITE, alpha: 0.75 * al, cap: "round" });
+        }
+      }
     }
   });
 

@@ -83,6 +83,31 @@ const TRAY_LABELS = ["Q1", "Q2", "Q3"];
 type State = "intro" | "q1" | "q2" | "q3" | "profile" | "end";
 
 async function main(): Promise<void> {
+  // Wait for fonts to be ready before creating any Pixi Text objects.
+  // In headless Chromium (SwiftShader), font metrics are unavailable until
+  // the font loading pipeline completes — without this, canvas 2D fillText
+  // produces empty or black results.
+  try {
+    await document.fonts.ready;
+  } catch (_e) { /* ignore in environments where fonts.ready is unavailable */ }
+
+  // Pre-warm the font engine with a throwaway draw so the glyph cache is primed
+  try {
+    const warmCanvas = document.createElement("canvas");
+    warmCanvas.width = 4; warmCanvas.height = 4;
+    const ctx = warmCanvas.getContext("2d");
+    if (ctx) {
+      ctx.font = "bold 14px Arial, sans-serif";
+      ctx.fillStyle = "#1A2E2D";
+      ctx.fillText("Ag", 0, 3);
+    }
+  } catch (_e) { /* ignore */ }
+
+  // Small delay before WebGL init: in headless SwiftShader (se 375×667 viewport),
+  // the GPU command processor needs time to settle after browser startup before
+  // shader compilation succeeds. 80ms is enough; does not affect real-device UX.
+  await new Promise<void>(r => setTimeout(r, 80));
+
   const app = new Application();
   await app.init({
     width: window.innerWidth,
@@ -139,7 +164,7 @@ async function main(): Promise<void> {
         alpha: 0,
         duration: 0.5 + Math.random() * 0.3,
         ease: "power1.out",
-        onComplete: () => { d.parent?.removeChild(d); d.destroy(); },
+        onComplete: () => { if (d.parent) { d.parent.removeChild(d); d.destroy(); } },
       });
     }
   }
@@ -154,7 +179,7 @@ async function main(): Promise<void> {
     s.alpha = 0;
     fxLayer.addChild(s);
     gsap.timeline({
-      onComplete: () => { s.parent?.removeChild(s); s.destroy(); },
+      onComplete: () => { if (s.parent) { s.parent.removeChild(s); s.destroy(); } },
     })
       .to(s, { alpha: 1, duration: 0.1 })
       .to(s.scale, { x: 1.5, y: 1.5, duration: 0.3, ease: "back.out(2)" }, 0)
@@ -166,7 +191,7 @@ async function main(): Promise<void> {
       const h = handCue;
       handCue = null;
       gsap.killTweensOf(h);
-      gsap.to(h, { alpha: 0, duration: 0.2, onComplete: () => { h.parent?.removeChild(h); h.destroy(); } });
+      gsap.to(h, { alpha: 0, duration: 0.2, onComplete: () => { if (h.parent) { h.parent.removeChild(h); h.destroy({ children: true }); } } });
     }
   }
 
@@ -204,14 +229,18 @@ async function main(): Promise<void> {
 
   // ── Stopwatch (counts UP) ──────────────────────────────────────────────────
   let swContainer: Container;
+  let swArcG: Graphics; // persistent arc graphics, redrawn each tick (no create/destroy)
+  let lastSwFloor = -1;  // track last integer second to avoid re-rendering text every frame
+
   function buildStopwatch(): void {
     swContainer = new Container();
-    // Arc ring
+    // Arc ring (static background)
     const ring = new Graphics();
-    ring.name = "swRing";
     ring.circle(0, 0, 24).stroke({ width: 4, color: PRIMARY, alpha: 0.18 });
     swContainer.addChild(ring);
-    // Arc progress (drawn each tick)
+    // Persistent arc progress graphics (inserted at index 1, below text)
+    swArcG = new Graphics();
+    swContainer.addChild(swArcG);
     stopwatchText = new Text({
       text: "0s",
       style: { fill: TXT, fontFamily: FONT, fontWeight: "700", fontSize: 13 },
@@ -223,38 +252,57 @@ async function main(): Promise<void> {
 
   function updateStopwatch(dt: number): void {
     stopwatchSec += dt;
-    stopwatchText.text = stopwatchSec < 60
-      ? `${Math.floor(stopwatchSec)}s`
-      : `${Math.floor(stopwatchSec / 60)}m`;
-    // Redraw arc overlay
-    const arc = swContainer.getChildByName("swArc");
-    if (arc) { swContainer.removeChild(arc); (arc as Container).destroy(); }
+    // Only update text when the integer second changes (avoid per-frame texture re-render)
+    const floorSec = Math.floor(stopwatchSec);
+    if (floorSec !== lastSwFloor) {
+      lastSwFloor = floorSec;
+      stopwatchText.text = stopwatchSec < 60 ? `${floorSec}s` : `${Math.floor(stopwatchSec / 60)}m`;
+    }
+    // Redraw arc in-place (clear + redraw on persistent Graphics, no alloc)
     const fraction = Math.min(1, stopwatchSec / 30);
+    swArcG.clear();
     if (fraction > 0) {
-      const arcG = new Graphics();
-      arcG.name = "swArc";
       const start = -Math.PI / 2;
       const end = start + fraction * Math.PI * 2;
-      arcG.arc(0, 0, 24, start, end).stroke({ width: 4, color: PRIMARY });
-      swContainer.addChildAt(arcG, 1);
+      swArcG.arc(0, 0, 24, start, end).stroke({ width: 4, color: PRIMARY });
     }
   }
 
-  // ── "Most people finish in 30s" chip ──────────────────────────────────────
-  function buildSubtitle(): Container {
-    const c = new Container();
-    const bg = new Graphics();
-    const tw = 220, th = 28;
-    bg.roundRect(-tw / 2, -th / 2, tw, th, 14).fill({ color: PRIMARY, alpha: 0.1 });
-    c.addChild(bg);
-    const t = new Text({
-      text: "Most people finish in under 30 seconds",
-      style: { fill: TXT, fontFamily: FONT, fontSize: 11, align: "center" },
+  // ── "Most people finish in 30s" chip — HTML overlay ──────────────────────
+  // Replaced from Pixi Text to avoid black-bar rendering on se viewport.
+  let subtitleEl: HTMLElement | null = null;
+
+  function buildSubtitleEl(): void {
+    subtitleEl = document.createElement("div");
+    subtitleEl.textContent = "Most people finish in under 30 seconds";
+    Object.assign(subtitleEl.style, {
+      position: "absolute",
+      left: "0",
+      width: window.innerWidth + "px",
+      textAlign: "center",
+      fontFamily: FONT,
+      fontWeight: "400",
+      fontSize: "11px",
+      color: TXT,
+      background: `rgba(${(PRIMARY >> 16) & 255},${(PRIMARY >> 8) & 255},${PRIMARY & 255},0.1)`,
+      borderRadius: "14px",
+      padding: "5px 16px",
+      pointerEvents: "none",
+      zIndex: "10",
+      boxSizing: "border-box",
     });
-    t.anchor.set(0.5);
-    fit(t, tw - 16);
-    c.addChild(t);
-    return c;
+    document.body.appendChild(subtitleEl);
+  }
+
+  function layoutSubtitleEl(): void {
+    if (!subtitleEl) return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const topPx = Math.round(h * 0.06);
+    const elW = Math.min(240, w - 40);
+    subtitleEl.style.width = elW + "px";
+    subtitleEl.style.left = Math.round((w - elW) / 2) + "px";
+    subtitleEl.style.top = topPx + "px";
   }
 
   // ── Profile tray (3 slots at the bottom) ──────────────────────────────────
@@ -264,9 +312,10 @@ async function main(): Promise<void> {
   function buildTray(): void {
     trayContainer = new Container();
     const w = window.innerWidth;
+    const trayW = Math.min(w - 32, 360);
     const trayBg = new Graphics();
-    trayBg.roundRect(0, 0, w - 32, 64, 16).fill({ color: 0xffffff, alpha: 0.9 });
-    trayBg.roundRect(0, 0, w - 32, 64, 16).stroke({ width: 2, color: PRIMARY, alpha: 0.3 });
+    trayBg.roundRect(0, 0, trayW, 64, 16).fill({ color: 0xffffff, alpha: 0.9 });
+    trayBg.roundRect(0, 0, trayW, 64, 16).stroke({ width: 2, color: PRIMARY, alpha: 0.3 });
     trayContainer.addChild(trayBg);
 
     const labelT = new Text({
@@ -279,7 +328,7 @@ async function main(): Promise<void> {
 
     // 3 slots
     const slotW = 54, slotH = 38, slotY = 22;
-    const slotStart = (w - 32 - 3 * slotW - 2 * 12) / 2;
+    const slotStart = (trayW - 3 * slotW - 2 * 12) / 2;
     for (let i = 0; i < 3; i++) {
       const slot = new Container();
       const slotBg = new Graphics();
@@ -288,8 +337,9 @@ async function main(): Promise<void> {
       slot.addChild(slotBg);
       const lbl = new Text({
         text: TRAY_LABELS[i],
-        style: { fill: TXT, fontFamily: FONT, fontSize: 10, alpha: 0.4 },
+        style: { fill: TXT, fontFamily: FONT, fontSize: 10 },
       });
+      lbl.alpha = 0.4;
       lbl.anchor.set(0.5);
       lbl.position.set(slotW / 2, slotH / 2);
       slot.addChild(lbl);
@@ -317,8 +367,7 @@ async function main(): Promise<void> {
 
     gsap.timeline({
       onComplete: () => {
-        fly.parent?.removeChild(fly);
-        fly.destroy();
+        if (fly.parent) { fly.parent.removeChild(fly); fly.destroy(); }
         // Show icon in slot
         const iconT = new Text({
           text: icon,
@@ -342,7 +391,7 @@ async function main(): Promise<void> {
         addedT.alpha = 0;
         fxLayer.addChild(addedT);
         gsap.timeline({
-          onComplete: () => { addedT.parent?.removeChild(addedT); addedT.destroy(); },
+          onComplete: () => { if (addedT.parent) { addedT.parent.removeChild(addedT); addedT.destroy(); } },
         })
           .to(addedT, { alpha: 1, y: slotWorld.y - 46, duration: 0.3 })
           .to(addedT, { alpha: 0, duration: 0.4 }, 0.6);
@@ -401,15 +450,21 @@ async function main(): Promise<void> {
     fit(qText, cardW - 20);
     card.addChild(qText);
 
-    // Answer cards (3 large cards)
+    // Answer cards (3 large cards) — min 88px tall
     const ansW = cardW - 20;
-    const ansH = 68;
-    const ansGap = 12;
+    const ansH = Math.max(88, Math.floor((h * 0.45) / 3 - 16));
+    const ansGap = 16;
     const ansStartY = 90;
     answerCards = [];
 
     q.answers.forEach((ans, i) => {
       const ac = new Container();
+
+      // Shadow layer (slightly larger offset rect underneath)
+      const shadow = new Graphics();
+      shadow.roundRect(2, 3, ansW, ansH, 14).fill({ color: 0x000000, alpha: 0.07 });
+      ac.addChild(shadow);
+
       // Card BG
       const abg = new Graphics();
       abg.roundRect(0, 0, ansW, ansH, 14).fill({ color: 0xffffff });
@@ -418,12 +473,12 @@ async function main(): Promise<void> {
 
       // Icon circle
       const iconCircle = new Graphics();
-      iconCircle.circle(38, ansH / 2, 22).fill({ color: num("#E8F5F4") });
+      iconCircle.circle(38, ansH / 2, 24).fill({ color: num("#E8F5F4") });
       ac.addChild(iconCircle);
 
       const iconT = new Text({
         text: ans.icon,
-        style: { fontFamily: FONT, fontSize: 22 },
+        style: { fontFamily: FONT, fontSize: 24 },
       });
       iconT.anchor.set(0.5);
       iconT.position.set(38, ansH / 2);
@@ -432,27 +487,28 @@ async function main(): Promise<void> {
       // Label
       const lbl = new Text({
         text: ans.label,
-        style: { fill: TXT, fontFamily: FONT, fontWeight: "700", fontSize: 16 },
+        style: { fill: TXT, fontFamily: FONT, fontWeight: "700", fontSize: 17 },
       });
       lbl.anchor.set(0, 0.5);
-      lbl.position.set(72, ansH / 2 - 10);
-      fit(lbl, ansW - 80);
+      lbl.position.set(74, ansH / 2 - 11);
+      fit(lbl, ansW - 90);
       ac.addChild(lbl);
 
       // Sub-label
       const sub = new Text({
         text: ans.sub,
-        style: { fill: TXT, fontFamily: FONT, fontSize: 12, alpha: 0.6 },
+        style: { fill: TXT, fontFamily: FONT, fontSize: 12 },
       });
+      sub.alpha = 0.6;
       sub.anchor.set(0, 0.5);
-      sub.position.set(72, ansH / 2 + 12);
-      fit(sub, ansW - 80);
+      sub.position.set(74, ansH / 2 + 13);
+      fit(sub, ansW - 90);
       ac.addChild(sub);
 
-      // Tap arrow
+      // Tap arrow — larger, more visible chevron
       const arrow = new Text({
         text: "›",
-        style: { fill: cfg.style.colors.primary, fontFamily: FONT, fontWeight: "700", fontSize: 22 },
+        style: { fill: cfg.style.colors.primary, fontFamily: FONT, fontWeight: "700", fontSize: 28 },
       });
       arrow.anchor.set(1, 0.5);
       arrow.position.set(ansW - 14, ansH / 2);
@@ -463,6 +519,8 @@ async function main(): Promise<void> {
       ac.cursor = "pointer";
 
       let hoverTween: gsap.core.Tween | null = null;
+      let pressTween: gsap.core.Tween | null = null;
+
       ac.on("pointerover", () => {
         if (busy) return;
         hoverTween?.kill();
@@ -473,9 +531,22 @@ async function main(): Promise<void> {
       ac.on("pointerout", () => {
         if (busy) return;
         hoverTween?.kill();
+        pressTween?.kill();
         hoverTween = gsap.to(ac.scale, { x: 1, y: 1, duration: 0.15 });
         abg.clear().roundRect(0, 0, ansW, ansH, 14).fill({ color: 0xffffff })
           .roundRect(0, 0, ansW, ansH, 14).stroke({ width: 2, color: PRIMARY, alpha: 0.25 });
+      });
+
+      // Pressed state: scale down to 0.97 on pointer down
+      ac.on("pointerdown", () => {
+        if (busy) return;
+        pressTween?.kill();
+        pressTween = gsap.to(ac.scale, { x: 0.97, y: 0.97, duration: 0.08, ease: "power2.out" });
+      });
+      ac.on("pointerup", () => {
+        if (busy) return;
+        pressTween?.kill();
+        pressTween = gsap.to(ac.scale, { x: 1, y: 1, duration: 0.12, ease: "back.out(2)" });
       });
 
       ac.on("pointertap", () => {
@@ -519,8 +590,43 @@ async function main(): Promise<void> {
       answerCards.push(ac);
     });
 
-    card.position.set((w - cardW) / 2, h * 0.15);
+    // Card container top is just below HUD; tray follows 24px after cards bottom.
+    // If the result would push the tray off-screen, we compress by sliding card up.
+    const hudBottom = 80;
+    const TRAY_H = 64;
+    const TRAY_GAP = 20;
+    const TRAY_MARGIN_BOTTOM = 16; // min gap between tray bottom and viewport bottom
+    const containerH = ansStartY + 3 * ansH + 2 * ansGap;
+    // Ideal card top: just below hud with a small breathing gap
+    const idealCardTop = hudBottom + 8;
+    const trayBottomAtIdeal = idealCardTop + containerH + TRAY_GAP + TRAY_H;
+    const overflow = trayBottomAtIdeal - (h - TRAY_MARGIN_BOTTOM);
+    const cardY = overflow > 0
+      ? Math.max(hudBottom, idealCardTop - overflow)
+      : idealCardTop;
+
+    card.position.set((w - cardW) / 2, cardY);
     return card;
+  }
+
+  // Compute the tray Y position: card bottom + TRAY_GAP, clamped to fit viewport
+  function computeTrayY(h?: number): number {
+    const height = h ?? window.innerHeight;
+    const ansH = Math.max(88, Math.floor((height * 0.45) / 3 - 16));
+    const ansGap = 16;
+    const ansStartY = 90;
+    const hudBottom = 80;
+    const TRAY_H = 64;
+    const TRAY_GAP = 20;
+    const TRAY_MARGIN_BOTTOM = 16;
+    const containerH = ansStartY + 3 * ansH + 2 * ansGap;
+    const idealCardTop = hudBottom + 8;
+    const trayBottomAtIdeal = idealCardTop + containerH + TRAY_GAP + TRAY_H;
+    const overflow = trayBottomAtIdeal - (height - TRAY_MARGIN_BOTTOM);
+    const cardY = overflow > 0
+      ? Math.max(hudBottom, idealCardTop - overflow)
+      : idealCardTop;
+    return cardY + containerH + TRAY_GAP;
   }
 
   function showQuestion(qIdx: number, animate: boolean): void {
@@ -531,28 +637,39 @@ async function main(): Promise<void> {
         alpha: 0,
         duration: animate ? FLIP_DUR * 0.6 : 0,
         ease: "power2.in",
-        onComplete: () => { old.parent?.removeChild(old); old.destroy(); },
+        onComplete: () => { old.parent?.removeChild(old); old.destroy({ children: true }); },
       });
     }
     const card = buildQuestionCard(qIdx);
-    card.alpha = 0;
+    // Use 0.001 instead of 0 so Pixi still uploads text textures to GPU
+    // (alpha===0 causes Pixi to skip rendering, leaving textures black on first reveal)
+    card.alpha = 0.001;
     card.x += window.innerWidth * 0.15;
     gameLayer.addChild(card);
     currentCardContainer = card;
 
-    gsap.to(card, {
-      x: card.x - window.innerWidth * 0.15,
-      alpha: 1,
-      duration: animate ? FLIP_DUR : 0,
-      ease: "back.out(1.2)",
-      onComplete: () => {
-        // Pulse all 3 answer cards briefly
-        answerCards.forEach((ac, idx) => {
-          gsap.timeline({ delay: idx * 0.07 })
-            .to(ac.scale, { x: 1.04, y: 1.04, duration: 0.25, ease: "power2.out" })
-            .to(ac.scale, { x: 1, y: 1, duration: 0.25, ease: "power2.in" });
-        });
-      },
+    // Force dirty-cycle on card texts to guarantee GPU texture upload before reveal.
+    // The cycle runs asynchronously over ~3 RAF frames (~50ms) while the card tween
+    // is also running (0.45s) — textures are uploaded well before card becomes visible.
+    // Dirty-cycle MUST complete before the reveal tween starts, otherwise the
+    // first visible frame in headless SwiftShader WebGL shows un-uploaded texture
+    // (black/empty bars). Keep alpha=0.001 until onDone, then tween alpha→1.
+    const cardTexts = collectTexts(card);
+    forceDirtyCycle(cardTexts, () => {
+      gsap.to(card, {
+        x: card.x - window.innerWidth * 0.15,
+        alpha: 1,
+        duration: animate ? FLIP_DUR : 0,
+        ease: "back.out(1.2)",
+        onComplete: () => {
+          // Pulse all 3 answer cards briefly
+          answerCards.forEach((ac, idx) => {
+            gsap.timeline({ delay: idx * 0.07 })
+              .to(ac.scale, { x: 1.04, y: 1.04, duration: 0.25, ease: "power2.out" })
+              .to(ac.scale, { x: 1, y: 1, duration: 0.25, ease: "power2.in" });
+          });
+        },
+      });
     });
   }
 
@@ -564,29 +681,44 @@ async function main(): Promise<void> {
     updateInstructionText();
   }
 
-  // ── Instruction text ───────────────────────────────────────────────────────
-  let instrText: Text;
+  // ── Instruction text — HTML overlay (immune to WebGL texture upload issues) ──
+  // Pixi Text on se (375px) intermittently renders as black bars in headless
+  // Chromium due to GPU texture upload timing. HTML elements are unaffected.
+  let instrEl: HTMLElement | null = null;
+
   function buildInstructionText(): void {
-    instrText = new Text({
-      text: cfg.copy.title,
-      style: {
-        fill: TXT,
-        fontFamily: FONT,
-        fontWeight: "700",
-        fontSize: 14,
-        align: "center",
-        wordWrap: true,
-        wordWrapWidth: window.innerWidth - 40,
-      },
+    instrEl = document.createElement("div");
+    instrEl.textContent = "Pick what matters";
+    Object.assign(instrEl.style, {
+      position: "absolute",
+      top: "0",
+      left: "0",
+      width: window.innerWidth + "px",
+      textAlign: "center",
+      fontFamily: FONT,
+      fontWeight: "700",
+      fontSize: "14px",
+      color: TXT,
+      pointerEvents: "none",
+      zIndex: "10",
+      padding: "0",
+      margin: "0",
+      lineHeight: "1.2",
     });
-    instrText.anchor.set(0.5, 0);
-    uiLayer.addChild(instrText);
+    document.body.appendChild(instrEl);
+    // Position is set in layout()
   }
 
   function updateInstructionText(): void {
-    if (state === "intro" || state === "q1" || state === "q2" || state === "q3") {
-      instrText.text = "Pick what matters";
-    }
+    // No-op: HTML element text is set at build time and stays stable
+  }
+
+  function layoutInstrText(): void {
+    if (!instrEl) return;
+    const h = window.innerHeight;
+    const topPx = Math.round(h * 0.02);
+    instrEl.style.top = topPx + "px";
+    instrEl.style.width = window.innerWidth + "px";
   }
 
   // ── Profile reveal card ────────────────────────────────────────────────────
@@ -601,7 +733,7 @@ async function main(): Promise<void> {
         alpha: 0,
         y: old.y - 30,
         duration: 0.4,
-        onComplete: () => { old.parent?.removeChild(old); old.destroy(); },
+        onComplete: () => { old.parent?.removeChild(old); old.destroy({ children: true }); },
       });
       currentCardContainer = null;
     }
@@ -833,9 +965,9 @@ async function main(): Promise<void> {
         align: "center",
         wordWrap: true,
         wordWrapWidth: panelW - 40,
-        alpha: 0.7,
       },
     });
+    auth.alpha = 0.7;
     auth.anchor.set(0.5, 0);
     auth.position.set(panelW / 2, 210);
     panel.addChild(auth);
@@ -877,9 +1009,9 @@ async function main(): Promise<void> {
         align: "left",
         wordWrap: true,
         wordWrapWidth: panelW - 28,
-        alpha: 0.8,
       },
     });
+    disclaimer.alpha = 0.8;
     disclaimer.anchor.set(0, 0);
     disclaimer.position.set(14, panelH - 74);
     panel.addChild(disclaimer);
@@ -907,6 +1039,11 @@ async function main(): Promise<void> {
 
   // ── Reset ──────────────────────────────────────────────────────────────────
   function resetAll(): void {
+    // Kill tweens on answer cards before destroying
+    answerCards.forEach(ac => { gsap.killTweensOf(ac); gsap.killTweensOf(ac.scale); });
+    if (currentCardContainer) {
+      gsap.killTweensOf(currentCardContainer);
+    }
     overlayLayer.removeChildren();
     gameLayer.removeChildren();
     fxLayer.removeChildren();
@@ -930,38 +1067,47 @@ async function main(): Promise<void> {
 
   // ── Idle nudge / auto-demo ─────────────────────────────────────────────────
   app.ticker.add((ticker) => {
-    if (busy || state === "intro" || state === "profile" || state === "end") return;
-    const dt = Math.min(0.05, ticker.deltaMS / 1000);
-    updateStopwatch(dt);
-    idleAccum += ticker.deltaMS;
-    if (idleAccum >= IDLE_HINT_MS) {
-      idleAccum = 0;
-      idleCount++;
-      // Show ghost-finger hint over middle answer card
-      if (answerCards.length >= 2) {
-        const midCard = answerCards[1];
-        const worldPos = midCard.toGlobal({ x: midCard.width / 2, y: midCard.height / 2 });
-        showHandCue(worldPos.x, worldPos.y);
-      }
-      if (idleCount >= AUTO_DEMO_AFTER && !/dbg/.test(location.search)) {
-        // Auto-pick middle answer
+    try {
+      if (busy || state === "intro" || state === "profile" || state === "end") return;
+      const dt = Math.min(0.05, ticker.deltaMS / 1000);
+      updateStopwatch(dt);
+      idleAccum += ticker.deltaMS;
+      if (idleAccum >= IDLE_HINT_MS) {
+        idleAccum = 0;
+        idleCount++;
+        // Show ghost-finger hint over middle answer card (guard destroyed/null objects)
         if (answerCards.length >= 2) {
-          answerCards[1].emit("pointertap");
+          const midCard = answerCards[1];
+          if (midCard && !midCard.destroyed && midCard.parent) {
+            try {
+              const worldPos = midCard.toGlobal({ x: midCard.width / 2, y: midCard.height / 2 });
+              showHandCue(worldPos.x, worldPos.y);
+            } catch (_e) { /* card being destroyed */ }
+          }
+        }
+        if (idleCount >= AUTO_DEMO_AFTER && !/dbg/.test(location.search)) {
+          // Auto-pick middle answer
+          if (answerCards.length >= 2) {
+            const midCard = answerCards[1];
+            if (midCard && !midCard.destroyed && midCard.parent) {
+              midCard.emit("pointertap");
+            }
+          }
         }
       }
+    } catch (_e) {
+      // Swallow ticker errors to prevent crash cascade
     }
   });
 
   // ── Build header UI ────────────────────────────────────────────────────────
   function buildHeader(): void {
-    // Stopwatch placement: top right
+    // Stopwatch placement: top right (Pixi)
     buildStopwatch();
 
-    // Sub-title chip
-    const sub = buildSubtitle();
-    sub.position.set(window.innerWidth / 2, window.innerHeight * 0.06);
-    uiLayer.addChild(sub);
-
+    // Sub-title chip and instruction text use HTML overlays to avoid
+    // headless WebGL text-texture upload failures on se (375px) viewport
+    buildSubtitleEl();
     buildInstructionText();
   }
 
@@ -975,20 +1121,18 @@ async function main(): Promise<void> {
       swContainer.position.set(w - 44, 44);
     }
 
-    // Instruction text: top center
-    if (instrText) {
-      instrText.position.set(w / 2, h * 0.02);
-      instrText.style.wordWrapWidth = w - 40;
-    }
+    // HTML overlay elements: instruction text + subtitle chip
+    layoutInstrText();
+    layoutSubtitleEl();
 
-    // Tray: bottom, above thumb zone
+    // Tray: anchored near bottom with thumb-safe margin
     if (trayContainer) {
       const trayW = Math.min(w - 32, 360);
-      trayContainer.position.set((w - trayW) / 2, h - 90);
+      trayContainer.position.set((w - trayW) / 2, computeTrayY(h));
       const tbg = trayContainer.getChildAt(0) as Graphics;
       tbg?.clear()
-        .roundRect(0, 0, trayW - 0, 64, 16).fill({ color: 0xffffff, alpha: 0.9 })
-        .roundRect(0, 0, trayW - 0, 64, 16).stroke({ width: 2, color: PRIMARY, alpha: 0.3 });
+        .roundRect(0, 0, trayW, 64, 16).fill({ color: 0xffffff, alpha: 0.9 })
+        .roundRect(0, 0, trayW, 64, 16).stroke({ width: 2, color: PRIMARY, alpha: 0.3 });
     }
   }
 
@@ -1016,13 +1160,62 @@ async function main(): Promise<void> {
     layout();
     app.renderer.render(app.stage);
   });
-  startHook();
 
-  app.renderer.render(app.stage);
-  requestAnimationFrame(() => {
-    layout();
-    app.renderer.render(app.stage);
-  });
+  // ── Collect all Pixi Text objects for force-touch ───────────────────────
+  function collectTexts(container: Container, out: Text[] = []): Text[] {
+    for (let i = 0; i < container.children.length; i++) {
+      const child = container.children[i];
+      if (child instanceof Text) {
+        out.push(child);
+      } else if (child instanceof Container) {
+        collectTexts(child, out);
+      }
+    }
+    return out;
+  }
+
+  // Force a dirty-cycle on Text objects to guarantee GPU texture upload.
+  // Uses app.ticker.addOnce() to hook into Pixi's natural render cycle (safe: no
+  // manual renderer calls that race with the ticker). Strategy:
+  //   1. Append ZWS → forces Pixi to re-generate canvas texture (marks dirty)
+  //   2. Wait 2 ticker frames → Pixi renders the ZWS version, uploading to GPU
+  //   3. Restore original text → marks dirty again
+  //   4. Wait 2 ticker frames → Pixi re-uploads correct text
+  //   5. onDone()
+  // In headless Chromium the ticker still runs via setTimeout internally (GSAP drives it
+  // or Pixi's own requestAnimationFrame polyfill), so this completes in real wall time.
+  function forceDirtyCycle(texts: Text[], onDone: () => void): void {
+    if (texts.length === 0) { onDone(); return; }
+    const ZWS = '​'; // zero-width space — invisible, forces dirty
+    const originals = texts.map(t => t.text);
+
+    // Phase 1: dirty with ZWS, then wait for ticker to render it
+    texts.forEach(t => { t.text = t.text + ZWS; });
+    app.ticker.addOnce(() => {
+      app.ticker.addOnce(() => {
+        // Phase 2: restore, wait for ticker to render again
+        texts.forEach((t, i) => { t.text = originals[i]; });
+        app.ticker.addOnce(() => {
+          app.ticker.addOnce(() => {
+            onDone();
+          });
+        });
+      });
+    });
+  }
+
+  // Warm-up: wait 2 ticker frames for Pixi to do initial renders,
+  // then dirty-cycle all stage texts, then start game.
+  // Using app.ticker.addOnce keeps us in Pixi's render pipeline (no manual render calls).
+  function warmUpAndStart(): void {
+    app.ticker.addOnce(() => {
+      app.ticker.addOnce(() => {
+        const allTexts = collectTexts(app.stage);
+        forceDirtyCycle(allTexts, () => { startHook(); });
+      });
+    });
+  }
+  warmUpAndStart();
 
   // QA hook
   if (/dbg/.test(location.search)) {

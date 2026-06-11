@@ -39,6 +39,15 @@ const TOTAL_BLOCKS = 5;
 const PRE_PLACED   = 2;  // first N blocks are already on tower at hook
 const PLAYER_TAPS  = 3;  // blocks the player drops (indices 2,3,4)
 
+// ── Layout constants ──────────────────────────────────────────────────────────
+// HUD strip: top 56px reserved for meter + label
+const HUD_H        = 56;
+// Crane rail sits just below HUD
+// Drop zone: the active swinging block hangs at CRANE_HANG_Y
+// Tower top anchor: tower's topmost block always ~38% down from top of play area
+// Play area = HUD_H .. (h - BOTTOM_STRIP_H)
+const BOTTOM_STRIP_H = 80; // reserved bottom strip for instruction + CTA-free zone
+
 // ─────────────────────────────────────────────────────────────────────────────
 async function main(): Promise<void> {
   const app = new Application();
@@ -55,19 +64,36 @@ async function main(): Promise<void> {
   app.canvas.style.height = window.innerHeight + "px";
   document.body.appendChild(app.canvas);
 
-  // ── Layers: bg → game → fx → ui → overlay ────────────────────────────────
+  // ── Layers (bottom to top): bg → world(sky+ground+tower) → crane → rope → activeBlk → fx → ui(HUD) → overlay
+  // We use these containers to enforce correct z-order:
+  //   bgLayer      - sky gradient
+  //   towerWorld   - ground + placed tower blocks (scrolls with camera)
+  //   craneLayer   - crane beam + trolley (fixed screen position)
+  //   ropeLayer    - rope (fixed screen, drawn to swinging block)
+  //   gameLayer    - (unused now — towerWorld promoted to stage child directly)
+  //   fxLayer      - sparkles / confetti
+  //   uiLayer      - HUD meter + instruction text + ghost finger
+  //   overlayLayer - endcard
+
   const bgLayer      = new Container();
-  const gameLayer    = new Container();
+  const towerWorld   = new Container(); // replaces gameLayer — placed blocks + ground
+  const craneLayer   = new Container(); // crane beam + trolley
+  const ropeLayer    = new Container(); // rope (rendered above crane, below swinging block)
+  const activeLayer  = new Container(); // swinging block lives here
   const fxLayer      = new Container();
   const uiLayer      = new Container();
   const overlayLayer = new Container();
-  app.stage.addChild(bgLayer, gameLayer, fxLayer, uiLayer, overlayLayer);
+
+  app.stage.addChild(bgLayer, towerWorld, craneLayer, ropeLayer, activeLayer, fxLayer, uiLayer, overlayLayer);
 
   // Stage is the tap receiver; game children are NOT interactive.
   app.stage.eventMode = "static";
   app.stage.hitArea   = app.screen;
-  gameLayer.interactiveChildren = false;
-  fxLayer.interactiveChildren  = false;
+  towerWorld.interactiveChildren  = false;
+  craneLayer.interactiveChildren  = false;
+  ropeLayer.interactiveChildren   = false;
+  activeLayer.interactiveChildren = false;
+  fxLayer.interactiveChildren     = false;
 
   // ── State ─────────────────────────────────────────────────────────────────
   type Phase = "hook" | "play" | "win" | "endcard";
@@ -76,6 +102,54 @@ async function main(): Promise<void> {
   let dropping       = false;
   let ghostDone      = false;
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // ── Layout helpers ────────────────────────────────────────────────────────
+  // Rail Y: crane beam sits just below HUD strip
+  function railY(): number { return HUD_H + 18; }
+
+  // The swinging block hangs at this screen Y (center of block)
+  function hangY(): number { return railY() + 72; }
+
+  // Camera target for towerWorld.y:
+  //
+  // Three competing constraints (towerTopY ≤ 0, towerWorld.y maps world→screen):
+  //
+  //   (A) GROUND FLOOR: keep ground (world y=0) visible near bottom.
+  //       Screen Y of ground = towerWorld.y. Want ≤ h * 0.79.
+  //
+  //   (B) DROP ZONE CAP: when tower is tall, pan up so tower visual top ≤ 40% of play area.
+  //       Visual top = towerWorld.y + towerTopY - BH  (towerTopY is bottom of top block).
+  //       Want ≤ HUD_H + playH * 0.40.
+  //       → towerWorld.y ≤ HUD_H + playH * 0.40 - towerTopY + BH
+  //
+  // Camera target for towerWorld.y:
+  //
+  // Strategy: push camera as far down as possible (ground near bottom of screen),
+  // but cap upward so the TOWER TOP stays visible (at most at 55% of screen height,
+  // giving plenty of sky for stars + block swing).
+  //
+  //   groundFloor = h * 0.79 → desired ground position (near bottom)
+  //   dropZoneCap = tower visual top at screen 55%:
+  //       towerWorld.y + towerTopY - BH = h * 0.55
+  //       → towerWorld.y = h * 0.55 - towerTopY + BH  (= h * 0.55 + |towerTopY| + BH)
+  //
+  //   result = min(groundFloor, dropZoneCap)
+  //   Short tower: dropZoneCap is large → groundFloor dominates → ground near bottom ✓
+  //   Tall tower:  dropZoneCap shrinks → caps camera so tower top stays visible ✓
+  function camTargetY(): number {
+    const h = window.innerHeight;
+
+    // (A) Desired ground position: ~79% of screen height
+    const groundFloor = h * 0.79;
+
+    // (B) Hard cap: tower visual top must stay above 55% of screen
+    //     tower visual top (screen) = towerWorld.y + towerTopY - BH
+    //     want ≤ h * 0.55  →  towerWorld.y ≤ h * 0.55 - towerTopY + BH
+    const dropZoneCap = h * 0.55 - towerTopY + BH;
+
+    // Use the smaller: normally groundFloor rules; when tower is tall, dropZoneCap overrides
+    return Math.min(groundFloor, dropZoneCap);
+  }
 
   // ── Instruction text ────────────────────────────────────────────────────
   const instrText = new Text({
@@ -113,35 +187,37 @@ async function main(): Promise<void> {
       const sr = 1.2 + (i % 3) * 0.6;
       bgGfx.circle(sx, sy, sr).fill({ color: 0xffffff, alpha: 0.45 + (i % 4) * 0.1 });
     }
-    // Horizon glow
+    // Horizon glow — in lower 45%
     bgGfx.rect(0, h * 0.55, w, h * 0.45).fill({ color: 0xFFB100, alpha: 0.08 });
   }
 
-  // ── Habit meter bar (progress-already-running) ────────────────────────────
+  // ── Habit meter bar (HUD strip — top 56px) ───────────────────────────────
   const meterContainer = new Container();
   uiLayer.addChild(meterContainer);
-  let meterGfx = new Graphics();
+  let meterGfx  = new Graphics();
   let meterFill = new Graphics();
   let meterLabel: Text | null = null;
   meterContainer.addChild(meterGfx, meterFill);
 
   function drawMeter(filledBlocks: number): void {
-    const w = window.innerWidth, h = window.innerHeight;
+    const w = window.innerWidth;
     meterGfx.clear();
     meterFill.clear();
     if (meterLabel) { meterLabel.destroy(); meterLabel = null; }
 
     const barW = Math.min(w * 0.55, 220);
-    const barH = 18;
+    const barH = 14;
     const bx   = w / 2 - barW / 2;
-    const by   = h * 0.088;
+    // Vertically center the meter + label within the top HUD_H strip
+    // label below bar: barH + 4 + ~14 label = 32px total; center at HUD_H/2 = 28
+    const by   = Math.round(HUD_H / 2 - (barH + 18) / 2);
 
     // Track
-    meterGfx.roundRect(bx, by, barW, barH, 9).fill({ color: 0xffffff, alpha: 0.12 });
+    meterGfx.roundRect(bx, by, barW, barH, 7).fill({ color: 0xffffff, alpha: 0.12 });
     // Filled portion
     const fillW = (filledBlocks / TOTAL_BLOCKS) * barW;
     if (fillW > 0) {
-      meterFill.roundRect(bx, by, fillW, barH, 9).fill({ color: COL_PRI, alpha: 0.85 });
+      meterFill.roundRect(bx, by, fillW, barH, 7).fill({ color: COL_PRI, alpha: 0.85 });
     }
     // Segment dividers
     for (let i = 1; i < TOTAL_BLOCKS; i++) {
@@ -154,27 +230,59 @@ async function main(): Promise<void> {
       style: { fill: "#ffffff", fontFamily: FONT, fontWeight: "bold", fontSize: 12 },
     });
     meterLabel.anchor.set(0.5, 0);
-    meterLabel.position.set(w / 2, by + barH + 4);
+    meterLabel.position.set(w / 2, by + barH + 3);
     meterContainer.addChild(meterLabel);
   }
 
-  // ── Tower world container (camera rises) ─────────────────────────────────
-  const towerWorld = new Container();
-  gameLayer.addChild(towerWorld);
+  // HUD background strip (solid semi-transparent bar behind meter)
+  const hudBg = new Graphics();
+  uiLayer.addChildAt(hudBg, 0); // behind meter
 
-  // Placed block records
+  function drawHudBg(): void {
+    const w = window.innerWidth;
+    hudBg.clear();
+    hudBg.rect(0, 0, w, HUD_H).fill({ color: 0x000000, alpha: 0.32 });
+  }
+
+  // ── Placed block records ──────────────────────────────────────────────────
   interface PlacedBlock { cx: number; topY: number; }
   const placed: PlacedBlock[] = [];
 
-  // Foundation ground line
+  // ── Tower top world Y ─────────────────────────────────────────────────────
+  let towerTopY = 0;  // world y of the top surface of the topmost block (0 = ground surface)
+
+  // ── Ground platform (soil + grass) ───────────────────────────────────────
   const groundGfx = new Graphics();
   towerWorld.addChild(groundGfx);
 
   function drawGround(): void {
     const w = window.innerWidth;
     groundGfx.clear();
-    groundGfx.rect(-w, 0, w * 3, 28).fill({ color: 0x1a1230 });
-    groundGfx.rect(-w, 28, w * 3, 8).fill({ color: COL_PRI, alpha: 0.25 });
+    // Wide soil platform the tower stands on
+    // In towerWorld coords: y=0 is the ground surface
+    const gw = w * 2.4;
+    const gx = -gw / 2;
+
+    // Deep soil body
+    groundGfx.rect(gx, 0, gw, 80).fill({ color: 0x3b2005 });
+    // Lighter soil mid
+    groundGfx.rect(gx, 6, gw, 30).fill({ color: 0x5a3410 });
+    // Grass top strip
+    groundGfx.rect(gx, 0, gw, 10).fill({ color: 0x2e7d32 });
+    // Bright grass edge highlight
+    groundGfx.rect(gx, 0, gw, 3).fill({ color: 0x4caf50 });
+    // Grass tufts (decorative notches)
+    for (let i = 0; i < 22; i++) {
+      const tx = gx + (i / 22) * gw + 10;
+      const th = 6 + (i % 3) * 3;
+      groundGfx.rect(tx, -th, 4, th).fill({ color: 0x388e3c });
+    }
+    // Soil pebble dots
+    for (let i = 0; i < 12; i++) {
+      const px = gx + (i * 173 + 40) % gw;
+      const py = 16 + (i * 31) % 18;
+      groundGfx.circle(px, py, 2 + (i % 3)).fill({ color: 0x2a1a06, alpha: 0.5 });
+    }
   }
 
   // Make a habit block (procedural)
@@ -234,13 +342,13 @@ async function main(): Promise<void> {
   }
 
   // ── Build pre-placed tower (2 blocks) ─────────────────────────────────────
-  // World coords: y increases downward, tower top = negative y
-  // Ground = y=0. Each block placed center at topY - BH/2.
-  let towerTopY = 0;  // world y of the top surface of the topmost block
-
   function buildPrePlaced(): void {
-    towerWorld.removeChildren();
+    // Remove all children except groundGfx
+    while (towerWorld.children.length > 0) {
+      towerWorld.removeChildAt(0);
+    }
     placed.length = 0;
+    towerWorld.addChild(groundGfx);
     drawGround();
     towerTopY = 0;
 
@@ -250,55 +358,64 @@ async function main(): Promise<void> {
     }
   }
 
-  // ── Camera targeting ──────────────────────────────────────────────────────
-  function buildLineY(): number { return window.innerHeight * 0.62; }
+  // ── Crane rail + trolley ───────────────────────────────────────────────────
+  // Crane drawn in craneLayer (fixed screen coords, below HUD, above world)
+  const craneGfx   = new Graphics();
+  const trolleyGfx = new Graphics();
+  craneLayer.addChild(craneGfx, trolleyGfx);
 
-  function camTargetY(): number {
-    return buildLineY() - towerTopY;
-  }
+  // Rope drawn in ropeLayer (above crane, below activeBlock)
+  const ropeGfx = new Graphics();
+  ropeLayer.addChild(ropeGfx);
 
-  // ── Crane rail + rope + trolley ───────────────────────────────────────────
-  const craneGfx    = new Graphics();
-  const ropeGfx     = new Graphics();
-  const trolleyGfx  = new Graphics();
-  uiLayer.addChild(craneGfx, ropeGfx, trolleyGfx);
-
-  function drawCrane(blockX?: number): void {
-    const w = window.innerWidth, h = window.innerHeight;
-    const railY = h * 0.13;
+  function drawCrane(blockScreenX?: number): void {
+    const w = window.innerWidth;
+    const ry = railY();
     craneGfx.clear();
-    craneGfx.rect(0, railY, w, 7).fill({ color: 0x6b4a2a });
-    craneGfx.rect(0, railY - 4, w, 4).fill({ color: 0x8a6040 });
+    // Crane beam spans full width
+    craneGfx.rect(0, ry, w, 7).fill({ color: 0x6b4a2a });
+    craneGfx.rect(0, ry - 4, w, 4).fill({ color: 0x8a6040 });
 
-    ropeGfx.clear();
     trolleyGfx.clear();
-    if (blockX !== undefined) {
-      const ropeBottom = buildLineY() - BH * 0.5;
-      ropeGfx.moveTo(blockX, railY + 7).lineTo(blockX, ropeBottom).stroke({ width: 3, color: 0x2a1d10 });
-      ropeGfx.circle(blockX, ropeBottom, 4).fill({ color: 0x2a1d10 });
-      trolleyGfx.roundRect(blockX - 16, railY - 4, 32, 16, 4).fill({ color: 0x3a2a1a });
+    ropeGfx.clear();
+
+    if (blockScreenX !== undefined) {
+      const hy = hangY();
+      // Rope: from rail bottom to just above block center
+      ropeGfx.moveTo(blockScreenX, ry + 7).lineTo(blockScreenX, hy - BH * 0.52).stroke({ width: 3, color: 0x2a1d10 });
+      ropeGfx.circle(blockScreenX, hy - BH * 0.52, 4).fill({ color: 0x2a1d10 });
+      // Trolley wheel on rail
+      trolleyGfx.roundRect(blockScreenX - 16, ry - 4, 32, 16, 4).fill({ color: 0x3a2a1a });
     }
   }
 
   // ── Active (swinging) block ────────────────────────────────────────────────
   let activeBlk: Container | null = null;
   let swingTween: gsap.core.Tween | null = null;
-  let swingPad = 28;
+  const swingPad = 28;
 
   function spawnActive(): void {
-    if (activeBlk) { uiLayer.removeChild(activeBlk); activeBlk.destroy(); activeBlk = null; }
+    if (activeBlk && !activeBlk.destroyed) {
+      gsap.killTweensOf(activeBlk);
+      for (let ci = 0; ci < activeBlk.children.length; ci++) {
+        gsap.killTweensOf(activeBlk.children[ci]);
+      }
+      activeLayer.removeChild(activeBlk);
+      activeBlk.destroy({ children: true });
+      activeBlk = null;
+    }
     swingTween?.kill();
+    swingTween = null;
     if (tapCount >= PLAYER_TAPS) return;
 
     const blkIdx = PRE_PLACED + tapCount;
     const blk    = makeHabitBlock(blkIdx);
-    const h      = window.innerHeight, w = window.innerWidth;
-    const railY  = h * 0.13;
-    blk.position.set(swingPad + BW / 2, railY + 60);
-    uiLayer.addChild(blk);
+    const w      = window.innerWidth;
+    blk.position.set(swingPad + BW / 2, hangY());
+    activeLayer.addChild(blk);
     activeBlk = blk;
 
-    const lo = swingPad + BW / 2;
+    const lo  = swingPad + BW / 2;
     const hi2 = w - swingPad - BW / 2;
     const dur = SWG_S - tapCount * ((SWG_S - SWG_E) / (PLAYER_TAPS - 1));
 
@@ -314,27 +431,29 @@ async function main(): Promise<void> {
     if (tapCount === 0) showShadowHint(true);
     else showShadowHint(false);
 
-    // Instruction text — anchored in lower thumb zone, never over tower
-    const w2 = window.innerWidth, h2 = window.innerHeight;
-    instrText.style.fontSize = Math.min(18, w2 * 0.048);
-    instrText.position.set(w2 / 2, h2 * 0.82);
+    // Instruction text — in bottom strip above CTA-free zone
+    const h2 = window.innerHeight;
+    instrText.style.fontSize = Math.min(18, window.innerWidth * 0.048);
+    instrText.position.set(window.innerWidth / 2, h2 - BOTTOM_STRIP_H / 2);
     instrText.alpha = 0;
     gsap.killTweensOf(instrText);
     gsap.to(instrText, { alpha: 1, duration: 0.35, delay: 0.2 });
   }
 
-  // ── Shadow hint (pulsing indicator below crane) ───────────────────────────
+  // ── Shadow hint (pulsing indicator at tower top) ──────────────────────────
   const shadowHintGfx = new Graphics();
   uiLayer.addChild(shadowHintGfx);
   let shadowTween: gsap.core.Tween | null = null;
 
   function showShadowHint(visible: boolean): void {
     shadowTween?.kill();
+    shadowTween = null;
     shadowHintGfx.clear();
     if (!visible) return;
-    const w = window.innerWidth, h = window.innerHeight;
-    const bl = buildLineY();
-    shadowHintGfx.ellipse(w / 2, bl + 6, BW * 0.45, 7).fill({ color: 0xffffff, alpha: 0.18 });
+    const w = window.innerWidth;
+    // Draw hint at the tower top in screen coords
+    const screenTowerTop = towerWorld.y + towerTopY;
+    shadowHintGfx.ellipse(w / 2, screenTowerTop - 6, BW * 0.45, 7).fill({ color: 0xffffff, alpha: 0.18 });
     shadowTween = gsap.to(shadowHintGfx, { alpha: 0.15, duration: 0.55, yoyo: true, repeat: -1, ease: "sine.inOut" });
   }
 
@@ -352,7 +471,8 @@ async function main(): Promise<void> {
     const circ = new Graphics().circle(0, 0, 18).fill({ color: 0xffffff, alpha: 0.6 });
     const ring  = new Graphics().circle(0, 0, 22).stroke({ width: 2, color: 0xffffff, alpha: 0.4 });
     finger.addChild(circ, ring);
-    finger.position.set(w / 2, h * 0.52);
+    // Position in middle of play area
+    finger.position.set(w / 2, HUD_H + (h - HUD_H - BOTTOM_STRIP_H) * 0.52);
     finger.alpha = 0;
     ghostContainer.addChild(finger);
 
@@ -362,7 +482,7 @@ async function main(): Promise<void> {
       ghostDone = true;
       void ghostDone; // used as state flag
     }});
-    seq.to(finger, { alpha: 0.85, y: h * 0.5, duration: 0.4 })
+    seq.to(finger, { alpha: 0.85, y: finger.y - (h * 0.02), duration: 0.4 })
        .to(finger.scale, { x: 0.8, y: 0.8, duration: 0.15, ease: "power2.in" }, "+=0.2")
        .to(finger.scale, { x: 1, y: 1, duration: 0.15, ease: "power2.out" })
        .to(finger, { alpha: 0, duration: 0.3 }, "+=0.3");
@@ -374,6 +494,7 @@ async function main(): Promise<void> {
     if (tapCount >= PLAYER_TAPS) return;
     dropping = true;
     swingTween?.kill();
+    swingTween = null;
     showShadowHint(false);
     ghostContainer.removeChildren();
     clearIdleTimer();
@@ -382,36 +503,59 @@ async function main(): Promise<void> {
 
     const blk    = activeBlk;
     const blkIdx = PRE_PLACED + tapCount;
-    const tapX   = blk.x;
-    const lowerCx = placed.length > 0 ? placed[placed.length - 1].cx + towerWorld.x : towerWorld.x;
-    const offset  = tapX - lowerCx;
+
+    // blk is in activeLayer (screen coords). Its x is the screen x.
+    const tapScreenX = blk.x;
+
+    // Convert to world x: worldX = screenX - towerWorld.x (towerWorld.x = w/2 always)
+    const worldW2 = window.innerWidth / 2;
+    const worldLowerCx = placed.length > 0 ? placed[placed.length - 1].cx : 0;
+    const offset  = (tapScreenX - worldW2) - worldLowerCx;
     const isPerfect = Math.abs(offset) <= 8;
 
-    // Magnet forgiveness: GSAP tween x toward lower.cx — visibly "snaps"
-    const worldLowerCx = placed.length > 0 ? placed[placed.length - 1].cx : 0;
+    // Magnet forgiveness
     const magnetDist = Math.abs(offset);
-    const magnetStrength = Math.min(1, magnetDist / MAG_TOL); // 0=perfect 1=edge
-
-    // Target world x for this block (magnet pulls toward center, not perfect)
     const magnetPull = magnetDist <= MAG_TOL ? (offset * 0.25) : offset;
+    const magnetStrength = Math.min(1, magnetDist / MAG_TOL);
     const finalWorldX = worldLowerCx + magnetPull;
 
-    // Animate x (magnet pull) simultaneously with drop
-    gsap.to(blk, { x: towerWorld.x + finalWorldX, duration: 0.22, ease: "power2.out" });
+    // Target screen coords for the landed block
+    const landScreenX = worldW2 + finalWorldX;
 
-    const targetY = buildLineY() - BH / 2;
-    const dist    = targetY - blk.y;
+    // The block should land at towerTopY - BH (one block above current top)
+    // In screen coords: towerWorld.y + (towerTopY - BH) - BH/2
+    const landWorldTopY = towerTopY - BH; // world y of top surface of new block
+    const landScreenY   = towerWorld.y + landWorldTopY - BH / 2; // screen y of center
+
+    const dist = Math.abs(landScreenY - blk.y);
+    const dropDur = Math.max(0.22, dist / 2200 + 0.14);
+
+    // Use a single tween to move x + y together — avoids race between two tweens on same target
     gsap.to(blk, {
-      y: targetY,
-      duration: Math.max(0.16, dist / 2200 + 0.14),
+      x: landScreenX,
+      y: landScreenY,
+      duration: dropDur,
       ease: "power1.in",
-      onComplete: () => landBlock(blk, blkIdx, finalWorldX, isPerfect, magnetStrength),
+      onComplete: () => {
+        if (!blk || blk.destroyed) { dropping = false; return; }
+        landBlock(blk, blkIdx, finalWorldX, isPerfect, magnetStrength);
+      },
     });
   }
 
   function landBlock(blk: Container, blkIdx: number, finalWorldX: number, isPerfect: boolean, magnetStrength: number): void {
-    uiLayer.removeChild(blk);
-    blk.destroy();
+    if (!blk || blk.destroyed) { dropping = false; return; }
+
+    // Kill ALL tweens on this block and all its children before destroying
+    // (prevents GSAP from writing x/y/alpha to destroyed objects)
+    gsap.killTweensOf(blk);
+    for (let ci = 0; ci < blk.children.length; ci++) {
+      gsap.killTweensOf(blk.children[ci]);
+    }
+
+    // Block was in activeLayer. Place equivalent block in towerWorld.
+    activeLayer.removeChild(blk);
+    blk.destroy({ children: true });
     activeBlk = null;
     dropping  = false;
 
@@ -426,10 +570,7 @@ async function main(): Promise<void> {
     // Sway on near-miss (scripted elastic rotation), wind gust on perfect
     if (!isPerfect && magnetStrength > 0.2) {
       // GSAP rotation tween ±3° elastic — tower sways but stands
-      const towerPivotY = buildLineY();
-      const oldPY = towerWorld.pivot.y;
-      towerWorld.pivot.y = towerPivotY;
-      towerWorld.y += towerPivotY;
+      // Use a wrapper container for pivot rotation so towerWorld.y doesn't fight camera
       gsap.to(towerWorld, {
         rotation: (Math.random() > 0.5 ? 1 : -1) * 0.052,
         duration: 0.18,
@@ -438,19 +579,19 @@ async function main(): Promise<void> {
         repeat: 3,
         onComplete: () => {
           gsap.to(towerWorld, { rotation: 0, duration: 0.2, ease: "sine.inOut", onComplete: () => {
-            towerWorld.pivot.y = 0;
-            towerWorld.y = camTargetY();
+            towerWorld.rotation = 0;
+            gsap.to(towerWorld, { y: camTargetY(), duration: 0.25, ease: "power2.out" });
           }});
         },
       });
-      sparkleAt(towerWorld.x + finalWorldX, buildLineY(), 0xFFB100);
+      sparkleAt(window.innerWidth / 2 + finalWorldX, towerWorld.y + towerTopY, 0xFFB100);
     } else {
       // Wind gust — subtle horizontal oscillation of fx particles
       windGust();
-      sparkleAt(towerWorld.x + finalWorldX, buildLineY(), COL_ACC);
+      sparkleAt(window.innerWidth / 2 + finalWorldX, towerWorld.y + towerTopY, COL_ACC);
     }
 
-    // Camera rise
+    // Camera rise — smooth scroll up as tower grows
     gsap.to(towerWorld, { y: camTargetY(), duration: 0.42, ease: "power2.out" });
 
     tapCount++;
@@ -461,6 +602,7 @@ async function main(): Promise<void> {
       gsap.delayedCall(0.35, triggerWin);
     } else {
       gsap.delayedCall(0.3, () => {
+        if (phase !== "play") return;
         spawnActive();
         setIdleTimer();
       });
@@ -481,23 +623,25 @@ async function main(): Promise<void> {
         rotation: Math.random() * 3,
         duration: 0.65,
         ease: "power2.out",
-        onComplete: () => { fxLayer.removeChild(s); s.destroy(); },
+        onComplete: () => { if (!s.destroyed) { fxLayer.removeChild(s); s.destroy(); } },
       });
     }
   }
 
   function windGust(): void {
+    const w2 = window.innerWidth;
     for (let i = 0; i < 6; i++) {
-      const w2 = window.innerWidth;
       const g = new Graphics().rect(0, -2, 30 + Math.random() * 40, 3).fill({ color: 0xffffff, alpha: 0.25 });
-      g.position.set(Math.random() * w2, buildLineY() - 20 - Math.random() * 60);
+      // Near the tower top in screen space
+      const gY = towerWorld.y + towerTopY - 20 - Math.random() * 60;
+      g.position.set(Math.random() * w2, gY);
       fxLayer.addChild(g);
       gsap.to(g, { x: g.x + 80, alpha: 0, duration: 0.5 + Math.random() * 0.3, ease: "power1.out",
-        onComplete: () => { fxLayer.removeChild(g); g.destroy(); } });
+        onComplete: () => { if (!g.destroyed) { fxLayer.removeChild(g); g.destroy(); } } });
     }
   }
 
-  // ── Confetti burst (ported from fruit-bonanza) ────────────────────────────
+  // ── Confetti burst ────────────────────────────────────────────────────────
   function confettiBurst(count = 70): void {
     const w = window.innerWidth, h = window.innerHeight;
     const COLORS = [0xff3aa5, 0xffd84d, 0x9b4dff, 0x38f06b, 0xff7e2e, COL_ACC, COL_PRI];
@@ -511,10 +655,18 @@ async function main(): Promise<void> {
       fxLayer.addChild(piece);
       const dur  = 1.8 + Math.random() * 1.2;
       const sway = 80 + Math.random() * 80;
-      gsap.to(piece, { y: h + 30, duration: dur, ease: "power1.in",
-        onComplete: () => { fxLayer.removeChild(piece); piece.destroy(); } });
-      gsap.to(piece, { x: sx + (Math.random() < 0.5 ? -sway : sway), duration: dur, ease: "sine.inOut" });
-      gsap.to(piece, { rotation: piece.rotation + (Math.random() - 0.5) * 12, duration: dur, ease: "none" });
+      // Single tween for all properties — avoids multi-tween race where one completes+destroys
+      // the piece while siblings are still running the same frame.
+      gsap.to(piece, {
+        y: h + 30,
+        x: sx + (Math.random() < 0.5 ? -sway : sway),
+        rotation: piece.rotation + (Math.random() - 0.5) * 12,
+        duration: dur,
+        ease: "power1.in",
+        onComplete: () => {
+          if (!piece.destroyed) { fxLayer.removeChild(piece); piece.destroy(); }
+        },
+      });
     }
   }
 
@@ -524,7 +676,8 @@ async function main(): Promise<void> {
     for (let f = 0; f < 5; f++) {
       const flame = new Container();
       const fx = w / 2 + (f - 2) * 22;
-      const fy = buildLineY() - BH * (TOTAL_BLOCKS + 0.5);
+      // Position at tower top in screen space
+      const fy = towerWorld.y + towerTopY;
 
       const body = new Graphics()
         .poly([0, 0, 12, -30, -12, -30, 0, -55])
@@ -536,15 +689,17 @@ async function main(): Promise<void> {
       flame.position.set(fx, fy);
       fxLayer.addChild(flame);
 
-      // Flicker
-      gsap.to(flame, {
-        scaleY: 1.2 + Math.random() * 0.3,
-        scaleX: 0.85 + Math.random() * 0.2,
+      // Flicker — use scale ObservablePoint directly (no scaleX/scaleY in Pixi v8)
+      const targetScaleY = 1.2 + Math.random() * 0.3;
+      const targetScaleX = 0.85 + Math.random() * 0.2;
+      gsap.to(flame.scale, {
+        y: targetScaleY,
+        x: targetScaleX,
         duration: 0.12,
         yoyo: true,
         repeat: 20,
         ease: "sine.inOut",
-        onComplete: () => { fxLayer.removeChild(flame); flame.destroy(); },
+        onComplete: () => { if (!flame.destroyed) { gsap.killTweensOf(flame.scale); fxLayer.removeChild(flame); flame.destroy(); } },
       });
     }
   }
@@ -554,6 +709,7 @@ async function main(): Promise<void> {
     if (phase === "win" || phase === "endcard") return;
     phase = "win";
     swingTween?.kill();
+    swingTween = null;
     showShadowHint(false);
     clearIdleTimer();
 
@@ -568,7 +724,8 @@ async function main(): Promise<void> {
       style: { fill: COL_PRI, fontFamily: FONT, fontWeight: "bold", fontSize: Math.min(38, w * 0.1), stroke: { color: "#2D3047", width: 5 } },
     });
     winText.anchor.set(0.5);
-    winText.position.set(w / 2, h * 0.3);
+    // Position in middle of play area
+    winText.position.set(w / 2, HUD_H + (h - HUD_H - BOTTOM_STRIP_H) * 0.35);
     winText.alpha = 0;
     winText.scale.set(0.5);
     overlayLayer.addChild(winText);
@@ -600,7 +757,7 @@ async function main(): Promise<void> {
       .stroke({ width: 4, color: COL_PRI, alignment: 1 });
     panel.addChild(panelBg);
 
-    // Brand logo (procedural stacked blocks + sun silhouette "H")
+    // Brand logo (procedural stacked blocks + sun silhouette)
     const logoC = new Container();
     for (let i = 0; i < 4; i++) {
       const lbw = 16 - i * 2;
@@ -734,28 +891,36 @@ async function main(): Promise<void> {
     if (phase === "play") dropActive();
   });
 
-  // ── Ticker: crane rope update ────────────────────────────────────────────
+  // ── Ticker: crane rope update + dt safety ────────────────────────────────
   app.ticker.add(() => {
-    const bx = activeBlk ? activeBlk.x : undefined;
-    drawCrane(bx);
+    if (activeBlk && !activeBlk.destroyed) {
+      drawCrane(activeBlk.x);
+    } else {
+      drawCrane();
+    }
   });
 
   // ── Layout / resize ────────────────────────────────────────────────────────
   function layout(): void {
     const w = window.innerWidth, h = window.innerHeight;
+    app.renderer.resize(w, h);
     app.canvas.style.width  = w + "px";
     app.canvas.style.height = h + "px";
+    app.stage.hitArea = { x: 0, y: 0, width: w, height: h, contains: () => true } as any;
     drawBg();
-    drawCrane(activeBlk?.x);
+    drawHudBg();
+    drawCrane(activeBlk && !activeBlk.destroyed ? activeBlk.x : undefined);
+    // Re-center towerWorld horizontally; update camera Y
     towerWorld.position.set(w / 2, camTargetY());
   }
 
   // ── Boot sequence ─────────────────────────────────────────────────────────
   buildPrePlaced();
-  drawGround();
-  layout();
+  drawBg();
+  drawHudBg();
   drawMeter(PRE_PLACED);
   towerWorld.position.set(window.innerWidth / 2, camTargetY());
+  drawCrane();
 
   // Auto-start (no menu per spec)
   phase = "play";
