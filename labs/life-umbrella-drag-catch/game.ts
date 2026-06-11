@@ -1,5 +1,5 @@
-// Keep Them Dry — umbrella drag-catch playable (greybox, procedural graphics).
-// PixiJS v8 + GSAP. Portrait 9:16. All visuals: Pixi Graphics only.
+// Keep Them Dry — umbrella drag-catch playable (sprite-integrated + polished).
+// PixiJS v8 + GSAP. Portrait 9:16. Sprites: bg, family, umbrella, tree, sun.
 //
 // Flow: hook (0-3s drop + ghost) → bit1 (normal rain, bounce feedback) →
 //       bit2 (faster drops + leaf/acorn bonus) → bit3 (split clusters + wind) →
@@ -16,7 +16,7 @@
 //  - ghost-finger hint overlaid on first drop
 //  - Idle fallback: auto-demo / nudge → endcard
 
-import { Application, Container, Graphics, Text } from "pixi.js";
+import { Application, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
 import { gsap } from "gsap";
 import type { PlayableConfig } from "../../src/types.js";
 
@@ -49,7 +49,6 @@ const C_TXT   = num(cfg.style.colors.text);         // #1A3D2B dark green
 const C_RAIN  = 0x7ab8d4;
 const C_CLOUD = 0xdce8f0;
 const C_SUN   = 0xffe066;
-const C_GRASS = 0x5a8f3c;
 const FONT    = cfg.style.font.family;
 
 // ── Phase / state ──────────────────────────────────────────────────────────────
@@ -67,12 +66,13 @@ let spawnTimer       = 0;
 let spawnInterval    = 0.7;
 let windX            = 0;
 let windTimer        = 0;
-let shiverTimer      = 0;
 let shiverActive     = false;
-let paperCorner      = 0;      // 0..1
+let shiverTimer      = 0;
+let saveStreak       = 0;
 
 let umbX = 0, umbY = 0;
 let umbTargetX = 0, umbTargetY = 0;
+let umbVX = 0;  // velocity for tilt
 let pointerDown = false;
 let pointerX = 0, pointerY = 0;
 let umbRadius = 0;
@@ -95,12 +95,27 @@ interface Heart {
 const drops:  Drop[]  = [];
 const hearts: Heart[] = [];
 
+// ── Texture cache ──────────────────────────────────────────────────────────────
+const TEX: Record<string, Texture> = {};
+async function preloadTextures(): Promise<void> {
+  await Promise.all(Object.entries(cfg.assets).map(async ([k, uri]) => {
+    if (!/\.(webp|png)$/i.test(k)) return;
+    const img = new Image(); img.src = uri as string;
+    try { await img.decode(); } catch { return; }
+    TEX[k] = Texture.from(img);
+  }));
+}
+function tex(key: string): Texture | null { return TEX[key] ?? null; }
+
 async function main(): Promise<void> {
+  // ── Preload sprites first ──────────────────────────────────────────────────
+  await preloadTextures();
+
   const app = new Application();
   await app.init({
     width: window.innerWidth,
     height: window.innerHeight,
-    background: 0xbcdbef, // sky color, no cream bar
+    background: 0xbcdbef,
     antialias: false,
     preference: "webgl",
     resolution: 1,
@@ -108,7 +123,6 @@ async function main(): Promise<void> {
   });
   app.canvas.style.width  = window.innerWidth  + "px";
   app.canvas.style.height = window.innerHeight + "px";
-  // ensure no white gaps at edges
   app.canvas.style.display = "block";
   document.body.style.margin = "0";
   document.body.style.padding = "0";
@@ -119,22 +133,73 @@ async function main(): Promise<void> {
   app.stage.eventMode = "static";
   app.stage.hitArea   = app.screen;
 
-  // ── Layers ─────────────────────────────────────────────────────────────────
+  // ── Layers: bg → trees → family → hearts → umbrella → rain → HUD ──────────
   const bgLayer      = new Container();
+  const treeLayer    = new Container();
+  const familyLayer  = new Container();
+  const heartLayer   = new Container();
+  const umbLayer     = new Container();
+  const rainLayer    = new Container();   // drops go here
   const cloudLayer   = new Container();
-  const gameLayer    = new Container();
   const fxLayer      = new Container();
   const uiLayer      = new Container();
   const overlayLayer = new Container();
-  app.stage.addChild(bgLayer, cloudLayer, gameLayer, fxLayer, uiLayer, overlayLayer);
-  gameLayer.interactiveChildren = false;
+  app.stage.addChild(bgLayer, treeLayer, familyLayer, heartLayer, umbLayer, rainLayer, cloudLayer, fxLayer, uiLayer, overlayLayer);
+  familyLayer.interactiveChildren = false;
+  umbLayer.interactiveChildren = false;
+  rainLayer.interactiveChildren = false;
 
-  // ── Sky gradient (full viewport top 60%) ──────────────────────────────────
+  // ── Background ─────────────────────────────────────────────────────────────
+  // Sprite if available, else procedural sky+ground
+  const bgSpriteWrap = new Container();
+  bgLayer.addChild(bgSpriteWrap);
+
+  // Procedural fallback elements (hidden when sprite is used)
   const skyGfx    = new Graphics();
   const groundGfx = new Graphics();
   bgLayer.addChild(skyGfx, groundGfx);
 
+  // ── Sun ────────────────────────────────────────────────────────────────────
+  // Sprite if available, else procedural
+  const sunCont   = new Container();
+  const sunWrap   = new Container();
+  sunCont.addChild(sunWrap);
+  sunCont.alpha = 0;
+  bgLayer.addChild(sunCont);
+
+  const tSun = tex("sun.webp");
+  if (tSun) {
+    const sunSpr = new Sprite(tSun);
+    sunSpr.anchor.set(0.5);
+    sunWrap.addChild(sunSpr);
+    // size set in layout
+  } else {
+    const sunGfx  = new Graphics();
+    sunGfx.circle(0, 0, 50).fill({ color: C_SUN });
+    for (let i = 0; i < 8; i++) {
+      const ang  = (i / 8) * Math.PI * 2;
+      const rWrap = new Container();
+      const ray   = new Graphics().rect(-4, 56, 8, 20).fill({ color: C_SUN, alpha: 0.75 });
+      rWrap.addChild(ray);
+      rWrap.rotation = ang;
+      sunWrap.addChild(rWrap);
+    }
+    sunWrap.addChild(sunGfx);
+  }
+
+  // Rotating ray container (separate from sunWrap so we can rotate rays independently)
+  const sunRaysCont = new Container();
+  sunCont.addChild(sunRaysCont);
+  if (tSun) {
+    // No separate rays needed — sprite has them baked in, we rotate entire sunWrap
+  } else {
+    // Rays are inside sunWrap for procedural
+  }
+
   // ── Clouds ─────────────────────────────────────────────────────────────────
+  // Only show procedural clouds when bg sprite is not available (fallback).
+  // bg.webp already has painted clouds — adding more causes ugly double-cloud overlap.
+  const hasBgSprite = !!tex("bg.webp");
   function makeCloud(scale: number): Container {
     const c = new Container();
     const g = new Graphics();
@@ -151,124 +216,127 @@ async function main(): Promise<void> {
   const cloud1 = makeCloud(1.2);
   const cloud2 = makeCloud(0.9);
   const cloud3 = makeCloud(1.05);
+  // Hide procedural clouds when bg sprite is used (bg.webp already has clouds)
+  cloud1.alpha = hasBgSprite ? 0 : 1;
+  cloud2.alpha = hasBgSprite ? 0 : 1;
+  cloud3.alpha = hasBgSprite ? 0 : 1;
   cloudLayer.addChild(cloud1, cloud2, cloud3);
 
-  // ── Sun (reveal) ───────────────────────────────────────────────────────────
-  const sunCont = new Container();
-  const sunGfx  = new Graphics();
-  sunGfx.circle(0, 0, 50).fill({ color: C_SUN });
-  for (let i = 0; i < 8; i++) {
-    const ang  = (i / 8) * Math.PI * 2;
-    const rWrap = new Container();
-    const ray   = new Graphics().rect(-4, 56, 8, 20).fill({ color: C_SUN, alpha: 0.75 });
-    rWrap.addChild(ray);
-    rWrap.rotation = ang;
-    sunCont.addChild(rWrap);
+  // ── Trees ──────────────────────────────────────────────────────────────────
+  const tTree = tex("tree.webp");
+  // Two tree sprite instances (left + right), or procedural Graphics fallback
+  const treesGfxFallback = new Graphics();
+  treeLayer.addChild(treesGfxFallback);
+
+  let treeL: Container | null = null;
+  let treeR: Container | null = null;
+
+  if (tTree) {
+    const mkTree = (scale: number) => {
+      const w = new Container();
+      const spr = new Sprite(tTree);
+      spr.anchor.set(0.5, 1);  // bottom-center anchor (tree stands on ground)
+      spr.scale.set(scale / tTree.width);
+      w.addChild(spr);
+      return w;
+    };
+    treeL = mkTree(110);
+    treeR = mkTree(95);
+    treeLayer.addChild(treeL, treeR);
   }
-  sunCont.addChild(sunGfx);
-  sunCont.alpha = 0;
-  bgLayer.addChild(sunCont);
 
-  // ── Trees (background, decorative) ────────────────────────────────────────
-  const treesGfx = new Graphics();
-  bgLayer.addChild(treesGfx);
-
-  function drawTrees(ww: number, groundY: number): void {
-    treesGfx.clear();
+  // Procedural fallback tree draw
+  function drawTreesFallback(ww: number, groundY: number): void {
+    if (tTree) { treesGfxFallback.clear(); return; }
+    treesGfxFallback.clear();
     const positions = [0.06, 0.14, 0.80, 0.88, 0.94];
     const heights   = [0.12, 0.09, 0.10, 0.08, 0.11];
     for (let i = 0; i < positions.length; i++) {
       const tx = ww * positions[i];
       const th = ww * heights[i];
       const ty = groundY;
-      treesGfx.rect(tx - 4, ty - th * 0.5, 8, th * 0.55).fill({ color: num("#6b4c2a") });
-      treesGfx.poly([tx - th * 0.38, ty - th * 0.55,
+      treesGfxFallback.rect(tx - 4, ty - th * 0.5, 8, th * 0.55).fill({ color: num("#6b4c2a") });
+      treesGfxFallback.poly([tx - th * 0.38, ty - th * 0.55,
                      tx,             ty - th * 1.1,
                      tx + th * 0.38, ty - th * 0.55]).fill({ color: num("#3d7235") });
-      treesGfx.poly([tx - th * 0.3, ty - th * 0.78,
+      treesGfxFallback.poly([tx - th * 0.3, ty - th * 0.78,
                      tx,            ty - th * 1.28,
                      tx + th * 0.3, ty - th * 0.78]).fill({ color: num("#2e6b4f") });
     }
   }
 
-  // ── Picnic paper indicator (small corner darkener, NOT the big card) ───────
-  const paperGfx = new Graphics();
-  gameLayer.addChild(paperGfx);
-
-  // ── Family silhouette — 3 figures standing on grass ───────────────────────
-  // Parent L (64px tall), Parent R (60px tall), Child center (40px)
+  // ── Family ─────────────────────────────────────────────────────────────────
   const familyCont = new Container();
-  const familyGfx  = new Graphics();
-  const familyWrap = new Container();
-  familyWrap.addChild(familyGfx);
+  const familyWrap = new Container();  // squash/tilt wrapper
   familyCont.addChild(familyWrap);
-  gameLayer.addChild(familyCont);
+  familyLayer.addChild(familyCont);
+
+  const tFamily = tex("family.webp");
+  let familySprite: Sprite | null = null;
+  const familyGfx  = new Graphics();  // procedural fallback
+
+  if (tFamily) {
+    familySprite = new Sprite(tFamily);
+    familySprite.anchor.set(0.5, 1);  // bottom-center: feet at origin
+    familyWrap.addChild(familySprite);
+  } else {
+    familyWrap.addChild(familyGfx);
+  }
 
   function drawFamilyShape(ww: number): void {
+    if (tFamily && familySprite) {
+      // Scale so total width = ~240px (or 34% of ww, whichever is smaller)
+      const targetW = Math.min(240, ww * 0.34);
+      familySprite.scale.set(targetW / tFamily.width);
+      return;
+    }
     familyGfx.clear();
-    // Parent Left — warm terracotta, 64px body total
-    const pLH = 64;
-    const pLHd = pLH * 0.22;  // head radius
-    // Parent Right — slightly shorter warm brown, 60px
-    const pRH = 60;
-    const pRHd = pRH * 0.22;
-    // Child — warm gold/amber, 40px
-    const cH = 40;
-    const cHd = cH * 0.24;
-
-    // spacing between figures
+    const pLH = 64, pLHd = pLH * 0.22;
+    const pRH = 60, pRHd = pRH * 0.22;
+    const cH  = 40, cHd  = cH  * 0.24;
     const spacing = ww * 0.09;
-
-    // Parent Left (x = -spacing)
     const plx = -spacing;
-    familyGfx.circle(plx, -pLH + pLHd, pLHd).fill({ color: num("#d4845a") }); // warm skin
+    familyGfx.circle(plx, -pLH + pLHd, pLHd).fill({ color: num("#d4845a") });
     familyGfx.roundRect(plx - pLHd * 1.4, -pLH + pLHd * 2, pLHd * 2.8, pLH - pLHd * 2, pLHd * 0.5).fill({ color: num("#c06a38") });
-
-    // Parent Right (x = +spacing)
     const prx = spacing;
     familyGfx.circle(prx, -pRH + pRHd, pRHd).fill({ color: num("#b87050") });
     familyGfx.roundRect(prx - pRHd * 1.4, -pRH + pRHd * 2, pRHd * 2.8, pRH - pRHd * 2, pRHd * 0.5).fill({ color: num("#8b4c28") });
-
-    // Child center (x = 0)
     familyGfx.circle(0, -cH + cHd, cHd).fill({ color: num("#f0c080") });
     familyGfx.roundRect(-cHd * 1.3, -cH + cHd * 2, cHd * 2.6, cH - cHd * 2, cHd * 0.5).fill({ color: C_ACC });
-
-    // Ground shadow
     familyGfx.ellipse(0, 0, spacing * 1.8, 5).fill({ color: 0x000000, alpha: 0.12 });
-  }
-
-  // Picnic paper corner indicator — small postcard-size element below family, visible only on miss
-  function drawPaperCorner(cx: number, cy: number, pw: number): void {
-    paperGfx.clear();
-    if (paperCorner < 0.02) return;
-    // Small picnic paper in corner
-    const ph = pw * 0.55;
-    const px = cx + pw * 0.28;
-    const py = cy - ph * 0.5;
-    paperGfx.roundRect(px, py, pw * 0.28, ph, 4).fill({ color: num("#fff0d0"), alpha: 0.9 });
-    if (paperCorner > 0.05) {
-      // darkened corner
-      const cs = pw * 0.1 * paperCorner;
-      paperGfx.poly([
-        px + pw * 0.28 - cs, py,
-        px + pw * 0.28,      py,
-        px + pw * 0.28,      py + cs,
-      ]).fill({ color: num("#7a5010"), alpha: 0.6 * paperCorner });
-    }
-    paperGfx.roundRect(px, py, pw * 0.28, ph, 4).stroke({ width: 1.5, color: C_PRI, alpha: 0.15 });
   }
 
   // ── Umbrella ───────────────────────────────────────────────────────────────
   const umbrellaCont = new Container();
-  const umbrellaWrap = new Container();  // pivot wrapper (squash/stretch here)
-  const umbrellaGfx  = new Graphics();
-  umbrellaWrap.addChild(umbrellaGfx);
+  const umbrellaWrap = new Container();  // squash/stretch here; pivot at canopy center
   umbrellaCont.addChild(umbrellaWrap);
-  gameLayer.addChild(umbrellaCont);
+  umbLayer.addChild(umbrellaCont);
+
+  const tUmb = tex("umbrella.webp");
+  let umbSprite: Sprite | null = null;
+  const umbrellaGfx  = new Graphics();
+
+  if (tUmb) {
+    umbSprite = new Sprite(tUmb);
+    // umbrella.webp: canopy dome is at approximately top 40% of image.
+    // We want anchor so that CANOPY CENTER is the reference point (shield point).
+    // Image is roughly square; canopy center is ~y=28% from top.
+    umbSprite.anchor.set(0.5, 0.28);
+    umbrellaWrap.addChild(umbSprite);
+  } else {
+    umbrellaWrap.addChild(umbrellaGfx);
+  }
 
   function drawUmbrella(r: number): void {
+    if (tUmb && umbSprite) {
+      // Scale so canopy radius ≈ r.
+      // Sprite width ≈ full umbrella span. Canopy is ~85% of sprite width on each side.
+      // So targetW for canopy diameter = 2*r, sprite width = 2*r / 0.85
+      const targetW = (2 * r) / 0.85;
+      umbSprite.scale.set(targetW / tUmb.width);
+      return;
+    }
     umbrellaGfx.clear();
-    // Green canopy — half-ellipse dome, alternating panel shades
     const panels = 6;
     for (let i = 0; i < panels; i++) {
       const a0 = Math.PI + (i / panels) * Math.PI;
@@ -281,26 +349,21 @@ async function main(): Promise<void> {
       const shade = i % 2 === 0 ? C_PRI : num("#3a7f60");
       umbrellaGfx.poly(pts).fill({ color: shade });
     }
-    // Canopy outline ribs
     for (let i = 0; i <= panels; i++) {
       const a = Math.PI + (i / panels) * Math.PI;
       umbrellaGfx.moveTo(0, 0).lineTo(r * Math.cos(a), r * Math.sin(a) * 0.5)
         .stroke({ width: 1.5, color: 0xffffff, alpha: 0.25 });
     }
-    // Canopy border
     const dpts: number[] = [];
     for (let i = 0; i <= 24; i++) {
       const a = Math.PI + (i / 24) * Math.PI;
       dpts.push(r * Math.cos(a), r * Math.sin(a) * 0.5);
     }
     umbrellaGfx.poly(dpts).stroke({ width: 2, color: 0xffffff, alpha: 0.4 });
-    // Straight handle going down from center
     const handleLen = r * 0.6;
     umbrellaGfx.rect(-3.5, 0, 7, handleLen).fill({ color: num("#6b4c2a") });
-    // Hook at bottom of handle
     umbrellaGfx.arc(-3.5, handleLen, 7, Math.PI * 0.5, Math.PI * 1.5)
       .stroke({ width: 4, color: num("#5a3a1a") });
-    // Tip at top
     umbrellaGfx.circle(0, 0, 5).fill({ color: C_ACC });
   }
 
@@ -317,7 +380,6 @@ async function main(): Promise<void> {
     meterFill.clear();
     const fw = Math.max(8, mw * (protection / 100));
     meterFill.roundRect(mx, my, fw, mh, 7).fill({ color: C_PRI });
-    // bright overlay to show fill clearly
     if (fw > 12) {
       meterFill.roundRect(mx + 3, my + 3, Math.max(0, fw - 6), 4, 2).fill({ color: 0xffffff, alpha: 0.2 });
     }
@@ -372,7 +434,7 @@ async function main(): Promise<void> {
   ctaBtn.on("pointertap", () => window.FbPlayableAd.onCTAClick());
   overlayLayer.addChild(ctaBtn);
 
-  // ── Layout function ─────────────────────────────────────────────────────────
+  // ── Layout ─────────────────────────────────────────────────────────────────
   function layout(): void {
     const ww = window.innerWidth;
     const hh = window.innerHeight;
@@ -380,83 +442,95 @@ async function main(): Promise<void> {
     app.canvas.style.width  = ww + "px";
     app.canvas.style.height = hh + "px";
 
-    // Sky occupies top 75% (light blue → grey-blue gradient)
-    // Ground/grass strip at ~75% height
-    const grassY = hh * 0.75;
-
-    // Sky: full gradient fill (two layers for gradient approximation)
-    skyGfx.clear()
-      .rect(0, 0, ww, grassY).fill({ color: 0xbcdbef })            // light blue
-      .rect(0, grassY * 0.5, ww, grassY * 0.5).fill({ color: 0xa8c8e0, alpha: 0.45 }) // grey-blue lower
-      ;
-
-    // Ground fill (below grass strip)
-    groundGfx.clear()
-      // soil/earth
-      .rect(0, grassY + hh * 0.038, ww, hh - grassY - hh * 0.038).fill({ color: num("#8b6914"), alpha: 0.6 })
-      // grass strip
-      .rect(0, grassY, ww, hh * 0.038).fill({ color: C_GRASS })
-      // grass top edge (darker blade)
-      .rect(0, grassY, ww, hh * 0.012).fill({ color: num("#4a7226") })
-      // flower spots
-    ;
-    // Flower spots decorative
-    const flowerSpots = [[0.12, 0.755], [0.20, 0.765], [0.74, 0.755], [0.84, 0.762]];
-    for (const [fx2, fy2] of flowerSpots) {
-      groundGfx.circle(ww * fx2, hh * fy2, 5).fill({ color: C_ACC, alpha: 0.8 });
-      groundGfx.circle(ww * fx2, hh * fy2, 2.5).fill({ color: 0xffffff, alpha: 0.7 });
+    // bg.webp: meadow/sky, horizon at ~55% from top.
+    // We want the grass line to sit at grassY = hh*0.75.
+    // cover-fit the canvas; center it.
+    const tBg = tex("bg.webp");
+    bgSpriteWrap.removeChildren();
+    if (tBg) {
+      skyGfx.clear();
+      groundGfx.clear();
+      const bgSpr = new Sprite(tBg);
+      bgSpr.anchor.set(0.5, 0);
+      const scaleX = ww / tBg.width;
+      const scaleY = hh / tBg.height;
+      const bgScale = Math.max(scaleX, scaleY);
+      bgSpr.scale.set(bgScale);
+      bgSpr.position.set(ww / 2, 0);
+      bgSpriteWrap.addChild(bgSpr);
+    } else {
+      const grassY = hh * 0.75;
+      skyGfx.clear()
+        .rect(0, 0, ww, grassY).fill({ color: 0xbcdbef })
+        .rect(0, grassY * 0.5, ww, grassY * 0.5).fill({ color: 0xa8c8e0, alpha: 0.45 });
+      groundGfx.clear()
+        .rect(0, grassY + hh * 0.038, ww, hh - grassY - hh * 0.038).fill({ color: num("#8b6914"), alpha: 0.6 })
+        .rect(0, grassY, ww, hh * 0.038).fill({ color: 0x5a8f3c })
+        .rect(0, grassY, ww, hh * 0.012).fill({ color: num("#4a7226") });
     }
 
-    // Decorative trees left/right (slim, outside family zone)
-    drawTrees(ww, grassY);
+    // Ground Y: family feet should sit on the meadow — bg grass is ~75% down
+    const grassY = hh * 0.75;
 
-    // Sun
+    // ── Trees ────────────────────────────────────────────────────────────────
+    drawTreesFallback(ww, grassY);
+
+    if (tTree && treeL && treeR) {
+      // Left tree: ~110px target width at 1x, slightly larger scale
+      const targetWL = Math.min(130, ww * 0.19);
+      const sL = treeL.children[0] as Sprite;
+      sL.scale.set(targetWL / tTree.width);
+      treeL.position.set(ww * 0.10, grassY);
+
+      // Right tree: ~95px, smaller
+      const targetWR = Math.min(110, ww * 0.16);
+      const sR = treeR.children[0] as Sprite;
+      sR.scale.set(targetWR / tTree.width);
+      treeR.position.set(ww * 0.88, grassY);
+    }
+
+    // ── Sun ──────────────────────────────────────────────────────────────────
+    const sunTargetW = Math.min(100, ww * 0.22);
     sunCont.position.set(ww * 0.72, hh * 0.09);
+    if (tSun) {
+      const sunSpr2 = sunWrap.children[0] as Sprite;
+      sunSpr2.scale.set(sunTargetW / tSun.width);
+    } else {
+      // procedural sun scale is embedded in Graphics size
+    }
 
-    // Clouds in upper 30% of sky
+    // ── Clouds ───────────────────────────────────────────────────────────────
     cloud1.position.set(ww * 0.12, hh * 0.10);
     cloud2.position.set(ww * 0.58, hh * 0.07);
     cloud3.position.set(ww * 0.34, hh * 0.16);
 
-    // Family stands ON the grass: feet at grassY, figures at 65-72% height
-    // Family positioned at grassY so their feet touch the green strip
-    const famUnit = ww * 0.045;
+    // ── Family ───────────────────────────────────────────────────────────────
     drawFamilyShape(ww);
-    familyCont.position.set(ww / 2, grassY);  // family origin at grass level (feet)
+    familyCont.position.set(ww / 2, grassY);
 
-    // Paper corner indicator near family (small, only visible on miss)
-    drawPaperCorner(ww / 2, grassY, ww * 0.36);
-
-    // Umbrella: green canopy half-ellipse ~120px wide (radius 60px at min width)
-    umbRadius = Math.max(60, ww * 0.17);
+    // ── Umbrella ─────────────────────────────────────────────────────────────
+    // umbRadius = ~46% of sprite width (canopy collision). Keep modest — ~14% ww.
+    umbRadius = Math.max(42, ww * 0.14);
     drawUmbrella(umbRadius);
 
-    // Initial umbrella position: canopy at pointer.y - UMB_OFFSET_Y (above family)
     if (!pointerDown) {
       umbTargetX = ww / 2;
-      umbTargetY = grassY - hh * 0.28;  // well above family heads
+      umbTargetY = grassY - hh * 0.28;
     }
     umbX = umbTargetX;
     umbY = umbTargetY;
     umbrellaCont.position.set(umbX, umbY);
 
-    // UI: top HUD strip
-    // Meter label above meter
+    // ── HUD ──────────────────────────────────────────────────────────────────
     const meterY = hh * 0.05;
     meterLabel.position.set(ww / 2, meterY - 4);
     drawMeter(ww, hh);
-
-    // Instruction below meter
     instructionTxt.style.wordWrapWidth = ww * 0.76;
     instructionTxt.position.set(ww / 2, meterY + 18);
-
-    // Nudge text in middle area (above family heads)
     nudgeTxt.position.set(ww / 2, grassY - hh * 0.28);
-
-    // Ghost hint start pos
     ghostCont.position.set(ww * 0.35, grassY - hh * 0.12);
 
-    // CTA button bottom thumb zone
+    // ── CTA ───────────────────────────────────────────────────────────────────
     const bw = Math.min(ww * 0.76, 280);
     const bh = 56;
     const bx = (ww - bw) / 2;
@@ -464,16 +538,12 @@ async function main(): Promise<void> {
     ctaBg.clear().roundRect(bx, by, bw, bh, 28).fill({ color: C_ACC });
     ctaTxt.position.set(ww / 2, by + bh / 2);
 
-    void famUnit;
-
-    // Endcard panel
     buildEndcard(ww, hh);
   }
 
   // ── Endcard builder ────────────────────────────────────────────────────────
   function buildEndcard(ww: number, hh: number): void {
     endcardCont.removeChildren();
-    // Scrim
     endcardCont.addChild(new Graphics().rect(0, 0, ww, hh).fill({ color: 0x000000, alpha: 0.5 }));
 
     const pw = Math.min(ww * 0.88, 360);
@@ -488,7 +558,6 @@ async function main(): Promise<void> {
         .stroke({ width: 4, color: C_PRI }),
     );
 
-    // Brand name
     const brandTxt = new Text({
       text: "Evergreen Life",
       style: { fill: C_PRI, fontFamily: FONT, fontWeight: "bold", fontSize: 26, align: "center" },
@@ -497,7 +566,6 @@ async function main(): Promise<void> {
     brandTxt.position.set(ww / 2, py + 20);
     endcardCont.addChild(brandTxt);
 
-    // Brand tree/umbrella icon
     const iconG = new Graphics();
     const ix = ww / 2, iy = py + 80;
     iconG.poly([ix - 30, iy, ix, iy - 40, ix + 30, iy]).fill({ color: C_PRI });
@@ -509,7 +577,6 @@ async function main(): Promise<void> {
     iconG.roundRect(ix + 10, iy + 34, 10, 18, 2).fill({ color: C_PRI });
     endcardCont.addChild(iconG);
 
-    // "Protected" badge
     const badgeG = new Graphics()
       .roundRect(ww / 2 - 68, py + 136, 136, 28, 10)
       .fill({ color: C_PRI });
@@ -522,7 +589,6 @@ async function main(): Promise<void> {
     badgeTxt.position.set(ww / 2, py + 150);
     endcardCont.addChild(badgeTxt);
 
-    // Endcard line
     const lineTxt = new Text({
       text: "They stayed dry. Find a life plan\nthat fits — free plan match,\nno obligation.",
       style: {
@@ -539,7 +605,6 @@ async function main(): Promise<void> {
     lineTxt.position.set(ww / 2, py + 176);
     endcardCont.addChild(lineTxt);
 
-    // Disclaimer
     const discTxt = new Text({
       text: "Coverage varies by state. Licensed agents in [State]. No obligation.",
       style: {
@@ -557,7 +622,6 @@ async function main(): Promise<void> {
   }
 
   // ── Drop factory ────────────────────────────────────────────────────────────
-  // Rain drops: 3px × 12px rounded rects, alpha 0.7 per spec
   function spawnDrop(ww: number, hh: number, type: "rain" | "leaf" | "acorn" = "rain", fromX?: number): void {
     const spd = phase === "bit3" ? DROP_SPEED_BIT3
               : phase === "bit2" ? DROP_SPEED_BIT2
@@ -567,7 +631,6 @@ async function main(): Promise<void> {
     const cont = new Container();
     const gfx  = new Graphics();
     if (type === "rain") {
-      // Spec: 3px wide × 12px tall rounded rect, alpha 0.7
       gfx.roundRect(-1.5, 0, 3, 12, 1.5).fill({ color: C_RAIN, alpha: 0.7 });
     } else if (type === "leaf") {
       gfx.poly([0, -9, 7, 0, 0, 9, -7, 0]).fill({ color: num("#5a9a3c"), alpha: 0.92 });
@@ -580,19 +643,46 @@ async function main(): Promise<void> {
     const sx = fromX !== undefined ? fromX : ww * (0.08 + Math.random() * 0.84);
     const windVX = phase === "bit3" ? (Math.random() - 0.5) * ww * 0.14 : 0;
     cont.position.set(sx, -18);
-    gameLayer.addChild(cont);
+    rainLayer.addChild(cont);
 
     const r = type === "rain" ? 3 : type === "leaf" ? 8 : 7;
     drops.push({ cont, x: sx, y: -18, vx: windVX, vy: baseVY, r, alive: true, type, bounced: false, bounceTimer: 0 });
+  }
+
+  // ── Splash particles on canopy hit ─────────────────────────────────────────
+  function spawnSplash(x: number, y: number): void {
+    for (let i = 0; i < 5; i++) {
+      const p = new Container();
+      const pg = new Graphics().circle(0, 0, 3).fill({ color: 0xffffff, alpha: 0.85 });
+      p.addChild(pg);
+      p.position.set(x, y);
+      fxLayer.addChild(p);
+      const angle = Math.PI + (Math.random() - 0.5) * Math.PI;
+      const speed = 30 + Math.random() * 40;
+      const pvx = Math.cos(angle) * speed;
+      const pvy = Math.sin(angle) * speed;
+      gsap.to(p, {
+        x: p.x + pvx * 0.5,
+        y: p.y + pvy * 0.5 - 18,
+        alpha: 0,
+        duration: 0.35 + Math.random() * 0.2,
+        ease: "power2.out",
+        onComplete: () => { if (p.parent) fxLayer.removeChild(p); p.destroy(); },
+      });
+    }
   }
 
   // ── Bounce effect ──────────────────────────────────────────────────────────
   function doBounce(drop: Drop, ww: number, hh: number): void {
     drop.bounced = true;
     drop.bounceTimer = 0.38;
-    // Squash/stretch the umbrella wrapper
-    gsap.to(umbrellaWrap.scale, { x: 1.09, y: 0.92, duration: 0.07, yoyo: true, repeat: 1, ease: "power2.out" });
-    // Ripple at bounce point
+    saveStreak++;
+    // Canopy micro squash
+    gsap.killTweensOf(umbrellaWrap.scale);
+    gsap.to(umbrellaWrap.scale, { x: 1.09, y: 0.91, duration: 0.07, yoyo: true, repeat: 1, ease: "power2.out" });
+    // Splash particles
+    spawnSplash(drop.x, umbrellaCont.y);
+    // Ripple
     const rip = new Graphics()
       .circle(0, 0, umbRadius * 0.38)
       .stroke({ width: 3, color: 0xffffff, alpha: 0.65 });
@@ -603,32 +693,33 @@ async function main(): Promise<void> {
       onComplete: () => { if (rip.parent) fxLayer.removeChild(rip); rip.destroy(); } });
     if (!meterPaused) protection = Math.min(100, protection + 1.8);
     drawMeter(ww, hh);
-    // Spawn heart to show the family is protected
+    // Hearts float up from family on save streak
+    if (saveStreak % 3 === 0) {
+      spawnHeart(drop.x, umbrellaCont.y - 10);
+    }
     spawnHeart(drop.x, umbrellaCont.y - 10);
   }
 
   // ── Miss effect ────────────────────────────────────────────────────────────
   function doMiss(ww: number, hh: number): void {
+    saveStreak = 0;
     meterPaused   = true;
     meterPauseTimer = 2.2;
     protection = Math.max(20, protection - 7);
     drawMeter(ww, hh);
-    // Paper corner darkens (small picnic paper in corner)
-    paperCorner = Math.min(1, paperCorner + 0.45);
-    const grassY = hh * 0.75;
-    drawPaperCorner(ww / 2, grassY, ww * 0.36);
-    gsap.to({ v: paperCorner }, {
-      v: 0, duration: 1.9,
-      onUpdate: function() {
-        paperCorner = (this.targets() as Array<{v: number}>)[0].v;
-        drawPaperCorner(ww / 2, hh * 0.75, ww * 0.36);
-      },
+    // Screen shake
+    const stageOrig = { x: app.stage.x, y: app.stage.y };
+    gsap.to(app.stage, {
+      x: stageOrig.x + 6, y: stageOrig.y - 4,
+      duration: 0.05, yoyo: true, repeat: 5, ease: "none",
+      onComplete: () => { app.stage.x = stageOrig.x; app.stage.y = stageOrig.y; },
     });
     // Family shiver
     shiverActive = true;
     shiverTimer  = 0.5;
-    // Sad tilt on wrapper
-    gsap.to(familyWrap, { rotation: 0.07, duration: 0.15, yoyo: true, repeat: 3, ease: "sine.inOut" });
+    gsap.killTweensOf(familyWrap);
+    gsap.to(familyWrap, { rotation: 0.07, duration: 0.15, yoyo: true, repeat: 3, ease: "sine.inOut",
+      onComplete: () => { familyWrap.rotation = 0; } });
     // Nudge
     nudgeTxt.alpha = 0;
     gsap.to(nudgeTxt, { alpha: 1, duration: 0.2 });
@@ -644,7 +735,6 @@ async function main(): Promise<void> {
     drop.vy = drop.type === "leaf"
       ? -window.innerHeight * 0.22
       : -window.innerHeight * 0.32;
-    // Gold sparkle
     const sp = new Container();
     const sg = new Graphics().star(0, 0, 5, 11, 5).fill({ color: C_ACC });
     sp.addChild(sg);
@@ -662,8 +752,9 @@ async function main(): Promise<void> {
     g.circle( 6, -6, 6).fill({ color: C_ACC });
     g.poly([-12, -4, 12, -4, 0, 10]).fill({ color: C_ACC });
     cont.addChild(g);
-    cont.position.set(x, y);
-    fxLayer.addChild(cont);
+    cont.position.set(x + (Math.random() - 0.5) * 30, y);
+    // Hearts go into heartLayer (between family and umbrella)
+    heartLayer.addChild(cont);
     cont.scale.set(0.4);
     gsap.to(cont.scale, { x: 1.3, y: 1.3, duration: 0.18, ease: "back.out(2.5)" });
     gsap.to(cont.scale, { x: 1.0, y: 1.0, duration: 0.18, delay: 0.18, ease: "back.out(1.6)" });
@@ -725,26 +816,53 @@ async function main(): Promise<void> {
   function enterReveal(): void {
     if (phase === "reveal" || phase === "end") return;
     phase = "reveal";
-    // Clear drops defensively
     for (const d of drops) {
       if (d.alive) {
         d.alive = false;
         gsap.killTweensOf(d.cont);
-        if (d.cont.parent) gameLayer.removeChild(d.cont);
+        if (d.cont.parent) rainLayer.removeChild(d.cont);
         d.cont.destroy();
       }
     }
     drops.length = 0;
-    // Clouds part
-    gsap.to(cloud1.position, { x: -w() * 0.6, duration: 1.3, ease: "power2.in" });
-    gsap.to(cloud2.position, { x: w() * 1.5,  duration: 1.1, ease: "power2.in" });
-    gsap.to(cloud3.position, { y: -h() * 0.2, duration: 0.9, ease: "power2.in" });
-    // Sun rises
+    // Clouds part and fade out (procedural clouds only; bg-sprite has painted clouds)
+    if (!hasBgSprite) {
+      gsap.to(cloud1.position, { x: -w() * 0.6, duration: 1.3, ease: "power2.in" });
+      gsap.to(cloud1, { alpha: 0, duration: 1.0, delay: 0.4, ease: "power1.in" });
+      gsap.to(cloud2.position, { x: w() * 1.5,  duration: 1.1, ease: "power2.in" });
+      gsap.to(cloud2, { alpha: 0, duration: 1.0, delay: 0.3, ease: "power1.in" });
+      gsap.to(cloud3.position, { y: -h() * 0.2, duration: 0.9, ease: "power2.in" });
+      gsap.to(cloud3, { alpha: 0, duration: 0.8, delay: 0.2, ease: "power1.in" });
+    }
+    // When bg sprite is active, fade the bg slightly brighter to simulate clouds parting
+    if (hasBgSprite && bgSpriteWrap.children.length > 0) {
+      gsap.to(bgSpriteWrap, { alpha: 0.7, duration: 1.2, delay: 0.3, ease: "power1.out" });
+    }
+    // Sun rises (starts below, moves up)
+    sunCont.position.set(w() * 0.72, h() * 0.22);
     gsap.to(sunCont, { alpha: 1, duration: 1.3, delay: 0.5, ease: "power1.out" });
+    gsap.to(sunCont.position, { y: h() * 0.09, duration: 1.5, delay: 0.5, ease: "power2.out" });
+    // Sun rays rotate continuously
+    gsap.to(sunWrap, { rotation: Math.PI * 2, duration: 8, repeat: -1, ease: "none" });
+    // Sun scale pulse
     gsap.to(sunCont.scale, { x: 1.12, y: 1.12, duration: 2.0, delay: 0.5, ease: "sine.inOut", yoyo: true, repeat: -1 });
+    // Warm tint wash — orange-ish tint on stage
+    const warmOverlay = new Graphics().rect(0, 0, w(), h()).fill({ color: 0xffd080, alpha: 0 });
+    fxLayer.addChild(warmOverlay);
+    gsap.to(warmOverlay, { alpha: 0.15, duration: 1.5, delay: 0.8, ease: "power1.out" });
+    // Family hop (y bounce twice)
+    const origFamY = familyCont.y;
+    gsap.to(familyCont, {
+      y: origFamY - 18,
+      duration: 0.22,
+      delay: 1.0,
+      ease: "power2.out",
+      yoyo: true,
+      repeat: 3,
+      onComplete: () => { familyCont.y = origFamY; },
+    });
     // Umbrella fades
     gsap.to(umbrellaCont, { alpha: 0, duration: 0.8, delay: 0.3 });
-    // Hide UI
     gsap.to(instructionTxt, { alpha: 0, duration: 0.3 });
     gsap.delayedCall(REVEAL_HOLD_MS / 1000, showEndcard);
   }
@@ -755,32 +873,41 @@ async function main(): Promise<void> {
     buildEndcard(window.innerWidth, window.innerHeight);
     gsap.to(endcardCont, { alpha: 1, duration: 0.45, ease: "power1.out" });
     gsap.to(ctaBtn,      { alpha: 1, duration: 0.45, delay: 0.25, ease: "power1.out" });
-    // CTA bob
     gsap.to(ctaBtn, { y: -6, duration: 0.7, yoyo: true, repeat: -1, ease: "sine.inOut" });
   }
 
   function w(): number { return window.innerWidth; }
   function h(): number { return window.innerHeight; }
 
+  // ── Ambient animations (start) ─────────────────────────────────────────────
+  // Tree gentle sway
+  if (treeL) gsap.to(treeL, { rotation: 0.03, duration: 2.2, yoyo: true, repeat: -1, ease: "sine.inOut" });
+  if (treeR) gsap.to(treeR, { rotation: -0.025, duration: 2.6, yoyo: true, repeat: -1, ease: "sine.inOut" });
+  // Clouds drift slowly — only when procedural clouds are visible
+  if (!hasBgSprite) {
+    gsap.to(cloud1, { x: "+=18", duration: 7, yoyo: true, repeat: -1, ease: "sine.inOut" });
+    gsap.to(cloud2, { x: "-=14", duration: 9, yoyo: true, repeat: -1, ease: "sine.inOut" });
+    gsap.to(cloud3, { x: "+=10", duration: 11, yoyo: true, repeat: -1, ease: "sine.inOut" });
+  }
+
   // ── Main ticker ─────────────────────────────────────────────────────────────
   layout();
   window.addEventListener("resize", layout);
 
-  // Start ghost demo immediately for first-time users
   gsap.delayedCall(0.4, () => {
     if (!hasInteracted) {
       startGhostDemo(window.innerWidth, window.innerHeight);
     }
   });
 
-  // Spawn first rain drops IMMEDIATELY (t=0) so rain is visible from start
-  // This ensures rain is visible at t0/t1 per spec
+  // Initial drops
   spawnDrop(window.innerWidth, window.innerHeight, "rain", window.innerWidth * 0.3);
   spawnDrop(window.innerWidth, window.innerHeight, "rain", window.innerWidth * 0.6);
   spawnDrop(window.innerWidth, window.innerHeight, "rain", window.innerWidth * 0.5);
+  spawnTimer = spawnInterval * 0.5;
 
-  // Continue spawning during hook phase too
-  spawnTimer = spawnInterval * 0.5; // start half-way through first interval
+  // Prev umbrella X for velocity tracking
+  let prevUmbX = umbX;
 
   app.ticker.add((ticker) => {
     const dt = Math.min(0.05, ticker.deltaMS / 1000);
@@ -801,7 +928,7 @@ async function main(): Promise<void> {
         idleTimer = 0;
         idleCount++;
         if (!hasInteracted && idleCount < AUTO_DEMO_AFTER) {
-          // just a tick
+          // just tick
         } else {
           enterReveal();
         }
@@ -815,14 +942,26 @@ async function main(): Promise<void> {
     if (phase === "bit3"  && phaseTimer >  4.5) { enterReveal(); }
     if (gameTime > GAMEPLAY_MS / 1000 && phase !== "reveal" && phase !== "end") { enterReveal(); }
 
-    // ── Umbrella lerp ────────────────────────────────────────────────────────
+    // ── Umbrella lerp + tilt toward drag direction ───────────────────────────
     const ls = Math.min(1, 18 * dt);
+    const prevX = umbX;
     umbX += (umbTargetX - umbX) * ls;
     umbY += (umbTargetY - umbY) * ls;
-    // Clamp umbrella: never below family heads (top of tallest parent is ~64px above grass)
     const minUmbY = grassY - 70;
     if (umbY > minUmbY) umbY = minUmbY;
     umbrellaCont.position.set(umbX, umbY);
+
+    // Track velocity for tilt
+    umbVX = (umbX - prevX) / Math.max(dt, 0.001);
+    prevUmbX = prevX;
+    void prevUmbX;
+    // Tilt: rotation lerp ±0.12 by vx (normalise to screen-width units)
+    const targetTilt = Math.max(-0.12, Math.min(0.12, umbVX / (W * 2.5)));
+    const tiltWrap = new Container();
+    void tiltWrap;
+    // Apply tilt to umbrellaWrap rotation (only if no squash tween running)
+    const currentTilt = umbrellaCont.rotation;
+    umbrellaCont.rotation += (targetTilt - currentTilt) * Math.min(1, 8 * dt);
 
     // ── Wind (bit3) ───────────────────────────────────────────────────────────
     if (phase === "bit3") {
@@ -830,7 +969,7 @@ async function main(): Promise<void> {
       if (windTimer > 1.6) { windTimer = 0; windX = (Math.random() - 0.5) * W * 0.25; }
     }
 
-    // ── Spawn drops — spawn in ALL phases (including hook) ────────────────────
+    // ── Spawn drops ───────────────────────────────────────────────────────────
     if (phase !== "reveal" && phase !== "end") {
       spawnTimer += dt;
       if (spawnTimer >= spawnInterval) {
@@ -848,7 +987,6 @@ async function main(): Promise<void> {
     }
 
     // ── Update drops ─────────────────────────────────────────────────────────
-    // Umbrella hit radius from current umbrella position
     const hitR = umbRadius * HIT_SCALE;
 
     for (let i = drops.length - 1; i >= 0; i--) {
@@ -861,14 +999,13 @@ async function main(): Promise<void> {
       if (d.cont.destroyed) { drops.splice(i, 1); continue; }
       d.cont.position.set(d.x, d.y);
 
-      // Bounced drops fade out
       if (d.bounced) {
         d.bounceTimer -= dt;
         if (!d.cont.destroyed) d.cont.alpha = Math.max(0, d.bounceTimer / 0.38);
         if (d.bounceTimer <= 0) {
           d.alive = false;
           if (!d.cont.destroyed) {
-            if (d.cont.parent) gameLayer.removeChild(d.cont);
+            if (d.cont.parent) rainLayer.removeChild(d.cont);
             d.cont.destroy();
           }
           drops.splice(i, 1);
@@ -876,7 +1013,7 @@ async function main(): Promise<void> {
         continue;
       }
 
-      // Dome hit test (umbrella ellipse — rx=hitR, ry=hitR*0.5)
+      // Dome hit test (umbrella ellipse)
       const dx = d.x - umbX;
       const dy = d.y - umbY;
       const domeRy = hitR * 0.5;
@@ -895,21 +1032,16 @@ async function main(): Promise<void> {
         } else {
           doBounce(d, W, H);
         }
-        const rim = Math.sqrt((dx * dx) / (hitR * hitR) + (dy * dy) / (domeRy * domeRy));
-        if (rim > 0.72 && rim <= 1.02) {
-          spawnHeart(d.x, d.y - 10);
-        }
         continue;
       }
 
-      // Miss zone: drop passes family zone
-      // Family feet at grassY, tallest figure head ~64px above
+      // Miss zone
       const famY0 = grassY - 70;
       const famY1 = grassY + 10;
       if (d.y > famY0 && d.y < famY1 && Math.abs(d.x - W / 2) < W * 0.22) {
         d.alive = false;
         if (!d.cont.destroyed) {
-          if (d.cont.parent) gameLayer.removeChild(d.cont);
+          if (d.cont.parent) rainLayer.removeChild(d.cont);
           d.cont.destroy();
         }
         drops.splice(i, 1);
@@ -921,7 +1053,7 @@ async function main(): Promise<void> {
       if (d.y > H + 20 || d.x < -40 || d.x > W + 40) {
         d.alive = false;
         if (!d.cont.destroyed) {
-          if (d.cont.parent) gameLayer.removeChild(d.cont);
+          if (d.cont.parent) rainLayer.removeChild(d.cont);
           d.cont.destroy();
         }
         drops.splice(i, 1);
@@ -937,7 +1069,7 @@ async function main(): Promise<void> {
       hrt.cont.alpha = Math.max(0, hrt.timer / 1.2);
       if (hrt.timer <= 0) {
         if (!hrt.cont.destroyed) {
-          if (hrt.cont.parent) fxLayer.removeChild(hrt.cont);
+          if (hrt.cont.parent) heartLayer.removeChild(hrt.cont);
           hrt.cont.destroy();
         }
         hearts.splice(i, 1);
@@ -967,7 +1099,6 @@ async function main(): Promise<void> {
     app.renderer.render(app.stage);
   });
 
-  // Second paint: Pixi v8 shader-race workaround
   requestAnimationFrame(() => { layout(); app.renderer.render(app.stage); });
 }
 

@@ -1,12 +1,12 @@
 // Budget Slider: Bath Morph — RenoScope playable ad.
-// PixiJS + GSAP. Procedural greybox: no AI assets this pass.
+// PixiJS + GSAP. Asset-integrated pass: 3-sprite crossfade stack.
 // Mechanic: horizontal budget slider ($6K–$25K) morphs bathroom scene
 // across three tiers at $8K/$15K/$22K thresholds (discrete crossfades
 // with hysteresis). Continuous micro-channels between thresholds.
 // Variable reward: designer-bonus objects + Best Value sweet-spot $18.5K.
 // FSM: intro → interactive → locked → endcard.
 
-import { Application, Container, Graphics, Text } from "pixi.js";
+import { Application, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
 import { gsap } from "gsap";
 import type { PlayableConfig } from "../../src/types.js";
 
@@ -37,6 +37,10 @@ function lerpC(ca: number, cb: number, t: number): number {
   const rb=(cb>>16)&255, gb=(cb>>8)&255, bb=cb&255;
   return (Math.round(ra+(rb-ra)*t)<<16)|(Math.round(ga+(gb-ga)*t)<<8)|Math.round(ba+(bb-ba)*t);
 }
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
 
 const PRIMARY = num(cfg.style.colors.primary);   // #3D5A6C slate-blue
 const ACCENT  = num(cfg.style.colors.accent);    // #C77B4F copper
@@ -66,6 +70,21 @@ const VANITY_COLORS=[num("#7A5C44"), num("#9E7B5A"), num("#BDB5A6"), num("#E8E4D
 const LIGHT_WARM  = [0x000000,  0x000000,  0x221100,  0x443322];
 const LIGHT_ALPHA = [0, 0, 0.07, 0.13];
 
+// Warm tint lerp colours per tier (for continuous channel)
+const TINT_COLORS = [0xFFFFFF, 0xFFEEDD, 0xFFDDCC, 0xFFCCAA];
+
+// ── Texture cache ──────────────────────────────────────────────────────────────
+const TEX: Record<string, Texture> = {};
+async function preloadTextures(): Promise<void> {
+  await Promise.all(Object.entries(cfg.assets).map(async ([k, uri]) => {
+    if (!/\.(webp|png)$/i.test(k)) return;
+    const img = new Image(); img.src = uri as string;
+    try { await img.decode(); } catch { return; }
+    TEX[k] = Texture.from(img);
+  }));
+}
+function tex(key: string): Texture | null { return TEX[key] ?? null; }
+
 // ── State machine ──────────────────────────────────────────────────────────────
 type FSMState = "intro"|"interactive"|"locked"|"endcard";
 let fsmState: FSMState = "intro";
@@ -82,6 +101,7 @@ let lockChipShown = false;
 let sweetSpotShown= false;
 let dragging      = false;
 let lastTierChangeDir = 0;
+let thumbGlowActive = false;
 
 function computeTier(b: number): Tier {
   if (b < T1) return 0; if (b < T2) return 1; if (b < T3) return 2; return 3;
@@ -102,6 +122,9 @@ function xToBudget(x: number): number {
 
 // ── Main ───────────────────────────────────────────────────────────────────────
 async function main(): Promise<void> {
+  // Preload all textures before building scene
+  await preloadTextures();
+
   const app = new Application();
   await app.init({
     width: window.innerWidth, height: window.innerHeight,
@@ -114,39 +137,70 @@ async function main(): Promise<void> {
   app.stage.eventMode = "static";
   app.stage.hitArea   = app.screen;
 
-  // Fullscreen BG covers letterbox gutters.  Also two scene-extension rects
-  // (drawn inside root/bgLayer) that blend the room into the top/bottom gutters.
+  // Fullscreen BG covers letterbox gutters.
   const fullscreenBgGfx = new Graphics();
   app.stage.addChild(fullscreenBgGfx);
 
   // ── Layer stack ──────────────────────────────────────────────────────────
   const root         = new Container();
-  const bgLayer      = new Container();
-  const roomLayer    = new Container();
-  const fxLayer      = new Container();
-  const uiLayer      = new Container();
-  const hudLayer     = new Container();
-  const overlayLayer = new Container();
+  const bgLayer      = new Container();  // bg sprites + procedural bg fallback
+  const roomLayer    = new Container();  // procedural room objects (fallback)
+  const fxLayer      = new Container();  // particles, flash
+  const uiLayer      = new Container();  // slider, ticker, chips
+  const hudLayer     = new Container();  // instruction text
+  const overlayLayer = new Container();  // lock/endcard overlay
   root.addChild(bgLayer, roomLayer, fxLayer, uiLayer, hudLayer, overlayLayer);
   app.stage.addChild(root);
   uiLayer.interactiveChildren = false;
 
-  // ── Background graphics objects ──────────────────────────────────────────
-  // topExtGfx / botExtGfx are re-drawn in layout() to fill letterbox gutters
-  // with matching room colors so no dark bars show above or below the scene.
-  const topExtGfx    = new Graphics(); bgLayer.addChild(topExtGfx);
-  const botExtGfx    = new Graphics(); bgLayer.addChild(botExtGfx);
-  const wallGfx      = new Graphics(); bgLayer.addChild(wallGfx);
-  const floorGfx     = new Graphics(); bgLayer.addChild(floorGfx);
-  const windowGfx    = new Graphics(); bgLayer.addChild(windowGfx);
-  const warmGfx      = new Graphics(); bgLayer.addChild(warmGfx);
-  const xfadeGfx     = new Graphics(); xfadeGfx.alpha = 0; bgLayer.addChild(xfadeGfx);
+  // ── 3-sprite crossfade stack ──────────────────────────────────────────────
+  // Covers ROOM_TOP(0) → ROOM_BOTTOM(460). All three loaded; alpha driven by budget.
+  // bath-basic  → visible at low budget (< T1..T2)
+  // bath-mid    → fades in across T1 threshold
+  // bath-premium → fades in across T2-T3 band
+  const bathBasicSprite   = makeBathSprite("bath-basic.webp");
+  const bathMidSprite     = makeBathSprite("bath-mid.webp");
+  const bathPremiumSprite = makeBathSprite("bath-premium.webp");
 
-  // ── Room object graphics ─────────────────────────────────────────────────
+  // Tint overlay sprites mirror the bath sprites for warm tint lerp
+  const tintOverlay = new Graphics();
+  tintOverlay.alpha = 0;
+
+  // White flash crossfade overlay
+  const xfadeGfx = new Graphics(); xfadeGfx.alpha = 0;
+
+  // Procedural bg fallback (only drawn when sprites missing)
+  const topExtGfx    = new Graphics();
+  const botExtGfx    = new Graphics();
+  const wallGfx      = new Graphics();
+  const floorGfx     = new Graphics();
+  const windowGfx    = new Graphics();
+  const warmGfx      = new Graphics();
+  const procBgFallback = new Container();
+  procBgFallback.addChild(topExtGfx, botExtGfx, wallGfx, floorGfx, windowGfx, warmGfx);
+
+  bgLayer.addChild(
+    procBgFallback,
+    bathBasicSprite,
+    bathMidSprite,
+    bathPremiumSprite,
+    tintOverlay,
+    xfadeGfx,
+  );
+
+  // ── Room object graphics (procedural fallback, hidden when sprites present) ─
   const tubGfx    = new Graphics(); roomLayer.addChild(tubGfx);
   const showerGfx = new Graphics(); showerGfx.alpha = 0; roomLayer.addChild(showerGfx);
   const vanityGfx = new Graphics(); roomLayer.addChild(vanityGfx);
   const mirrorGfx = new Graphics(); roomLayer.addChild(mirrorGfx);
+
+  const hasSprites = !!(tex("bath-basic.webp") && tex("bath-mid.webp") && tex("bath-premium.webp"));
+
+  // Hide procedural room objects when we have sprites
+  if (hasSprites) {
+    procBgFallback.visible = false;
+    roomLayer.visible = false;
+  }
 
   // FX containers
   const bonusCont      = new Container(); bonusCont.alpha = 0;      fxLayer.addChild(bonusCont);
@@ -172,9 +226,8 @@ async function main(): Promise<void> {
   hudLayer.addChild(disclaimerText);
 
   // ── Ticker (large budget number) ──────────────────────────────────────────
-  // Zone: ROOM_BOTTOM(460) → TRACK_Y(580).  Ticker centred in this band.
-  const TICKER_CY = 498; // centre of ticker text
-  const CHIP_CY   = 536; // centre of tier chip
+  const TICKER_CY = 498;
+  const CHIP_CY   = 536;
 
   const tickerBg = new Graphics();
   uiLayer.addChild(tickerBg);
@@ -187,7 +240,6 @@ async function main(): Promise<void> {
   tickerText.position.set(DW/2, TICKER_CY);
   uiLayer.addChild(tickerText);
 
-  // "est." superscript
   const estLabel = new Text({
     text: "est.",
     style: { fill: cfg.style.colors.accent, fontFamily: FONT, fontWeight: "bold", fontSize: 13 },
@@ -195,7 +247,6 @@ async function main(): Promise<void> {
   estLabel.anchor.set(0, 0.5);
   uiLayer.addChild(estLabel);
 
-  // Tier chip below ticker
   const tierChipGfx  = new Graphics(); uiLayer.addChild(tierChipGfx);
   const tierChipText = new Text({
     text: "",
@@ -214,7 +265,6 @@ async function main(): Promise<void> {
   const maxLbl = new Text({ text: "$25K", style: { fill: TXT, fontFamily: FONT, fontWeight: "bold", fontSize: 11 } });
   maxLbl.anchor.set(1, 0.5); maxLbl.position.set(TRACK_R, TRACK_Y + 18); uiLayer.addChild(maxLbl);
 
-  // Threshold labels
   const thresholds = [T1, T2, T3];
   const thrLabels  = ["$8K","$15K","$22K"];
   for (let i=0; i<thresholds.length; i++) {
@@ -226,7 +276,8 @@ async function main(): Promise<void> {
   // Thumb
   const thumbWrap = new Container();
   const thumbGfx  = new Graphics();
-  thumbWrap.addChild(thumbGfx);
+  const thumbGlowGfx = new Graphics(); // soft glow ring while dragging
+  thumbWrap.addChild(thumbGlowGfx, thumbGfx);
   uiLayer.addChild(thumbWrap);
 
   // Ghost finger
@@ -236,7 +287,7 @@ async function main(): Promise<void> {
   ghostFinger.alpha = 0;
   uiLayer.addChild(ghostFinger);
 
-  // ── Lock chip (tappable, bottom CTA zone) ─────────────────────────────────
+  // ── Lock chip ─────────────────────────────────────────────────────────────
   const lockChip    = new Container(); lockChip.alpha = 0;
   const lockChipBg  = new Graphics();
   const lockChipTxt = new Text({ text: "Lock my style", style: { fill: "#3a2418", fontFamily: FONT, fontWeight: "bold", fontSize: 17 } });
@@ -246,10 +297,116 @@ async function main(): Promise<void> {
   overlayLayer.addChild(lockChip);
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // DRAW FUNCTIONS
+  // SPRITE HELPERS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  function makeBathSprite(key: string): Sprite | Container {
+    const t = tex(key);
+    if (!t) return new Container(); // invisible placeholder
+    const sp = new Sprite(t);
+    sp.anchor.set(0.5, 0);
+    // cover-fit will be applied in updateBathLayout()
+    return sp;
+  }
+
+  function coverFitBathSprite(sp: Sprite | Container): void {
+    if (!(sp instanceof Sprite)) return;
+    const t = sp.texture;
+    if (!t || t.width === 0) return;
+    // Cover-fit: fill DW × ROOM_BOTTOM
+    const scaleX = DW / t.width;
+    const scaleY = ROOM_BOTTOM / t.height;
+    const s = Math.max(scaleX, scaleY);
+    sp.scale.set(s);
+    sp.position.set(DW / 2, 0); // anchor 0.5,0 → centered horizontally, top-aligned
+  }
+
+  function updateBathLayout(): void {
+    coverFitBathSprite(bathBasicSprite as Sprite);
+    coverFitBathSprite(bathMidSprite as Sprite);
+    coverFitBathSprite(bathPremiumSprite as Sprite);
+    // Tint overlay covers the room area
+    tintOverlay.clear();
+    tintOverlay.rect(0, 0, DW, ROOM_BOTTOM).fill({ color: 0xFFFFFF });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CROSSFADE ALPHA — smoothstep-driven by budget value
+  // bath-basic:   fully visible below T1, fades out T1→T2
+  // bath-mid:     fades in T1-500→T1+2000, fades out T2→T2+2000
+  // bath-premium: fades in T2→T2+3000
+  // Continuous channel: subtle warm tint on tintOverlay + scale breathe
+  // ═══════════════════════════════════════════════════════════════════════════
+  function updateBathAlpha(): void {
+    if (!hasSprites) return;
+    const b = budget;
+
+    // basic: 1 below T1, fades to 0 over T1→T2 band
+    const basicAlpha  = 1 - smoothstep(T1, T2, b);
+    // mid: fades in T1-500→T1+1500, fades out T2+1000→T3-1000
+    const midIn       = smoothstep(T1 - 500, T1 + 1500, b);
+    const midOut      = smoothstep(T2 + 1000, T3 - 1000, b);
+    const midAlpha    = midIn * (1 - midOut);
+    // premium: fades in T2→T2+3000, stays full above T3
+    const premiumAlpha = smoothstep(T2, T2 + 3000, b);
+
+    (bathBasicSprite   as Sprite).alpha = basicAlpha;
+    (bathMidSprite     as Sprite).alpha = midAlpha;
+    (bathPremiumSprite as Sprite).alpha = premiumAlpha;
+
+    // Warm tint lerp: neutral at basic, warm amber at mid, golden at premium
+    const tier = computeTier(b);
+    const tBlend = tierBlend(b);
+    const tintFrom = TINT_COLORS[tier];
+    const tintTo   = TINT_COLORS[Math.min(tier+1, 3) as Tier];
+    const tintColor = lerpC(tintFrom, tintTo, tBlend);
+    const tintAlpha = smoothstep(T1 - 2000, T3, b) * 0.12; // max 12% warm overlay
+
+    tintOverlay.clear();
+    tintOverlay.rect(0, 0, DW, ROOM_BOTTOM).fill({ color: tintColor });
+    tintOverlay.alpha = tintAlpha;
+
+    // Scale breathe: 1.0 → 1.015 continuous, driven by budget position within tier
+    const breathe = 1.0 + tBlend * 0.015;
+    if (bathBasicSprite instanceof Sprite && basicAlpha > 0.01) {
+      const baseScale = (bathBasicSprite as Sprite).scale.x / ((bathBasicSprite as Sprite).scale.x || 1);
+      void baseScale; // just set via coverFit cached scale
+      // Re-apply breathe on top of cover-fit scale
+      const t0 = tex("bath-basic.webp");
+      if (t0) {
+        const scaleX = DW / t0.width;
+        const scaleY = ROOM_BOTTOM / t0.height;
+        const s = Math.max(scaleX, scaleY) * breathe;
+        (bathBasicSprite as Sprite).scale.set(s);
+        (bathBasicSprite as Sprite).position.set(DW / 2, -(s * t0.height - ROOM_BOTTOM) * 0.0); // keep top-aligned
+      }
+    }
+    if (bathMidSprite instanceof Sprite && midAlpha > 0.01) {
+      const t1 = tex("bath-mid.webp");
+      if (t1) {
+        const scaleX = DW / t1.width;
+        const scaleY = ROOM_BOTTOM / t1.height;
+        const s = Math.max(scaleX, scaleY) * breathe;
+        (bathMidSprite as Sprite).scale.set(s);
+      }
+    }
+    if (bathPremiumSprite instanceof Sprite && premiumAlpha > 0.01) {
+      const t2 = tex("bath-premium.webp");
+      if (t2) {
+        const scaleX = DW / t2.width;
+        const scaleY = ROOM_BOTTOM / t2.height;
+        const s = Math.max(scaleX, scaleY) * breathe;
+        (bathPremiumSprite as Sprite).scale.set(s);
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DRAW FUNCTIONS (procedural fallback — used when sprites missing)
   // ═══════════════════════════════════════════════════════════════════════════
 
   function drawBackground(): void {
+    if (hasSprites) return; // sprites handle the background
     const tier = computeTier(budget);
     const tNext = Math.min(tier+1, 3) as Tier;
     const t = tierBlend(budget);
@@ -258,9 +415,7 @@ async function main(): Promise<void> {
     const wAlpha     = LIGHT_ALPHA[tier]+(LIGHT_ALPHA[tNext]-LIGHT_ALPHA[tier])*t;
 
     wallGfx.clear();
-    // Back wall fills from top to WALL_SPLIT
     wallGfx.rect(0, 0, DW, WALL_SPLIT).fill({ color: shade(wallColor,-0.06) });
-    // Wall tile grid — size reflects tier
     const tileW = 44+tier*16, tileH = 44+tier*16;
     const gc = shade(wallColor,-0.14);
     for (let tx=0; tx<DW; tx+=tileW) {
@@ -270,10 +425,8 @@ async function main(): Promise<void> {
         wallGfx.rect(tx, ty, 1, tileH).fill({color:gc});
       }
     }
-    // Baseboard
     wallGfx.rect(0, WALL_SPLIT-6, DW, 8).fill({color:shade(wallColor,-0.2)});
 
-    // Floor covers WALL_SPLIT to ROOM_BOTTOM
     floorGfx.clear();
     const fTile = 52+tier*18;
     const fgc   = shade(floorColor,-0.18);
@@ -282,18 +435,15 @@ async function main(): Promise<void> {
         floorGfx.rect(fx+2,fy+2,fTile-3,fTile-3).fill({color:floorColor});
       }
     }
-    // Grout lines
     for (let fx=0; fx<DW; fx+=fTile) floorGfx.rect(fx,WALL_SPLIT,1,ROOM_BOTTOM-WALL_SPLIT).fill({color:fgc});
     for (let fy=WALL_SPLIT; fy<ROOM_BOTTOM; fy+=fTile) floorGfx.rect(0,fy,DW,1).fill({color:fgc});
 
-    // Warm light wash
     warmGfx.clear();
     if (wAlpha > 0.005) {
       const wc = LIGHT_WARM[tNext] || LIGHT_WARM[tier] || 0x221100;
       warmGfx.rect(0,0,DW,ROOM_BOTTOM).fill({color:wc,alpha:wAlpha});
     }
 
-    // Window
     drawWindow(tier, t);
   }
 
@@ -306,23 +456,20 @@ async function main(): Promise<void> {
     windowGfx.roundRect(wx,wy,ww,wh,6).stroke({width:tier>=3?4:7,color:frameC});
     windowGfx.rect(wx+ww/2-2,wy,4,wh).fill({color:frameC});
     windowGfx.rect(wx,wy+wh/2-2,ww,4).fill({color:frameC});
-    // LED glow on premium/luxury
     if (tier>=2) {
       const ga = tier>=3 ? 0.65 : (t-0)*0.5;
       if (ga>0.02) windowGfx.roundRect(wx-4,wy-4,ww+8,wh+8,10).stroke({width:3,color:num("#FFE090"),alpha:ga});
     }
-    // Sunbeam
     const bAlpha = 0.06+tier*0.025+t*0.02;
     windowGfx.poly([wx+16,wy+wh, wx+ww-16,wy+wh, wx+ww+40,WALL_SPLIT, wx-40,WALL_SPLIT]).fill({color:num("#FFF8E0"),alpha:bAlpha});
   }
 
   function drawVanity(tier: Tier, t: number): void {
+    if (hasSprites) return;
     vanityGfx.clear(); mirrorGfx.clear();
     const vBase = VANITY_COLORS[tier];
     const vNext = VANITY_COLORS[Math.min(tier+1,3) as Tier];
     const vColor = lerpC(vBase, vNext, t);
-
-    // Vanity cabinet — left side of room
     const vx=10, vy=220, vw=130, vh=118;
     vanityGfx.roundRect(vx,vy,vw,vh,8).fill({color:vColor});
     vanityGfx.roundRect(vx,vy,vw,vh,8).stroke({width:2,color:shade(vColor,-0.2)});
@@ -332,17 +479,12 @@ async function main(): Promise<void> {
     const hndC = tier>=2 ? num("#C8B870") : num("#807060");
     vanityGfx.roundRect(vx+vw/2-14, vy+vh*0.25-6, 28, 8, 4).fill({color:hndC});
     vanityGfx.roundRect(vx+vw/2-14, vy+vh*0.75-6, 28, 8, 4).fill({color:hndC});
-
-    // Countertop
     const sinkC = tier>=2 ? num("#DEDAD4") : num("#C8C0B4");
     vanityGfx.roundRect(vx-4, vy-26, vw+8, 30, 6).fill({color:sinkC});
     vanityGfx.ellipse(vx+vw/2, vy-11, 30, 14).fill({color:shade(sinkC,-0.13)});
-    // Faucet
     const faucetC = tier>=3 ? num("#C8B870") : (tier>=2 ? num("#B8B8B8") : num("#888"));
     vanityGfx.rect(vx+vw/2-3, vy-48, 6, 26).fill({color:faucetC});
     vanityGfx.roundRect(vx+vw/2-14, vy-52, 28, 8, 4).fill({color:faucetC});
-
-    // Mirror above vanity
     const mx=vx-4, my=44, mw=vw+8, mh=166+tier*10;
     mirrorGfx.roundRect(mx,my,mw,mh,tier>=2?4:8).fill({color:num("#C8D8DC"),alpha:0.48});
     mirrorGfx.roundRect(mx,my,mw,mh,tier>=2?4:8).stroke({
@@ -355,32 +497,24 @@ async function main(): Promise<void> {
   }
 
   function drawTub(tier: Tier, t: number): void {
+    if (hasSprites) return;
     tubGfx.clear();
-    // Tub lives in the center of the room scene (above floor-to-slider zone)
     const twBase = 200 + tier*14;
     const tw = twBase, th = 96 + tier*8;
-    const tx = (DW-tw)/2 + 18, ty = 250; // well inside the room, above floor line
+    const tx = (DW-tw)/2 + 18, ty = 250;
     const tubC = lerpC(num("#DEDED8"), num("#F0EDE8"), t);
-
-    // Cast shadow
     tubGfx.ellipse(tx+tw/2, ty+th+8, tw/2-8, 10).fill({color:0x000000, alpha:0.15});
-    // Tub body
     tubGfx.roundRect(tx, ty, tw, th, 28).fill({color:tubC});
     tubGfx.roundRect(tx, ty, tw, th, 28).stroke({width:3, color:shade(tubC,-0.16)});
-    // Inner basin
     tubGfx.roundRect(tx+14, ty+14, tw-28, th-22, 20).fill({color:shade(tubC,-0.07)});
-    // Rim highlight
     tubGfx.roundRect(tx+2, ty+2, tw-4, 18, 26).fill({color:0xffffff, alpha:0.25});
-    // Legs
     const legC = tier>=2 ? num("#C8B870") : num("#B0B0B0");
     tubGfx.roundRect(tx+18, ty+th-2, 10, 20, 3).fill({color:legC});
     tubGfx.roundRect(tx+tw-28, ty+th-2, 10, 20, 3).fill({color:legC});
     if (tier>=1) tubGfx.roundRect(tx+tw/2-5, ty+th-2, 10, 20, 3).fill({color:legC});
-    // Faucet
     const faucetC = tier>=3 ? num("#C8B870") : (tier>=2 ? num("#C0C0C0") : num("#909090"));
     tubGfx.rect(tx+tw*0.7-3, ty-16, 6, 22).fill({color:faucetC});
     tubGfx.roundRect(tx+tw*0.7-14, ty-22, 28, 8, 4).fill({color:faucetC});
-    // Water shimmer
     if (tier>=1) {
       const wa = 0.05+tier*0.04+t*0.03;
       tubGfx.roundRect(tx+18, ty+18, tw-36, 18, 9).fill({color:num("#A8D4E0"),alpha:wa});
@@ -388,26 +522,23 @@ async function main(): Promise<void> {
   }
 
   function drawShower(tier: Tier, t: number): void {
+    if (hasSprites) return;
     showerGfx.clear();
     const sw2=180+tier*10, sh2=220;
     const sx=(DW-sw2)/2+18, sy=140;
-    // Glass cabin
     const gAlpha = 0.16+t*0.06;
     showerGfx.rect(sx, sy, 4, sh2).fill({color:num("#C8E0E8"),alpha:0.7});
     showerGfx.rect(sx+sw2-4, sy, 4, sh2).fill({color:num("#C8E0E8"),alpha:0.7});
     showerGfx.rect(sx, sy, sw2, sh2).fill({color:num("#C8E0E8"),alpha:gAlpha});
     showerGfx.rect(sx, sy+sh2-4, sw2, 4).fill({color:num("#C8E0E8"),alpha:0.7});
-    // Shower head
     const headC = tier>=3 ? num("#C8B870") : num("#C0C0C0");
     showerGfx.circle(sx+sw2-22, sy+34, 16).fill({color:headC});
     showerGfx.rect(sx+sw2-24, sy+10, 4, 28).fill({color:headC});
-    // Rainfall dots (luxury)
     if (tier>=3 || t>0.6) {
       for (let i=0; i<6; i++) for (let j=0; j<4; j++) {
         showerGfx.circle(sx+sw2-12-i*3, sy+22+j*5, 1.5).fill({color:headC,alpha:0.8});
       }
     }
-    // Tray
     const trayC = tier>=3 ? num("#E8E4DC") : num("#C4C0B8");
     showerGfx.roundRect(sx, sy+sh2, sw2, 18, 4).fill({color:trayC});
     showerGfx.circle(sx+sw2/2, sy+sh2+9, 6).fill({color:shade(trayC,-0.2)});
@@ -425,11 +556,16 @@ async function main(): Promise<void> {
       markerGfx.rect(mx-1, TRACK_Y-10, 2, 20).fill({color:0xffffff,alpha:0.4});
     }
     thumbWrap.position.set(tx, TRACK_Y);
+    // Thumb glow (while dragging)
+    thumbGlowGfx.clear();
+    if (thumbGlowActive) {
+      thumbGlowGfx.circle(0, 0, THUMB_R+14).fill({color:ACCENT, alpha:0.18});
+      thumbGlowGfx.circle(0, 0, THUMB_R+8).fill({color:ACCENT, alpha:0.22});
+    }
     thumbGfx.clear();
     thumbGfx.circle(0,0,THUMB_R+7).fill({color:ACCENT,alpha:0.22});
     thumbGfx.circle(0,0,THUMB_R).fill({color:ACCENT});
     thumbGfx.circle(0,0,THUMB_R).stroke({width:3,color:shade(ACCENT,0.3)});
-    // Roof-shaped handle icon
     thumbGfx.poly([-10,-8, 0,-19, 10,-8]).fill({color:shade(ACCENT,0.3)});
     thumbGfx.circle(0,0,8).fill({color:shade(ACCENT,0.25)});
     ghostFinger.position.set(tx, TRACK_Y);
@@ -444,7 +580,6 @@ async function main(): Promise<void> {
     const v = budget;
     tickerText.text = "$"+(v/1000).toFixed(1)+"K";
     tickerText.position.set(DW/2 - 16, TICKER_CY);
-    // "est." sits to the right of the ticker number, vertically centred
     estLabel.position.set(DW/2 + tickerText.width/2 - 16, TICKER_CY + 14);
   }
 
@@ -469,7 +604,7 @@ async function main(): Promise<void> {
       });
       s.anchor.set(0.5); s.position.set(x,y); s.alpha=0;
       fxLayer.addChild(s);
-      gsap.timeline({onComplete:()=>s.destroy()})
+      gsap.timeline({onComplete:()=>{ if(!s.destroyed) s.destroy(); }})
         .to(s,{alpha:1,duration:0.1})
         .to(s,{x:x+Math.cos(angle)*dist,y:y+Math.sin(angle)*dist,alpha:0,duration:0.5,ease:"power1.out"},0);
     }
@@ -480,17 +615,46 @@ async function main(): Promise<void> {
       const d=new Graphics().circle(0,0,3+Math.random()*5).fill({color:ACCENT,alpha:0.7});
       d.position.set(x+(Math.random()-0.5)*40, y+(Math.random()-0.5)*18);
       fxLayer.addChild(d);
-      gsap.to(d,{y:d.y-28-Math.random()*18,alpha:0,duration:0.55+Math.random()*0.3,ease:"power1.out",onComplete:()=>d.destroy()});
+      gsap.to(d,{y:d.y-28-Math.random()*18,alpha:0,duration:0.55+Math.random()*0.3,ease:"power1.out",onComplete:()=>{ if(!d.destroyed) d.destroy(); }});
     }
   }
 
-  // ── Threshold crossfade flash ─────────────────────────────────────────────
+  // Per-tier sparkle positions (fixed zone per sprite art):
+  // basic: mirror/vanity zone → left side (~60, 140)
+  // mid: tub center → (~200, 280)
+  // premium: shower zone → right side (~280, 200)
+  const TIER_SPARKLE_POS: [number, number][] = [
+    [60, 140],   // basic — mirror left
+    [200, 280],  // mid   — tub center
+    [280, 200],  // premium — shower/rain
+    [320, 160],  // luxury — (same shower zone)
+  ];
+
+  // ── Threshold crossfade flash + parallax push-in ──────────────────────────
   function doThresholdCrossfade(newTier: Tier): void {
     xfadeGfx.clear();
     xfadeGfx.rect(0,0,DW,ROOM_BOTTOM).fill({color:0xffffff,alpha:0.55});
     gsap.killTweensOf(xfadeGfx);
     gsap.fromTo(xfadeGfx,{alpha:0.55},{alpha:0,duration:0.5,ease:"power1.out"});
-    sparkle(DW/2, 200, 10);
+
+    // Parallax push-in: scale 1.03 → 1.0 on the entering sprite
+    const enterSprite = newTier <= 0 ? bathBasicSprite :
+                        newTier === 1 ? bathMidSprite : bathPremiumSprite;
+    if (enterSprite instanceof Sprite) {
+      const t0 = enterSprite.texture;
+      if (t0 && t0.width > 0) {
+        const baseScale = Math.max(DW / t0.width, ROOM_BOTTOM / t0.height);
+        gsap.killTweensOf(enterSprite.scale);
+        gsap.fromTo(enterSprite.scale,
+          { x: baseScale * 1.03, y: baseScale * 1.03 },
+          { x: baseScale, y: baseScale, duration: 0.6, ease: "power2.out" }
+        );
+      }
+    }
+
+    // Per-tier sparkle burst at zone-specific position
+    const [sx, sy] = TIER_SPARKLE_POS[Math.min(newTier, 3)];
+    sparkle(sx, sy, 12);
     puff(DW/2, TRACK_Y-20, 6);
     showDesignerBonus(newTier);
   }
@@ -599,7 +763,6 @@ async function main(): Promise<void> {
     const pw=348, ph=440;
     panel.addChild(new Graphics().roundRect(-pw/2,-ph/2,pw,ph,24).fill({color:num("#2A3A44")}).stroke({width:4,color:ACCENT}));
 
-    // Brand
     const logoBg=new Graphics().roundRect(-106,-ph/2+16,212,52,10).fill({color:PRIMARY});
     const logoTxt=new Text({text:"RenoScope",style:{fill:TXT,fontFamily:FONT,fontWeight:"bold",fontSize:30}});
     logoTxt.anchor.set(0.5); logoTxt.position.set(0,-ph/2+42);
@@ -607,7 +770,6 @@ async function main(): Promise<void> {
     tagTxt.anchor.set(0.5); tagTxt.position.set(0,-ph/2+78);
     panel.addChild(logoBg,logoTxt,tagTxt);
 
-    // Tier headline
     const hLine=new Text({
       text:"Your "+TIER_NAMES[lockedTier]+" bath is taking shape.",
       style:{fill:TXT,fontFamily:FONT,fontWeight:"bold",fontSize:17,align:"center",wordWrap:true,wordWrapWidth:pw-44},
@@ -620,7 +782,6 @@ async function main(): Promise<void> {
     rangeLbl.anchor.set(0.5); rangeLbl.position.set(0,-ph/2+140);
     panel.addChild(hLine,rangeLbl);
 
-    // Free consult line
     const consultTxt=new Text({
       text:"Free consult includes a 3D design\nlicensed & insured in your state",
       style:{fill:TXT,fontFamily:FONT,fontWeight:"bold",fontSize:13,align:"center",wordWrap:true,wordWrapWidth:pw-44},
@@ -628,7 +789,6 @@ async function main(): Promise<void> {
     consultTxt.anchor.set(0.5); consultTxt.position.set(0,-ph/2+182);
     panel.addChild(consultTxt);
 
-    // Tier chip row
     const chipRowY=-ph/2+228;
     for (let i=0; i<4; i++) {
       const cColor=lerpC(WALL_COLORS[i], FLOOR_COLORS[i], 0.5);
@@ -642,7 +802,6 @@ async function main(): Promise<void> {
       panel.addChild(cg,cl);
     }
 
-    // CTA
     const ctaWrap=new Container();
     const ctaW=pw-48, ctaH=56;
     ctaWrap.addChild(new Graphics().roundRect(-ctaW/2,-ctaH/2,ctaW,ctaH,28).fill({color:ACCENT}).stroke({width:4,color:shade(ACCENT,-0.28)}));
@@ -656,7 +815,6 @@ async function main(): Promise<void> {
     panel.addChild(ctaWrap);
     gsap.to(ctaWrap.scale,{x:1.05,y:1.05,duration:0.75,yoyo:true,repeat:-1,ease:"sine.inOut"});
 
-    // Disclaimer on endcard
     const endDisc=new Text({
       text:"Estimates only. Final pricing varies by project, materials, and location.",
       style:{fill:TXT,fontFamily:FONT,fontWeight:"bold",fontSize:10,align:"center",wordWrap:true,wordWrapWidth:pw-32,alpha:0.6},
@@ -676,24 +834,25 @@ async function main(): Promise<void> {
   function updateScene(skipCrossfade=false): void {
     const newTier = computeTier(budget);
     const t = tierBlend(budget);
-    const tNext = Math.min(newTier+1,3) as Tier;
 
-    drawBackground();
-    drawVanity(newTier, t);
-
-    // Tub vs shower crossfade at T2
-    const tubAlpha    = newTier<=1 ? 1 : 0;
-    const showerAlpha = newTier>=2 ? 1 : 0;
-    if (skipCrossfade) {
-      tubGfx.alpha    = tubAlpha;
-      showerGfx.alpha = showerAlpha;
-    } else if (Math.abs(tubGfx.alpha-tubAlpha)>0.01) {
-      gsap.to(tubGfx,   {alpha:tubAlpha,   duration:0.4});
-      gsap.to(showerGfx,{alpha:showerAlpha,duration:0.4});
+    if (hasSprites) {
+      updateBathAlpha();
+    } else {
+      // Procedural fallback
+      drawBackground();
+      drawVanity(newTier, t);
+      const tubAlpha    = newTier<=1 ? 1 : 0;
+      const showerAlpha = newTier>=2 ? 1 : 0;
+      if (skipCrossfade) {
+        tubGfx.alpha    = tubAlpha;
+        showerGfx.alpha = showerAlpha;
+      } else if (Math.abs(tubGfx.alpha-tubAlpha)>0.01) {
+        gsap.to(tubGfx,   {alpha:tubAlpha,   duration:0.4});
+        gsap.to(showerGfx,{alpha:showerAlpha,duration:0.4});
+      }
+      if (newTier<=1) drawTub(newTier, t);
+      else            drawShower(newTier, t);
     }
-
-    if (newTier<=1) drawTub(newTier, t);
-    else            drawShower(newTier, t);
 
     drawSlider();
     updateTicker();
@@ -717,19 +876,16 @@ async function main(): Promise<void> {
   function isNearTrack(dx: number, dy: number): boolean {
     return dx>=TRACK_L-24 && dx<=TRACK_R+24 && Math.abs(dy-TRACK_Y)<=32;
   }
-  function isOnThumb(dx: number, dy: number): boolean {
-    return Math.hypot(dx-budgetToX(budget), dy-TRACK_Y)<=THUMB_R+16;
-  }
 
   app.stage.on("pointerdown",(e)=>{
     if (fsmState==="endcard") return;
     const [dx,dy]=toDesign(e.clientX, e.clientY);
     if (!isNearTrack(dx,dy)) return;
     dragging=true;
+    thumbGlowActive=true;
     idleMs=0; autoDemoMs=0;
     gsap.killTweensOf(ghostFinger); ghostFinger.alpha=0;
     if (!hadFirstDrag) hadFirstDrag=true;
-    // Jump on track tap (not just thumb drag)
     const newB=Math.round(xToBudget(dx)/100)*100;
     budget=Math.max(MIN_BUDGET,Math.min(MAX_BUDGET,newB));
     updateScene();
@@ -746,16 +902,21 @@ async function main(): Promise<void> {
     else if (budget<prevB) lastTierChangeDir=-1;
     if (budget>=MAX_BUDGET-200) maxReached=true;
     if (maxReached && budget<=MIN_BUDGET+200) fullPassDone=true;
-    // Accessory pop every ~$1.5K
     if (Math.floor(prevB/1500)!==Math.floor(budget/1500)) puff(budgetToX(budget), TRACK_Y-18, 4);
     updateScene();
   });
 
   app.stage.on("pointerup",()=>{
     dragging=false;
+    thumbGlowActive=false;
+    drawSlider(); // redraw thumb without glow
     if (fullPassDone && !lockChipShown) showLockChip();
   });
-  app.stage.on("pointerupoutside",()=>{ dragging=false; });
+  app.stage.on("pointerupoutside",()=>{
+    dragging=false;
+    thumbGlowActive=false;
+    drawSlider();
+  });
 
   // ── Ghost finger hint ─────────────────────────────────────────────────────
   let ghostTween: gsap.core.Timeline|null=null;
@@ -777,13 +938,43 @@ async function main(): Promise<void> {
     let idx=0;
     function flicker(): void {
       if (hadFirstDrag || fsmState!=="intro") return;
-      // Only flash number display, scene stays at start budget
       const v=vals[idx%vals.length];
       tickerText.text="$"+(v/1000).toFixed(1)+"K";
       idx++;
       gsap.delayedCall(idx<3?0.42:1.0, flicker);
     }
     gsap.delayedCall(0.25, flicker);
+  }
+
+  // ── Ambient motion: slow drift on bath sprites ────────────────────────────
+  function startAmbientMotion(): void {
+    if (!hasSprites) return;
+    const sprites = [bathBasicSprite, bathMidSprite, bathPremiumSprite];
+    sprites.forEach((sp, i) => {
+      if (!(sp instanceof Sprite)) return;
+      const t0 = sp.texture;
+      if (!t0 || t0.width === 0) return;
+      const baseScale = Math.max(DW / t0.width, ROOM_BOTTOM / t0.height);
+      // Slow drift: tiny Y offset yoyo — feels like breathing/living scene
+      gsap.to(sp, {
+        y: 4 + i * 2,
+        duration: 3.5 + i * 0.8,
+        yoyo: true,
+        repeat: -1,
+        ease: "sine.inOut",
+        delay: i * 0.6,
+      });
+      // Slow scale breathe
+      gsap.to(sp.scale, {
+        x: baseScale * 1.008,
+        y: baseScale * 1.008,
+        duration: 4 + i * 0.5,
+        yoyo: true,
+        repeat: -1,
+        ease: "sine.inOut",
+        delay: i * 0.3,
+      });
+    });
   }
 
   // ── Idle/auto-demo ticker ─────────────────────────────────────────────────
@@ -794,12 +985,10 @@ async function main(): Promise<void> {
     idleMs    += dt*1000;
     autoDemoMs+= dt*1000;
 
-    // Show ghost after idle
     if (idleMs>=IDLE_HINT_MS && !hadFirstDrag && ghostFinger.alpha<0.05) {
       startGhostHint();
     }
 
-    // Auto-demo sweep for non-interactors
     if (autoDemoMs>=AUTO_DEMO_AFTER_MS && !hadFirstDrag) {
       autoDemoMs=0;
       const target=autoDemoDir>0 ? MAX_BUDGET : MIN_BUDGET;
@@ -824,7 +1013,6 @@ async function main(): Promise<void> {
       });
     }
 
-    // Auto-lock after lock chip idle
     if (fullPassDone && lockChipShown && idleMs>=LOCK_CHIP_DELAY_MS && fsmState==="interactive") {
       lockStyle();
     }
@@ -838,35 +1026,37 @@ async function main(): Promise<void> {
     const ox=(w-DW*s)/2, oy=(h-DH*s)/2;
     root.position.set(ox, oy);
 
-    // Letterbox gap in design coords above/below the canvas
-    const topGap    = oy / s;        // positive when viewport taller than scene
+    const topGap    = oy / s;
     const botGap    = (h - DH*s - oy) / s;
 
-    // Fill letterbox/pillarbox gutters with scene BG so no dark bars appear
     fullscreenBgGfx.clear();
     fullscreenBgGfx.rect(0, 0, w, h).fill({ color: BG });
 
-    // Top extension: wall colour — extends room tiles upward
     topExtGfx.clear();
-    if (topGap > 0.5) {
-      // Use same wall colour as current tier (approximated from WALL_COLORS[0..3])
+    if (!hasSprites && topGap > 0.5) {
       const tier = computeTier(budget);
       const wallC = WALL_COLORS[tier];
       topExtGfx.rect(0, -topGap, DW, topGap + 1).fill({ color: shade(wallC, -0.06) });
     }
-    // Bottom extension: dark panel colour — extends the UI strip downward
     botExtGfx.clear();
-    if (botGap > 0.5) {
+    if (!hasSprites && botGap > 0.5) {
       botExtGfx.rect(0, DH, DW, botGap + 1).fill({ color: shade(PRIMARY, -0.35) });
     }
+
+    // Re-apply cover-fit when viewport changes
+    if (hasSprites) updateBathLayout();
   }
 
   // ── Init ──────────────────────────────────────────────────────────────────
+  // Apply initial cover-fit to sprites
+  updateBathLayout();
+
   buildTickerBg();
   currentTier=computeTier(budget);
   lockedTier=currentTier;
   updateScene(true);
   layout();
+
   window.addEventListener("resize",()=>{
     app.canvas.style.width  = window.innerWidth  + "px";
     app.canvas.style.height = window.innerHeight + "px";
@@ -875,7 +1065,11 @@ async function main(): Promise<void> {
 
   fsmState="intro";
   startHookFlicker();
-  gsap.delayedCall(0.45,()=>{ fsmState="interactive"; startGhostHint(); });
+  gsap.delayedCall(0.45,()=>{
+    fsmState="interactive";
+    startGhostHint();
+    startAmbientMotion();
+  });
 
   // 2nd paint: Pixi v8 shader-race workaround
   app.renderer.render(app.stage);
