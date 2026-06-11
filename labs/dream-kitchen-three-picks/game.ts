@@ -5,7 +5,7 @@
 // Step 3: Backsplash (Herringbone / Subway) — tinted overlay on backsplash band
 // Reveal: zoom-out + warm light wash + floating dust particles
 // Endcard: composed final scene + CTA
-import { Application, Container, Graphics, Text, Texture, Sprite } from "pixi.js";
+import { Application, Container, Graphics, RenderTexture, Text, Texture, Sprite } from "pixi.js";
 import { gsap } from "gsap";
 import type { PlayableConfig } from "../../src/types.js";
 
@@ -211,11 +211,11 @@ async function main(): Promise<void> {
     return sp;
   }
 
-  // ── Kitchen sprite layer — full-frame COMBO MATRIX, crossfade front/back ──
-  // 8 photographic frames cover every pick combination (style × counter ×
-  // backsplash), generated as geometry-preserving images.edit variants of two
-  // style masters. Every pick swaps the WHOLE frame — zero procedural overlays
-  // on top of the photo, so nothing can misalign with the painted geometry.
+  // ── LAYERED FRAME — bottom photo + object layers stacked on top ───────────
+  // room (wall+floor) → backsplash band → upper cabinets → lower cabinets →
+  // countertop slab → pendants. Every pick swaps ONLY its own layer with its
+  // own animation; nothing else changes. Straight-on elevation = rectangular
+  // alignment; painter order hides the generous band edges.
   const kitchenSpriteCont = new Container();
   kitchenLayer.addChild(kitchenSpriteCont);
 
@@ -224,71 +224,166 @@ async function main(): Promise<void> {
   kitchenSpriteCont.addChild(kitchenMask);
   kitchenSpriteCont.mask = kitchenMask;
 
-  // Matrix key for (style, counter, splash):
-  //   modern base  = quartz counter + white-slab splash  -> m-q-w
-  //   farm base    = butcher counter + subway splash     -> f-b-s
-  //   counter: 0 = Quartz ('q'), 1 = Butcher Block ('b')
-  //   splash:  0 = Classic (style base: 'w' modern / 's' farm), 1 = Herringbone ('h')
-  function comboKey(s: number, c: number, t: number): string {
-    const st = s === 0 ? "m" : "f";
-    const ct = c === 0 ? "q" : "b";
-    const sp = t === 1 ? "h" : (s === 0 ? "w" : "s");
-    return `${st}-${ct}-${sp}.webp`;
+  // Fixed geometry (design px). Bands are generous: lower layers are covered
+  // by the layers above, so exact texture edges never need to line up.
+  const UPPERS_TOP   = 70;   // uppers anchored top, display height fixed below
+  const UPPERS_H     = 200;  // rows are panoramic (5-6.7:1) → full-bleed width
+  const SPLASH_TOP   = 264;  // tucked BEHIND the uppers bottom edge (no bare-wall gap)
+  const SPLASH_BOT   = 520;
+  const COUNTER_BOT  = 515;  // counter slab bottom (overlaps lowers top by ~10)
+  const LOWERS_BASE  = 740;  // lowers baseline on the floor (floor line ~597)
+  const LOWERS_H     = 235;
+  // Cabinet rows shift right so the centred range/oven moves AWAY from the
+  // centred sink+faucet of the counter layer (faucet over plain cabinetry,
+  // farm apron-sink pushed offscreen → no double sink).
+  const ROWS_X_SHIFT = 115;
+  // Per-counter datum fix: butcher block slab is thicker — lower it so the
+  // worktop line stays put between variants.
+  const COUNTER_DY: Record<string, number> = { "counter-butcher.webp": 14 };
+
+  const STYLE_KEYS   = [
+    { uppers: "uppers-modern.webp", lowers: "lowers-modern.webp" },
+    { uppers: "uppers-farm.webp",   lowers: "lowers-farm.webp"   },
+  ];
+  const COUNTER_KEYS = ["counter-quartz.webp", "counter-butcher.webp"];
+  const SPLASH_KEYS  = ["splash-classic.webp", "splash-herring.webp"];
+
+  // Room photo (bottom-most layer): cover-fit, bottom-anchored (crop ceiling).
+  const tRoom = tex("room.webp");
+  if (tRoom) {
+    const sp = new Sprite(tRoom);
+    sp.anchor.set(0.5, 1);
+    sp.scale.set(Math.max(DW / tRoom.width, KITCHEN_H / tRoom.height));
+    sp.position.set(DW / 2, KITCHEN_H);
+    kitchenSpriteCont.addChild(sp);
   }
 
-  // Front/back crossfade pair over the matrix textures.
-  let comboFront: Sprite | null = null;
-  let comboBack: Sprite | null = null;
-  const tBaseModern = tex(comboKey(0, 0, 0));
-  const tBaseFarm   = tex(comboKey(1, 1, 0));
-  if (tBaseModern) {
-    comboFront = makeCoverSprite(tBaseModern, DW, KITCHEN_H);
-    kitchenSpriteCont.addChild(comboFront);
-    comboBack = makeCoverSprite(tBaseModern, DW, KITCHEN_H);
-    comboBack.alpha = 0;
-    kitchenSpriteCont.addChild(comboBack);
+  // Splash band container (masked rect; sprite cover-fits the band).
+  const splashCont = new Container();
+  const splashMask = new Graphics().rect(0, SPLASH_TOP, DW, SPLASH_BOT - SPLASH_TOP).fill({ color: 0xffffff });
+  splashCont.addChild(splashMask);
+  splashCont.mask = splashMask;
+  kitchenSpriteCont.addChild(splashCont);
+
+  // Object layer containers in painter order.
+  const uppersCont  = new Container();
+  const lowersCont  = new Container();
+  const counterCont = new Container();
+  uppersCont.x = ROWS_X_SHIFT;
+  lowersCont.x = ROWS_X_SHIFT;
+  kitchenSpriteCont.addChild(uppersCont, lowersCont, counterCont);
+
+  // Pendants: static garnish, gentle swing.
+  const tPend = tex("pendants.webp");
+  if (tPend) {
+    const pc = new Container();
+    const sp = new Sprite(tPend);
+    sp.anchor.set(0.5, 0);
+    sp.scale.set(230 / tPend.height);
+    pc.addChild(sp);
+    pc.position.set(132, -4);   // foreground pair left of the hood
+    kitchenSpriteCont.addChild(pc);
+    gsap.to(pc, { rotation: 0.008, duration: 2.8, yoyo: true, repeat: -1, ease: "sine.inOut" });
   }
 
-  function crossfadeToCombo(s: number, c: number, t: number, duration = 0.35, onDone?: () => void): void {
-    const target = tex(comboKey(s, c, t));
-    if (!target || !comboFront || !comboBack) { onDone?.(); return; }
-    if (comboFront.texture === target) { onDone?.(); return; }
-    comboBack.texture = target;
-    // re-fit (textures share dimensions, but stay safe)
-    const sc = Math.max(DW / target.width, KITCHEN_H / target.height);
-    comboBack.scale.set(sc);
-    comboBack.alpha = 0;
-    gsap.killTweensOf(comboBack);
-    gsap.to(comboBack, {
-      alpha: 1, duration, ease: "power2.inOut",
-      onComplete: () => {
-        // promote back -> front
-        if (comboFront && comboBack) {
-          comboFront.texture = target;
-          const fs = Math.max(DW / target.width, KITCHEN_H / target.height);
-          comboFront.scale.set(fs);
-          comboBack.alpha = 0;
-        }
-        onDone?.();
-      },
-    });
+  interface LayerSlot { cont: Container; sprite: Sprite | null; key: string | null; }
+  const layerSlots: Record<string, LayerSlot> = {
+    uppers:  { cont: uppersCont,  sprite: null, key: null },
+    lowers:  { cont: lowersCont,  sprite: null, key: null },
+    counter: { cont: counterCont, sprite: null, key: null },
+    splash:  { cont: splashCont,  sprite: null, key: null },
+  };
+
+  function buildLayerSprite(name: string, t: Texture, key: string): Sprite {
+    const sp = new Sprite(t);
+    if (name === "uppers") {
+      sp.anchor.set(0.5, 0);
+      sp.scale.set(UPPERS_H / t.height);          // fixed height, full-bleed width
+      sp.position.set(DW / 2, UPPERS_TOP);
+    } else if (name === "lowers") {
+      sp.anchor.set(0.5, 1);
+      sp.scale.set(LOWERS_H / t.height);
+      sp.position.set(DW / 2, LOWERS_BASE);
+    } else if (name === "counter") {
+      sp.anchor.set(0.5, 1);
+      sp.scale.set((DW + 60) / t.width);          // slight overhang both sides
+      sp.position.set(DW / 2, COUNTER_BOT + (COUNTER_DY[key] ?? 0));
+    } else {                                      // splash: cover-fit the band
+      const bandH = SPLASH_BOT - SPLASH_TOP;
+      sp.anchor.set(0.5, 0.5);
+      sp.scale.set(Math.max(DW / t.width, bandH / t.height));
+      sp.position.set(DW / 2, SPLASH_TOP + bandH / 2);
+    }
+    return sp;
   }
 
-  // Style-only fade used by the hook→step1 transition.
-  function crossfadeToStyle(targetIdx: number, duration = 0.5, onDone?: () => void): void {
-    crossfadeToCombo(targetIdx, targetIdx === 0 ? 0 : 1, 0, duration, onDone);
+  type LayerAnim = "none" | "slide-up" | "slide-down" | "drop" | "wipe";
+
+  // Swap ONE layer: the outgoing sprite animates out, the incoming animates in.
+  function setLayer(name: string, key: string, anim: LayerAnim, onDone?: () => void): void {
+    const slot = layerSlots[name];
+    const t = tex(key);
+    if (!t || slot.key === key) { onDone?.(); return; }
+    slot.key = key;
+    const old = slot.sprite;
+    const sp = buildLayerSprite(name, t, key);
+    slot.sprite = sp;
+
+    if (old && anim !== "none") {
+      gsap.killTweensOf(old);
+      const out = anim === "slide-up" ? { y: old.y - 46 } :
+                  anim === "slide-down" ? { y: old.y + 46 } : {};
+      gsap.to(old, { ...out, alpha: 0, duration: 0.3, ease: "power2.in",
+        onComplete: () => { slot.cont.removeChild(old); old.destroy(); } });
+    } else if (old) {
+      slot.cont.removeChild(old); old.destroy();
+    }
+
+    slot.cont.addChild(sp);
+    if (anim === "none") { onDone?.(); return; }
+
+    if (anim === "wipe") {
+      // Left→right wipe reveal of the new splash inside the band.
+      const wm = new Graphics();
+      splashCont.addChild(wm);
+      sp.mask = wm;
+      const proxy = { w: 0 };
+      gsap.to(proxy, { w: DW, duration: 0.55, ease: "power2.inOut",
+        onUpdate: () => { wm.clear(); wm.rect(0, SPLASH_TOP, proxy.w, SPLASH_BOT - SPLASH_TOP).fill({ color: 0xffffff }); },
+        onComplete: () => { sp.mask = null; splashCont.removeChild(wm); wm.destroy(); onDone?.(); } });
+      return;
+    }
+    if (anim === "drop") {
+      sp.alpha = 0; sp.y -= 44;
+      gsap.to(sp, { alpha: 1, duration: 0.16 });
+      gsap.to(sp, { y: sp.y + 44, duration: 0.45, ease: "bounce.out", onComplete: () => onDone?.() });
+      return;
+    }
+    // slide-up / slide-down (incoming arrives from the same direction)
+    const fromY = sp.y + (anim === "slide-up" ? -46 : 46);
+    const toY = sp.y;
+    sp.y = fromY; sp.alpha = 0;
+    gsap.to(sp, { y: toY, alpha: 1, duration: 0.38, ease: "back.out(1.6)", delay: 0.12, onComplete: () => onDone?.() });
   }
 
-  // ── Band positions kept ONLY for shimmer/sparkle FX targeting ─────────────
-  // (the actual surface change is photographic via the combo matrix; these
-  // fractions just aim the light-sweep FX at the right zone of the photo)
-  const SPLASH_Y  = Math.round(KITCHEN_H * SPLASH_Y_FRAC);
-  const SPLASH_H  = Math.round(KITCHEN_H * SPLASH_H_FRAC);
-  const COUNTER_Y = Math.round(KITCHEN_H * COUNTER_Y_FRAC);
-  const COUNTER_H = Math.round(KITCHEN_H * COUNTER_H_FRAC);
+  // Pick-level helpers: each pick touches ONLY its own layers.
+  function setStyle(s: number, animate: boolean, onDone?: () => void): void {
+    setLayer("uppers", STYLE_KEYS[s].uppers, animate ? "slide-up" : "none");
+    setLayer("lowers", STYLE_KEYS[s].lowers, animate ? "slide-down" : "none", onDone);
+  }
+  function setCounter(c: number, animate: boolean, onDone?: () => void): void {
+    setLayer("counter", COUNTER_KEYS[c], animate ? "drop" : "none", onDone);
+  }
+  function setSplash(tIdx: number, animate: boolean, onDone?: () => void): void {
+    setLayer("splash", SPLASH_KEYS[tIdx], animate ? "wipe" : "none", onDone);
+  }
 
-  // (band overlays removed — every pick is a photographic frame swap; the
-  //  COUNTER_Y/SPLASH_Y fractions above only aim shimmer + sparkle FX)
+  // ── Band positions for shimmer/sparkle FX targeting ───────────────────────
+  const SPLASH_Y  = SPLASH_TOP;
+  const SPLASH_H  = 150;
+  const COUNTER_Y = 452;
+  const COUNTER_H = 60;
+  void SPLASH_Y_FRAC; void SPLASH_H_FRAC; void COUNTER_Y_FRAC; void COUNTER_H_FRAC;
 
   // ── Procedural fallback kitchen (used if sprites fail to load) ────────────
   const SAFE_PAD = 10;
@@ -455,14 +550,16 @@ async function main(): Promise<void> {
   }
 
   // Switch to show sprites or fallback.
-  // When sprites loaded: only update crossfade + overlays; no need to rebuild.
+  // When layers loaded: set every layer to its current pick (no animation).
   // When no sprites: rebuild full procedural container.
-  const hasSprites = !!(tBaseModern && tBaseFarm);
+  const hasSprites = !!(tRoom && tex(STYLE_KEYS[0].uppers) && tex(STYLE_KEYS[0].lowers) &&
+    tex(STYLE_KEYS[1].uppers) && tex(STYLE_KEYS[1].lowers) && tex(COUNTER_KEYS[0]) && tex(SPLASH_KEYS[0]));
 
   function setKitchen(sIdx: number, _cIdx: number, _tIdx: number, _withBonus = false): void {
     if (hasSprites) {
-      // Jump-cut to the style base frame (no animation here — animated swaps are called separately)
-      crossfadeToStyle(sIdx, 0.01);
+      setStyle(sIdx, false);
+      setCounter(_cIdx, false);
+      setSplash(_tIdx, false);
     } else {
       // Procedural fallback
       if (kitchenFallbackCont) {
@@ -475,82 +572,44 @@ async function main(): Promise<void> {
     }
   }
 
-  // ── Wipe line (hook split: Modern left, Farmhouse right) ──────────────────
-  // With sprites: we show both stacked sprites with a vertical mask/clip wipe.
-  // The farmhouse sprite is revealed on the right via a rect mask on a separate
-  // container that mirrors the old wipe approach.
-  const wipeCont = new Container();
-  bgLayer.addChild(wipeCont);
+  // ── Hook preview: the kitchen flips styles by swapping ONLY the cabinet
+  // layers — it literally demos the layered-swap mechanic before the first tap.
+  const toggleLabelCont = new Container();
+  bgLayer.addChild(toggleLabelCont);
+  let toggleTimer: gsap.core.Tween | null = null;
+  let toggleIdx = 0;
 
-  // Wipe-specific second sprite container (farmhouse half shown to the right)
-  const wipeFarmCont = new Container();
-  if (tBaseFarm) {
-    const wipeFarmSpr = makeCoverSprite(tBaseFarm, DW, KITCHEN_H);
-    wipeFarmCont.addChild(wipeFarmSpr);
+  function showToggleLabel(idx: number): void {
+    toggleLabelCont.removeChildren().forEach(cc => (cc as Container).destroy?.());
+    const pill = new Graphics().roundRect(0, 0, 150, 36, 18).fill({ color: 0x000000, alpha: 0.5 });
+    const t = new Text({ text: STYLE_NAMES[idx], style: { fill: TXT, fontFamily: FONT, fontWeight: "bold", fontSize: 19 } });
+    t.anchor.set(0.5);
+    t.position.set(75, 18);
+    const lc = new Container();
+    lc.addChild(pill, t);
+    lc.position.set(DW / 2 - 75, KITCHEN_H * 0.52);
+    lc.alpha = 0;
+    toggleLabelCont.addChild(lc);
+    gsap.to(lc, { alpha: 1, duration: 0.25 });
   }
-  const wipeFarmMask = new Graphics();
-  wipeFarmCont.mask = wipeFarmMask;
-  // We'll add wipeFarmCont above kitchenSpriteCont during wipe
-  kitchenLayer.addChild(wipeFarmCont);
-  kitchenLayer.addChild(wipeFarmMask); // mask must also be in the scene
 
-  // Divider/label overlay (always in wipeCont)
-  function buildWipeDivider(splitX: number): void {
-    wipeCont.removeChildren().forEach(cc => (cc as Container).destroy?.());
-    if (splitX >= DW - 4) return;
-    // Divider line + arrow
-    const line = new Graphics();
-    line.rect(splitX - 2, 0, 4, KITCHEN_H).fill({ color: PRIMARY });
-    line.poly([splitX - 14, KITCHEN_H / 2 - 22, splitX + 14, KITCHEN_H / 2, splitX - 14, KITCHEN_H / 2 + 22])
-      .fill({ color: 0xffffff, alpha: 0.85 });
-    wipeCont.addChild(line);
-    // Style labels
-    const mkLabel = (txt: string, x: number): void => {
-      const pill = new Graphics().roundRect(0, 0, 100, 34, 17).fill({ color: 0x000000, alpha: 0.45 });
-      const t = new Text({ text: txt, style: { fill: TXT, fontFamily: FONT, fontWeight: "bold", fontSize: 18 } });
-      t.anchor.set(0.5);
-      t.position.set(50, 17);
-      const lc = new Container();
-      lc.addChild(pill, t);
-      lc.position.set(x - 50, KITCHEN_H / 2 + 36);
-      wipeCont.addChild(lc);
+  function startStyleToggle(): void {
+    toggleIdx = 0;
+    showToggleLabel(0);
+    const tick = (): void => {
+      if (state !== "step1") return;
+      toggleIdx = 1 - toggleIdx;
+      setStyle(toggleIdx, true);
+      showToggleLabel(toggleIdx);
+      toggleTimer = gsap.delayedCall(WIPE_SPEED + 0.5, tick);
     };
-    if (splitX > 60)       mkLabel("Modern",    splitX / 2);
-    if (splitX < DW - 60)  mkLabel("Farmhouse", splitX + (DW - splitX) / 2);
+    toggleTimer = gsap.delayedCall(WIPE_SPEED + 0.5, tick);
   }
 
-  // Update mask + divider for current splitX (absolute DW coords)
-  function buildWipeRight(splitX: number): void {
-    // Update farmhouse right-half mask
-    wipeFarmMask.clear();
-    wipeFarmMask.rect(splitX, 0, DW - splitX, KITCHEN_H).fill({ color: 0xffffff });
-    buildWipeDivider(splitX);
-  }
-
-  let wipeX = DW / 2;
-  let wipeTween: gsap.core.Tween | null = null;
-
-  function startWipe(): void {
-    wipeX = DW / 2;
-    wipeFarmCont.visible = true;
-    buildWipeRight(wipeX);
-    const proxy = { x: wipeX };
-    wipeTween = gsap.to(proxy, {
-      x: DW * 0.28,
-      duration: WIPE_SPEED,
-      ease: "sine.inOut",
-      yoyo: true,
-      repeat: -1,
-      onUpdate: () => { wipeX = proxy.x; buildWipeRight(wipeX); },
-    });
-  }
-
-  function stopWipe(): void {
-    wipeTween?.kill();
-    wipeTween = null;
-    wipeFarmCont.visible = false;
-    wipeFarmMask.clear();
-    wipeCont.removeChildren().forEach(cc => (cc as Container).destroy?.());
+  function stopStyleToggle(): void {
+    toggleTimer?.kill();
+    toggleTimer = null;
+    toggleLabelCont.removeChildren().forEach(cc => (cc as Container).destroy?.());
   }
 
   // ── White flash for crossfade assist ─────────────────────────────────────
@@ -698,6 +757,10 @@ async function main(): Promise<void> {
             .fill({ color: subCol, alpha: 0.5 });
       }
     }
+    // Clip the swatch pattern to its tile (step-3 brick rows overflow otherwise)
+    const sMask = new Graphics().roundRect(6, 6, swatchW, CARD_H - 12, 6).fill({ color: 0xffffff });
+    sC.addChild(sMask);
+    sG.mask = sMask;
     sC.addChild(sG);
 
     const lblX = swatchW + 10;
@@ -705,7 +768,7 @@ async function main(): Promise<void> {
     const lbl = new Text({ text: label, style: { fill: TXT, fontFamily: FONT, fontWeight: "bold", fontSize: 20, align: "center" } });
     lbl.anchor.set(0.5, 0.5);
     lbl.position.set(lblX + lblAreaW / 2, CARD_H / 2 - 8);
-    fit(lbl, lblAreaW);
+    fit(lbl, lblAreaW - 10);
     sC.addChild(lbl);
 
     const tapLbl = new Text({ text: "Tap to pick", style: { fill: TXT, fontFamily: FONT, fontSize: 12, align: "center" } });
@@ -797,13 +860,13 @@ async function main(): Promise<void> {
       .to(kitchenLayer, { x: 0, y: 0, duration: 0.28, ease: "power2.inOut" }, 0.24);
   }
 
-  // Reveal slow zoom-out: 1.06 → 1.0 per spec
+  // Reveal: cinematic zoom to FULL-BLEED — the 800-tall scene grows ×1.2 to
+  // cover the whole 960 canvas (no dead letterbox under the kitchen).
   function cameraRevealZoomOut(onDone: () => void): void {
-    kitchenLayer.scale.set(1.06);
-    kitchenLayer.position.set(-(DW * 0.03), -(DH * 0.03));
+    const Z = DH / KITCHEN_H;             // 1.2 → 800×1.2 = 960
     gsap.timeline({ onComplete: onDone })
-      .to(kitchenLayer.scale, { x: 1, y: 1, duration: 1.4, ease: "power2.inOut" })
-      .to(kitchenLayer, { x: 0, y: 0, duration: 1.4, ease: "power2.inOut" }, 0);
+      .to(kitchenLayer.scale, { x: Z, y: Z, duration: 1.4, ease: "power2.inOut" })
+      .to(kitchenLayer, { x: -(DW * (Z - 1)) / 2, y: 0, duration: 1.4, ease: "power2.inOut" }, 0);
   }
 
   // (tileCascade removed — it rained procedural tiles ON TOP of the photo,
@@ -832,9 +895,9 @@ async function main(): Promise<void> {
       hideGhostFinger();
       pickCt = idx;
       clearSwatches();
-      // Camera push-in pulse + photographic frame swap + shimmer on counter zone
+      // Camera push-in pulse + counter LAYER drop-in + shimmer on counter zone
       cameraPushIn(() => {
-        crossfadeToCombo(pickStyle, pickCt, 0, 0.35, () => {
+        setCounter(pickCt, true, () => {
           shimmerBand(COUNTER_Y, COUNTER_H);
           sparkle(DW / 2, COUNTER_Y + COUNTER_H / 2);
           drawProgress(0.66);
@@ -855,16 +918,14 @@ async function main(): Promise<void> {
       hideGhostFinger();
       pickTile = idx;
       clearSwatches();
-      // White-flash + photographic frame swap + shimmer on splash zone
-      whiteFlash(() => {
-        crossfadeToCombo(pickStyle, pickCt, pickTile, 0.35, () => {
-          shimmerBand(SPLASH_Y, SPLASH_H);
-          sparkle(DW / 2, SPLASH_Y + SPLASH_H / 2);
-          warmLightWash();
-          drawProgress(1.0);
-          setHint("Your kitchen is ready!");
-          gsap.delayedCall(0.7, goReveal);
-        });
+      // Splash LAYER wipe-reveal + shimmer on splash zone
+      setSplash(pickTile, true, () => {
+        shimmerBand(SPLASH_Y, SPLASH_H);
+        sparkle(DW / 2, SPLASH_Y + SPLASH_H / 2);
+        warmLightWash();
+        drawProgress(1.0);
+        setHint("Your kitchen is ready!");
+        gsap.delayedCall(0.7, goReveal);
       });
     });
   }
@@ -874,6 +935,8 @@ async function main(): Promise<void> {
     busy  = true;
     clearSwatches();
     hideGhostFinger();
+    stepLabel.text = "";          // no floating hint over the full-bleed scene
+    bottomZoneBg.visible = false; // scene covers the whole frame now
 
     // Reveal: slow zoom-out 1.06 → 1.0 + warm light wash + dust particles
     cameraRevealZoomOut(() => {
@@ -889,7 +952,7 @@ async function main(): Promise<void> {
     const choiceLine    = `${STYLE_NAMES[pickStyle]} · ${CT_NAMES[pickCt]} · ${TILE_NAMES[pickTile]}`;
     const bH = 140;
     const bannerG = new Container();
-    bannerG.addChild(new Graphics().rect(0, KITCHEN_H / 2 - bH / 2, DW, bH).fill({ color: 0x000000, alpha: 0.70 }));
+    bannerG.addChild(new Graphics().rect(0, KITCHEN_H / 2 - bH / 2, DW, bH).fill({ color: 0x000000, alpha: 0.86 }));
 
     const arcTxt = new Text({ text: archetypeName,
       style: { fill: TXT, fontFamily: FONT, fontWeight: "bold", fontSize: 34, align: "center" } });
@@ -921,6 +984,7 @@ async function main(): Promise<void> {
     stopDust();
     hideGhostFinger();
     clearSwatches();
+    stepLabel.text = "";
     overlayLayer.removeChildren().forEach(cc => cc.destroy());
 
     // Endcard bg = final composed scene (sprites already showing correct style + overlays)
@@ -944,13 +1008,16 @@ async function main(): Promise<void> {
     fit(brandTxt, pw - 50);
     panel.addChild(brandTxt);
 
-    // Kitchen thumbnail — the user's ACTUAL final photo frame, cover-fit
+    // Kitchen thumbnail — LIVE snapshot of the composed layered scene
     const thumbW = pw - 50, thumbH = 118;
     const thumbY = -ph / 2 + 90;
     const thumbCont = new Container();
-    const finalTex = tex(comboKey(pickStyle, pickCt, pickTile));
-    if (finalTex) {
-      const thumbSpr = makeCoverSprite(finalTex, thumbW, thumbH);
+    if (hasSprites) {
+      const rt = RenderTexture.create({ width: DW, height: KITCHEN_H, resolution: 1 });
+      app.renderer.render({ container: kitchenSpriteCont, target: rt, clear: true });
+      const thumbSpr = makeCoverSprite(rt as unknown as Texture, thumbW, thumbH);
+      // Frame the strip on counter + lowers (contrast) instead of the white-on-white splash centre
+      thumbSpr.y -= 43;
       const thumbMask = new Graphics().roundRect(0, 0, thumbW, thumbH, 8).fill({ color: 0xffffff });
       thumbCont.addChild(thumbMask, thumbSpr);
       thumbSpr.mask = thumbMask;
@@ -1001,8 +1068,8 @@ async function main(): Promise<void> {
       t.position.set(0, yOff);
       panel.addChild(t);
     };
-    mkTrust("✓ professional designers",      ph / 2 - 178);
-    mkTrust("✓ free consult, no obligation", ph / 2 - 156);
+    mkTrust("✓ 3D design included",      ph / 2 - 178);
+    mkTrust("✓ Licensed & insured pros", ph / 2 - 156);
 
     const ctaW = pw - 44, ctaH = 76;
     const ctaBg = new Graphics()
@@ -1073,12 +1140,11 @@ async function main(): Promise<void> {
     swatchLayer.removeChildren();
 
     buildHud();
-    // Ensure modern is shown
-    if (hasSprites) crossfadeToStyle(0, 0.01);
+    // Compose the initial layered kitchen (modern / quartz / classic)
     setKitchen(0, 0, 0);
     drawProgress(0.05);
     setHint("Tap your favorite style");
-    startWipe();
+    if (hasSprites) startStyleToggle();
 
     showSwatches(1, (idx) => {
       if (busy || state !== "step1") return;
@@ -1086,10 +1152,10 @@ async function main(): Promise<void> {
       hideGhostFinger();
       pickStyle = idx;
       clearSwatches();
-      stopWipe();
+      stopStyleToggle();
       if (hasSprites) {
         whiteFlash(() => {
-          crossfadeToStyle(pickStyle, 0.35, () => {
+          setStyle(pickStyle, true, () => {
             sparkle(DW / 2, KITCHEN_H / 2);
             drawProgress(0.33);
             gsap.delayedCall(0.2, goStep2);
