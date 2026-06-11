@@ -1,0 +1,14 @@
+{
+  "id": "carpet-clean-v1",
+  "name": "Carpet Clean — Persian / Vacuum",
+  "colors": {
+    "background": "#2a2020",
+    "primary": "#8a2828",
+    "accent": "#e0a040",
+    "text": "#ffffff"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 700
+  }
+}

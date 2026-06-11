@@ -1,0 +1,14 @@
+{
+  "id": "carpet-clean-v4",
+  "name": "Carpet Clean — Playroom / Sponge",
+  "colors": {
+    "background": "#2a2438",
+    "primary": "#d44a8a",
+    "accent": "#ffd23f",
+    "text": "#ffffff"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 700
+  }
+}

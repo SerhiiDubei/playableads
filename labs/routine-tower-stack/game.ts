@@ -769,7 +769,7 @@ async function main(): Promise<void> {
     }
     // Sun
     logoC.addChild(new Graphics().circle(0, -46, 7).fill({ color: COL_PRI }));
-    logoC.position.set(0, -ph / 2 + 50);
+    logoC.position.set(0, -ph / 2 + 60);
     panel.addChild(logoC);
 
     // Brand name
@@ -841,7 +841,7 @@ async function main(): Promise<void> {
     });
     ctaT.anchor.set(0.5);
     ctaC.addChild(ctaT);
-    ctaC.position.set(0, ph / 2 - ctaH / 2 - 60);
+    ctaC.position.set(0, ph / 2 - ctaH / 2 - 84);
     ctaC.eventMode = "static";
     ctaC.cursor    = "pointer";
     ctaC.on("pointertap", (e) => { e.stopPropagation(); window.FbPlayableAd.onCTAClick(); });
@@ -862,8 +862,8 @@ async function main(): Promise<void> {
         lineHeight: 13,
       },
     });
-    disc.anchor.set(0.5);
-    disc.position.set(0, ph / 2 - 22);
+    disc.anchor.set(0.5, 1);
+    disc.position.set(0, ph / 2 - 14);
     panel.addChild(disc);
 
     panel.position.set(w / 2, h / 2);

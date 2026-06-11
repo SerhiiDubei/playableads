@@ -14,7 +14,7 @@
     "brushStep": 14,
     "gridCols": 24,
     "gridRows": 40,
-    "snapFillThreshold": 0.70,
+    "snapFillThreshold": 0.985,
     "stubborns": 2,
     "idleHintMs": 3000,
     "autoDemoAfterIdles": 2,

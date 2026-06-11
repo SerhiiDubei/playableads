@@ -1073,7 +1073,7 @@ async function main(): Promise<void> {
     panel.addChild(endLine2);
 
     const trust1Bg = new Graphics().roundRect(-180, -24, 360, 48, 10).fill({ color: num("#EEF5EC") }).stroke({ width: 2, color: PRIMARY });
-    const trust1T = new Text({ text: "Licensed agents in [State]", style: { fill: cfg.style.colors.primary, fontFamily: FONT, fontWeight: "bold", fontSize: 17, align: "center" } });
+    const trust1T = new Text({ text: "Licensed agents in your state", style: { fill: cfg.style.colors.primary, fontFamily: FONT, fontWeight: "bold", fontSize: 17, align: "center" } });
     trust1T.anchor.set(0.5);
     const trust1 = new Container();
     trust1.addChild(trust1Bg, trust1T);
@@ -1113,7 +1113,7 @@ async function main(): Promise<void> {
     gsap.to(ctaCont.scale, { x: 1.04, y: 1.04, duration: 0.75, yoyo: true, repeat: -1, ease: "sine.inOut" });
 
     const disclaimer = new Text({
-      text: "Coverage depends on your policy terms and state. Exclusions apply. Licensed agents in [State].",
+      text: "Coverage depends on your policy terms and state. Exclusions apply. Licensed agents in your state.",
       style: { fill: "#7a6654", fontFamily: FONT, fontWeight: "700", fontSize: 11, align: "center", wordWrap: true, wordWrapWidth: pw - 40 },
     });
     disclaimer.anchor.set(0.5, 0);

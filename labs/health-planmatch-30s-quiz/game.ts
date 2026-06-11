@@ -867,11 +867,11 @@ async function main(): Promise<void> {
     // Dim overlay
     const dim = new Graphics()
       .rect(0, 0, w, h)
-      .fill({ color: 0x000000, alpha: 0.45 });
+      .fill({ color: 0x000000, alpha: 0.62 });
     overlayLayer.addChild(dim);
 
     const panelW = Math.min(w - 32, 340);
-    const panelH = Math.min(h * 0.76, 560);
+    const panelH = Math.min(h * 0.78, 470);
     const panel = new Container();
     panel.position.set((w - panelW) / 2, (h - panelH) / 2);
     panel.alpha = 0;
@@ -957,7 +957,7 @@ async function main(): Promise<void> {
 
     // Authority line
     const auth = new Text({
-      text: "Licensed agents. We represent [X] organizations",
+      text: "Licensed agents available in your state.",
       style: {
         fill: TXT,
         fontFamily: FONT,
@@ -972,10 +972,10 @@ async function main(): Promise<void> {
     auth.position.set(panelW / 2, 210);
     panel.addChild(auth);
 
-    // CTA button — bottom thumb zone, ≥44px height
+    // CTA button — bottom thumb zone, ≥44px height (disclaimer sits ABOVE it)
     const ctaH = 56;
     const ctaW = panelW - 44;
-    const ctaY = panelH - ctaH - 80; // space for disclaimer below
+    const ctaY = panelH - ctaH - 18;
     const cta = new Container();
     const ctaBg = new Graphics();
     ctaBg.roundRect(0, 0, ctaW, ctaH, 28).fill({ color: ACCENT });
@@ -999,34 +999,22 @@ async function main(): Promise<void> {
     gsap.to(cta.scale, { x: 1.04, y: 1.04, duration: 0.7, yoyo: true, repeat: -1, ease: "sine.inOut" });
     panel.addChild(cta);
 
-    // TPMO disclaimer — readable, visible without scroll (≥10px)
+    // TPMO disclaimer — readable (≥10px), ABOVE the CTA, no placeholders
     const disclaimer = new Text({
-      text: "We do not offer every plan available in your area. Currently we represent [X] organizations which offer [Y] products in your area. Please contact Medicare.gov, 1-800-MEDICARE, or your local State Health Insurance Program to get information on all of your options. Not connected with or endorsed by the United States government or the federal Medicare program.",
+      text: "We do not offer every plan available in your area. Any information we provide is limited to the plans we offer in your area. Please contact Medicare.gov or 1-800-MEDICARE to get information on all of your options. Not connected with or endorsed by the U.S. government or the federal Medicare program.",
       style: {
         fill: TXT,
         fontFamily: FONT,
         fontSize: 10,
-        align: "left",
+        align: "center",
         wordWrap: true,
-        wordWrapWidth: panelW - 28,
+        wordWrapWidth: panelW - 32,
       },
     });
     disclaimer.alpha = 0.8;
-    disclaimer.anchor.set(0, 0);
-    disclaimer.position.set(14, panelH - 74);
+    disclaimer.anchor.set(0.5, 1);
+    disclaimer.position.set(panelW / 2, ctaY - 10);
     panel.addChild(disclaimer);
-
-    // Replay link
-    const replayT = new Text({
-      text: "↻ Start over",
-      style: { fill: cfg.style.colors.primary, fontFamily: FONT, fontWeight: "700", fontSize: 13 },
-    });
-    replayT.anchor.set(0.5);
-    replayT.position.set(panelW / 2, panelH - 12);
-    replayT.eventMode = "static";
-    replayT.cursor = "pointer";
-    replayT.on("pointertap", (e) => { e.stopPropagation(); resetAll(); });
-    panel.addChild(replayT);
 
     gsap.to(panel, {
       alpha: 1,

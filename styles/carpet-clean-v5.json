@@ -1,0 +1,14 @@
+{
+  "id": "carpet-clean-v5",
+  "name": "Carpet Clean — Scandi / Roller",
+  "colors": {
+    "background": "#1f2a2a",
+    "primary": "#0e7c7b",
+    "accent": "#f4a259",
+    "text": "#ffffff"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 700
+  }
+}

@@ -759,12 +759,15 @@ async function main(): Promise<void> {
 
     onRevealLights();
 
-    const PW = DW - 36, PH = 360;
+    // ── Solid, centred panel — strict vertical rhythm, no overlaps ───────────
+    const PW = DW - 48, PH = 442;
     const panel = new Container();
     const panBg = new Graphics();
-    panBg.roundRect(0, 0, PW, PH, 22).fill({ color: num("#f7fafa"), alpha: 0.93 });
+    panBg.roundRect(0, 0, PW, PH, 22).fill({ color: num("#f7fafa") });           // SOLID
     panBg.roundRect(0, 0, PW, PH, 22).stroke({ width: 4, color: COL_ACCENT });
     panel.addChild(panBg);
+
+    let cy = 18; // running y-cursor — every block advances it, nothing overlaps
 
     const brandBg = new Graphics().roundRect(0, 0, 190, 42, 12).fill({ color: COL_PRIMARY });
     const brandTxt = new Text({
@@ -774,76 +777,103 @@ async function main(): Promise<void> {
     brandTxt.anchor.set(0.5); brandTxt.position.set(95, 21);
     const brandCont = new Container();
     brandCont.addChild(brandBg, brandTxt);
-    brandCont.position.set((PW - 190) / 2, 18);
+    brandCont.position.set((PW - 190) / 2, cy);
     panel.addChild(brandCont);
+    cy += 42 + 10;
 
     const tagT = new Text({
       text: "Satisfaction, restored.",
-      style: { fill: COL_PRIMARY, fontFamily: FONT, fontWeight: "bold", fontSize: 15, align: "center" },
+      style: { fill: COL_PRIMARY, fontFamily: FONT, fontWeight: "bold", fontSize: 14, align: "center" },
     });
-    tagT.anchor.set(0.5); tagT.position.set(PW / 2, 74);
+    tagT.anchor.set(0.5, 0); tagT.position.set(PW / 2, cy);
     panel.addChild(tagT);
+    cy += tagT.height + 8;
 
     const hlT = new Text({
       text: cfg.copy.title,
       style: {
-        fill: 0x1a1a1a, fontFamily: FONT, fontWeight: "bold", fontSize: 28, align: "center",
-        wordWrap: true, wordWrapWidth: PW - 36,
+        fill: 0x1a1a1a, fontFamily: FONT, fontWeight: "bold", fontSize: 26, align: "center",
+        wordWrap: true, wordWrapWidth: PW - 40,
       },
     });
-    hlT.anchor.set(0.5, 0); hlT.position.set(PW / 2, 96);
+    hlT.anchor.set(0.5, 0); hlT.position.set(PW / 2, cy);
     panel.addChild(hlT);
+    cy += hlT.height + 8;
 
     const elT = new Text({
-      text: "Patio 100% clean! Licensed & insured in [State].\nBooking is open — get your free estimate.",
+      text: "Patio 100% clean! Licensed & insured in your state.\nBooking is open — get your free estimate.",
       style: {
-        fill: 0x2a2a2a, fontFamily: FONT, fontWeight: "bold", fontSize: 15, align: "center",
-        wordWrap: true, wordWrapWidth: PW - 36,
+        fill: 0x2a2a2a, fontFamily: FONT, fontWeight: "normal", fontSize: 14, align: "center",
+        wordWrap: true, wordWrapWidth: PW - 40,
       },
     });
-    elT.anchor.set(0.5, 0); elT.position.set(PW / 2, 158);
+    elT.anchor.set(0.5, 0); elT.position.set(PW / 2, cy);
     panel.addChild(elT);
+    cy += elT.height + 12;
 
-    const prev = new Graphics();
-    const stripX = 14, stripY = 238, stripW = PW - 28, stripH = 58;
-    prev.roundRect(stripX, stripY, stripW, stripH, 8).fill({ color: PAVER_COLORS[0] });
-    for (let c = 0; c < 4; c++) {
-      const tx = stripX + c * (stripW / 4);
-      prev.rect(tx, stripY, GROUT_W, stripH).fill({ color: COL_GROUT });
-      if (c === 1 || c === 2) {
-        const cx = tx + (stripW / 4) / 2;
-        prev.poly([cx, stripY + 8, cx + 18, stripY + 29, cx, stripY + 50, cx - 18, stripY + 29])
-          .fill({ color: COL_TILE_PAT, alpha: 0.85 });
-      }
+    // Photo preview strip — the ACTUAL clean patio art, masked (fallback: pavers)
+    const stripW = PW - 28, stripH = 64;
+    const stripCont = new Container();
+    const cleanTex = TEX["patio-clean.webp"];
+    if (cleanTex) {
+      const sp = new Sprite(cleanTex);
+      const s = Math.max(stripW / cleanTex.width, stripH / cleanTex.height);
+      sp.scale.set(s);
+      sp.anchor.set(0.5);
+      sp.position.set(stripW / 2, stripH / 2);
+      const m = new Graphics().roundRect(0, 0, stripW, stripH, 10).fill({ color: 0xffffff });
+      stripCont.addChild(m, sp);
+      sp.mask = m;
+      stripCont.addChild(new Graphics().roundRect(0, 0, stripW, stripH, 10)
+        .stroke({ width: 2, color: COL_PRIMARY, alpha: 0.6 }));
+    } else {
+      const prev = new Graphics();
+      prev.roundRect(0, 0, stripW, stripH, 10).fill({ color: PAVER_COLORS[0] });
+      for (let c = 1; c < 4; c++) prev.rect(c * (stripW / 4), 0, GROUT_W, stripH).fill({ color: COL_GROUT });
+      stripCont.addChild(prev);
     }
-    panel.addChild(prev);
+    stripCont.position.set(14, cy);
+    panel.addChild(stripCont);
+    cy += stripH + 10;
 
     const disT = new Text({
       text: "Free estimate, no obligation. Results shown are illustrative.",
       style: {
         fill: 0x666666, fontFamily: FONT, fontWeight: "normal", fontSize: 11, align: "center",
-        wordWrap: true, wordWrapWidth: PW - 36,
+        wordWrap: true, wordWrapWidth: PW - 40,
       },
     });
-    disT.anchor.set(0.5, 0); disT.position.set(PW / 2, 274);
+    disT.anchor.set(0.5, 0); disT.position.set(PW / 2, cy);
     panel.addChild(disT);
+    cy += disT.height + 14;
 
-    const panX = 18;
-    const panY = DH - ctaH - 30 - PH - 10;
-    panel.position.set(panX, panY);
+    // CTA INSIDE the panel — bottom block, full-width
+    const inCtaW = PW - 28, inCtaH = 56;
+    const inCta = new Container();
+    const inCtaBg = new Graphics();
+    inCtaBg.roundRect(0, 0, inCtaW, inCtaH, 28).fill({ color: COL_ACCENT });
+    inCtaBg.roundRect(0, 0, inCtaW, inCtaH, 28).stroke({ width: 3, color: shade(COL_ACCENT, -0.22) });
+    const inCtaTxt = new Text({
+      text: cfg.copy.cta,
+      style: { fill: "#06302f", fontFamily: FONT, fontWeight: "bold", fontSize: 19 },
+    });
+    inCtaTxt.anchor.set(0.5); inCtaTxt.position.set(inCtaW / 2, inCtaH / 2);
+    inCta.addChild(inCtaBg, inCtaTxt);
+    inCta.eventMode = "static";
+    inCta.cursor = "pointer";
+    inCta.on("pointertap", (e) => { e.stopPropagation(); window.FbPlayableAd.onCTAClick(); });
+    inCta.position.set(14, cy);
+    panel.addChild(inCta);
+    gsap.to(inCta.scale, { x: 1.03, y: 1.03, duration: 0.68, yoyo: true, repeat: -1, ease: "sine.inOut", delay: 0.5 });
+
+    // Centre the panel; keep the legacy bottom CTA hidden (panel owns the CTA now)
+    panel.position.set((DW - PW) / 2, (DH - PH) / 2 - 16);
     panel.scale.set(0.82);
     panel.alpha = 0;
     overlayLayer.addChild(panel);
     gsap.to(panel, { alpha: 1, duration: 0.28, delay: 0.05 });
     gsap.to(panel.scale, { x: 1, y: 1, duration: 0.35, ease: "back.out(1.7)", delay: 0.05 });
-
-    ctaCont.position.set(24, DH - ctaH - 24);
-    ctaCont.visible = true;
-    ctaCont.alpha = 1;
-    gsap.to(ctaCont.scale, {
-      x: 1.04, y: 1.04, duration: 0.68, yoyo: true, repeat: -1,
-      ease: "sine.inOut", delay: 0.5,
-    });
+    ctaCont.visible = false;
 
     gsap.to(instrT, { alpha: 0, duration: 0.28 });
     gsap.to(hudBg, { alpha: 0, duration: 0.5 });

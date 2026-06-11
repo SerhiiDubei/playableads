@@ -1,25 +1,21 @@
 {
   "id": "budget-slider-bath-morph",
   "name": "Budget Slider: Bath Morph",
-  "description": "Interactive budget slider ($6K–$25K) that morphs a bathroom scene across three tiers (Standard/Premium/Luxury) at $8K/$15K/$22K thresholds with continuous micro-changes between thresholds. Variable reward: designer bonus objects + Best Value sweet-spot at $18.5K. Ends with tier reveal + CTA.",
+  "description": "One-room compositing: a single bathroom shell (3 finish variants of the SAME room via images.edit) + 12 isolated object cutouts in fixed slots. Budget slider ($6K-$25K) crosses 7 thresholds; each swaps/adds INDIVIDUAL objects with pop animations (LED mirror, oak vanity, towel warmer + plant, stone walls, freestanding tub, floating vanity, marble suite + glass shower). Ends with locked style + estimate CTA.",
   "entry": "game.ts",
   "assetBudgetBytes": 1468006,
   "style": "budget-slider-bath-morph",
   "copy": {
     "title": "$6K or $25K? Slide and see.",
-    "cta": "See My Estimate"
+    "cta": "Get My Free 3D Plan"
   },
   "params": {
     "minBudget": 6000,
     "maxBudget": 25000,
-    "startBudget": 9500,
-    "threshold1": 8000,
-    "threshold2": 15000,
-    "threshold3": 22000,
-    "sweetSpot": 18500,
-    "hysteresisPct": 3,
+    "startBudget": 6500,
     "idleHintMs": 6000,
     "autoDemoAfterMs": 8000,
-    "lockChipDelayMs": 12000
+    "brand": "RenoScope",
+    "tagline": "See your budget take shape."
   }
 }

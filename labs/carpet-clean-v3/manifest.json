@@ -1,0 +1,23 @@
+{
+  "id": "carpet-clean-v3",
+  "name": "Carpet Clean — Shaggy / Steam",
+  "description": "Oddly-satisfying carpet cleaning (stamp-mask reveal). Variant: beige shaggy rug cleaned with a steam mop. 100% clean required; idle auto-demo carries passive viewers to the endcard. Same engine as power-wash, surface/tool swapped per variant.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "style": "carpet-clean-v3",
+  "copy": {
+    "title": "So satisfying. Finish it.",
+    "cta": "Book My Deep Clean"
+  },
+  "params": {
+    "brushRadius": 40,
+    "brushStep": 14,
+    "gridCols": 22,
+    "gridRows": 30,
+    "winThreshold": 0.985,
+    "idleHintMs": 2600,
+    "eraseOffsetY": 88,
+    "brand": "FreshPile",
+    "tagline": "Deep clean. Pure calm."
+  }
+}

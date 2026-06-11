@@ -1,0 +1,14 @@
+{
+  "id": "carpet-clean-v2",
+  "name": "Carpet Clean — Geometric / Brush",
+  "colors": {
+    "background": "#1a2430",
+    "primary": "#1e3a5f",
+    "accent": "#f0b429",
+    "text": "#ffffff"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 700
+  }
+}

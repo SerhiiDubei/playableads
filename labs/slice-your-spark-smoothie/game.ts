@@ -654,57 +654,83 @@ async function main(): Promise<void> {
 
     // Dark overlay
     const ovBg = new Graphics();
-    ovBg.rect(0, 0, w, h).fill({ color: 0x000000, alpha: 0.72 });
+    ovBg.rect(0, 0, w, h).fill({ color: 0x000000, alpha: 0.6 });
     ov.addChild(ovBg);
 
-    // Background gradient panel
-    const panel = new Graphics();
-    panel.roundRect(w * 0.05, h * 0.18, w * 0.9, h * 0.64, 24).fill({ color: COL_BG, alpha: 0.97 });
-    panel.roundRect(w * 0.05, h * 0.18, w * 0.9, h * 0.64, 24).stroke({ width: 2, color: COL_PRIMARY, alpha: 0.7 });
-    ov.addChild(panel);
+    // Solid centred panel, vertical rhythm via cy-cursor (zero overlaps).
+    // Panel bg height is computed AFTER content is laid out (no dead zone).
+    const PW = Math.min(w - 40, 330);
+    const panel = new Container();
+    const panBg = new Graphics();
+    panel.addChild(panBg);
 
-    // Brand name
-    const brandEnd = new Text({ text: "Zestful", style: { fill: COL_PRIMARY, fontFamily: fam, fontSize: 36, fontWeight: "900", align: "center" } });
-    brandEnd.anchor.set(0.5, 0); brandEnd.x = w / 2; brandEnd.y = h * 0.22;
-    ov.addChild(brandEnd);
+    let pcy = 18;
+    const brandBg = new Graphics().roundRect(0, 0, 180, 46, 12).fill({ color: COL_PRIMARY });
+    const brandTxt = new Text({ text: "Zestful", style: { fill: "#1a2a28", fontFamily: fam, fontWeight: "900", fontSize: 26 } });
+    brandTxt.anchor.set(0.5); brandTxt.position.set(90, 23);
+    const brandCont = new Container();
+    brandCont.addChild(brandBg, brandTxt);
+    brandCont.position.set((PW - 180) / 2, pcy);
+    panel.addChild(brandCont);
+    pcy += 56;
 
-    // Tagline
-    const tagline = new Text({ text: "Energy you can taste.", style: { fill: COL_LIME, fontFamily: fam, fontSize: 18, fontWeight: "700", align: "center" } });
-    tagline.anchor.set(0.5, 0); tagline.x = w / 2; tagline.y = h * 0.30;
-    ov.addChild(tagline);
+    const tagline = new Text({ text: "Energy you can taste.", style: { fill: COL_LIME, fontFamily: fam, fontSize: 15, fontWeight: "700", align: "center" } });
+    tagline.anchor.set(0.5, 0); tagline.position.set(PW / 2, pcy);
+    panel.addChild(tagline);
+    pcy += tagline.height + 10;
 
-    // Endcard headline
-    const headline = new Text({ text: "Blend complete!", style: { fill: COL_WHITE, fontFamily: fam, fontSize: 32, fontWeight: "900", align: "center" } });
-    headline.anchor.set(0.5, 0); headline.x = w / 2; headline.y = h * 0.37;
-    ov.addChild(headline);
+    const headline = new Text({ text: "Blend complete!", style: { fill: COL_WHITE, fontFamily: fam, fontSize: 28, fontWeight: "900", align: "center" } });
+    headline.anchor.set(0.5, 0); headline.position.set(PW / 2, pcy);
+    panel.addChild(headline);
+    pcy += headline.height + 10;
 
-    // Offer line
     const offerLine = new Text({
       text: "Continue to claim 20% off\nyour first month",
-      style: { fill: COL_TEXT, fontFamily: fam, fontSize: 18, fontWeight: "700", align: "center", wordWrap: true, wordWrapWidth: w * 0.75, lineHeight: 26 }
+      style: { fill: COL_TEXT, fontFamily: fam, fontSize: 16, fontWeight: "700", align: "center", wordWrap: true, wordWrapWidth: PW - 40, lineHeight: 22 }
     });
-    offerLine.anchor.set(0.5, 0); offerLine.x = w / 2; offerLine.y = h * 0.46;
-    ov.addChild(offerLine);
+    offerLine.anchor.set(0.5, 0); offerLine.position.set(PW / 2, pcy);
+    panel.addChild(offerLine);
+    pcy += offerLine.height + 14;
 
-    // Disclaimer
     const disclaimerStr = "*These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease. Results may vary.";
     const disc = new Text({
       text: disclaimerStr,
-      style: { fill: COL_WHITE, fontFamily: fam, fontSize: 10, fontWeight: "400", align: "center", wordWrap: true, wordWrapWidth: w * 0.82, alpha: 0.65 }
+      style: { fill: COL_WHITE, fontFamily: fam, fontSize: 10, fontWeight: "400", align: "center", wordWrap: true, wordWrapWidth: PW - 36 }
     });
-    disc.anchor.set(0.5, 1); disc.x = w / 2; disc.y = h * 0.81;
-    ov.addChild(disc);
+    disc.alpha = 0.65;
+    disc.anchor.set(0.5, 0); disc.position.set(PW / 2, pcy);
+    panel.addChild(disc);
+    pcy += disc.height + 14;
+
+    // CTA inside the panel
+    const inCtaW = PW - 32, inCtaH = 56;
+    const inCta = new Container();
+    const inCtaBg = new Graphics();
+    inCtaBg.roundRect(0, 0, inCtaW, inCtaH, 28).fill({ color: COL_PRIMARY });
+    inCtaBg.roundRect(0, 0, inCtaW, inCtaH, 28).stroke({ width: 3, color: 0xffffff, alpha: 0.35 });
+    const inCtaTxt = new Text({ text: "Continue — Claim 20% Off", style: { fill: "#1a2a28", fontFamily: fam, fontWeight: "900", fontSize: 19 } });
+    inCtaTxt.anchor.set(0.5); inCtaTxt.position.set(inCtaW / 2, inCtaH / 2);
+    if (inCtaTxt.width > inCtaW * 0.9) inCtaTxt.scale.set((inCtaW * 0.9) / inCtaTxt.width);
+    inCta.addChild(inCtaBg, inCtaTxt);
+    inCta.eventMode = "static";
+    inCta.cursor = "pointer";
+    inCta.on("pointertap", (e: any) => { e.stopPropagation(); (window as any).FbPlayableAd.onCTAClick(); });
+    inCta.position.set(16, pcy);
+    panel.addChild(inCta);
+    gsap.to(inCta.scale, { x: 1.03, y: 1.03, duration: 0.65, yoyo: true, repeat: -1, ease: "sine.inOut", delay: 0.6 });
+    pcy += inCtaH + 16;
+
+    const PH = pcy;
+    panBg.roundRect(0, 0, PW, PH, 22).fill({ color: COL_BG });
+    panBg.roundRect(0, 0, PW, PH, 22).stroke({ width: 3, color: COL_PRIMARY });
+    panel.position.set((w - PW) / 2, (h - PH) / 2 - 10);
+    ov.addChild(panel);
 
     uiLayer.addChild(ov);
     gsap.to(ov, { alpha: 1, duration: 0.4, delay: 0.3 });
 
-    // Defect 5: Show CTA only in endcard — bring to top, make visible, animate
-    uiLayer.removeChild(cta);
-    uiLayer.addChild(cta);
-    cta.visible = true;
-    cta.scale.set(1);
-    gsap.killTweensOf(cta.scale);
-    gsap.to(cta.scale, { x: 1.08, y: 1.08, duration: 0.6, yoyo: true, repeat: -1, ease: "sine.inOut" });
+    // Legacy bottom CTA stays hidden — the endcard CTA lives inside the panel.
+    cta.visible = false;
   }
 
   // ─────────────────────── STATE ───────────────────────

@@ -1,0 +1,14 @@
+{
+  "id": "carpet-clean-v3",
+  "name": "Carpet Clean — Shaggy / Steam",
+  "colors": {
+    "background": "#2e2a24",
+    "primary": "#7a6a52",
+    "accent": "#4ecdc4",
+    "text": "#ffffff"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 700
+  }
+}

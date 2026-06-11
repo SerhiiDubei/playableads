@@ -530,14 +530,7 @@ async function main(): Promise<void> {
     nudgeTxt.position.set(ww / 2, grassY - hh * 0.28);
     ghostCont.position.set(ww * 0.35, grassY - hh * 0.12);
 
-    // ── CTA ───────────────────────────────────────────────────────────────────
-    const bw = Math.min(ww * 0.76, 280);
-    const bh = 56;
-    const bx = (ww - bw) / 2;
-    const by = hh - bh - hh * 0.04;
-    ctaBg.clear().roundRect(bx, by, bw, bh, 28).fill({ color: C_ACC });
-    ctaTxt.position.set(ww / 2, by + bh / 2);
-
+    // CTA geometry is owned by buildEndcard (drawn INSIDE the panel).
     buildEndcard(ww, hh);
   }
 
@@ -547,7 +540,7 @@ async function main(): Promise<void> {
     endcardCont.addChild(new Graphics().rect(0, 0, ww, hh).fill({ color: 0x000000, alpha: 0.5 }));
 
     const pw = Math.min(ww * 0.88, 360);
-    const ph = hh * 0.65;
+    const ph = Math.min(hh * 0.62, 396);
     const px = (ww - pw) / 2;
     const py = (hh - ph) / 2 - hh * 0.04;
 
@@ -567,7 +560,7 @@ async function main(): Promise<void> {
     endcardCont.addChild(brandTxt);
 
     const iconG = new Graphics();
-    const ix = ww / 2, iy = py + 80;
+    const ix = ww / 2, iy = py + 102;
     iconG.poly([ix - 30, iy, ix, iy - 40, ix + 30, iy]).fill({ color: C_PRI });
     iconG.poly([ix - 22, iy - 16, ix, iy - 50, ix + 22, iy - 16]).fill({ color: num("#3a7f60") });
     iconG.rect(ix - 4, iy, 8, 20).fill({ color: num("#6b4c2a") });
@@ -578,7 +571,7 @@ async function main(): Promise<void> {
     endcardCont.addChild(iconG);
 
     const badgeG = new Graphics()
-      .roundRect(ww / 2 - 68, py + 136, 136, 28, 10)
+      .roundRect(ww / 2 - 68, py + 162, 136, 28, 10)
       .fill({ color: C_PRI });
     endcardCont.addChild(badgeG);
     const badgeTxt = new Text({
@@ -586,7 +579,7 @@ async function main(): Promise<void> {
       style: { fill: 0xffffff, fontFamily: FONT, fontWeight: "bold", fontSize: 16, align: "center" },
     });
     badgeTxt.anchor.set(0.5);
-    badgeTxt.position.set(ww / 2, py + 150);
+    badgeTxt.position.set(ww / 2, py + 176);
     endcardCont.addChild(badgeTxt);
 
     const lineTxt = new Text({
@@ -602,11 +595,22 @@ async function main(): Promise<void> {
       },
     });
     lineTxt.anchor.set(0.5, 0);
-    lineTxt.position.set(ww / 2, py + 176);
+    lineTxt.position.set(ww / 2, py + 202);
     endcardCont.addChild(lineTxt);
 
+    // CTA INSIDE the panel bottom; disclaimer right above it.
+    const bw = pw - 36;
+    const bh = 56;
+    const by = py + ph - bh - 16;
+    ctaBg.clear()
+      .roundRect((ww - bw) / 2, by, bw, bh, 28)
+      .fill({ color: C_ACC })
+      .stroke({ width: 3, color: 0x000000, alpha: 0.2 });
+    ctaTxt.position.set(ww / 2, by + bh / 2);
+    if (ctaTxt.width > bw * 0.88) ctaTxt.scale.set((bw * 0.88) / ctaTxt.width);
+
     const discTxt = new Text({
-      text: "Coverage varies by state. Licensed agents in [State]. No obligation.",
+      text: "Coverage varies by state. Licensed agents in your state. No obligation.",
       style: {
         fill: C_TXT,
         fontFamily: FONT,
@@ -617,7 +621,7 @@ async function main(): Promise<void> {
       },
     });
     discTxt.anchor.set(0.5, 1);
-    discTxt.position.set(ww / 2, py + ph - 8);
+    discTxt.position.set(ww / 2, by - 10);
     endcardCont.addChild(discTxt);
   }
 
