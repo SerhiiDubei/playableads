@@ -265,13 +265,37 @@ async function main(): Promise<void> {
   splashCont.mask = splashMask;
   kitchenSpriteCont.addChild(splashCont);
 
-  // Object layer containers in painter order.
+  // Gradient strip texture (canvas) for contact shadows / AO seams.
+  function makeGradTex(h: number, a0: number): Texture {
+    const cv = document.createElement("canvas");
+    cv.width = 4; cv.height = h;
+    const cx = cv.getContext("2d")!;
+    const g = cx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, `rgba(0,0,0,${a0})`);
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    cx.fillStyle = g;
+    cx.fillRect(0, 0, 4, h);
+    return Texture.from(cv);
+  }
+  function aoStrip(y: number, h: number, a0: number): Sprite {
+    const sp = new Sprite(makeGradTex(h, a0));
+    sp.position.set(0, y);
+    sp.width = DW; sp.height = h;
+    sp.blendMode = "multiply";
+    return sp;
+  }
+
+  // Object layer containers in painter order, with STATIC shadow/AO seams
+  // between them ("glue" the cutouts into one photo — research item #1).
   const uppersCont  = new Container();
   const lowersCont  = new Container();
   const counterCont = new Container();
   uppersCont.x = ROWS_X_SHIFT;
   lowersCont.x = ROWS_X_SHIFT;
-  kitchenSpriteCont.addChild(uppersCont, lowersCont, counterCont);
+  const aoUnderUppers  = aoStrip(UPPERS_TOP + UPPERS_H - 2, 20, 0.28); // uppers cast onto splash
+  const shadowFloor    = aoStrip(LOWERS_BASE - 6, 26, 0.38);           // lowers contact w/ floor
+  const aoUnderCounter = aoStrip(COUNTER_BOT - 2, 16, 0.30);           // counter overhang on lowers
+  kitchenSpriteCont.addChild(aoUnderUppers, uppersCont, shadowFloor, lowersCont, aoUnderCounter, counterCont);
 
   // Pendants: static garnish, gentle swing.
   const tPend = tex("pendants.webp");
@@ -297,6 +321,41 @@ async function main(): Promise<void> {
     kitchenSpriteCont.addChild(pc);
     gsap.to(pc, { rotation: 0.008, duration: 2.8, yoyo: true, repeat: -1, ease: "sine.inOut" });
   }
+
+  // Unified grade + vignette over ALL scene layers ("one photo" — item #2).
+  const warmGrade = new Graphics().rect(0, 0, DW, KITCHEN_H).fill({ color: 0xffb070, alpha: 0.07 });
+  warmGrade.blendMode = "add";
+  const vigCv = document.createElement("canvas");
+  vigCv.width = 270; vigCv.height = 400;
+  {
+    const vctx = vigCv.getContext("2d")!;
+    const rg = vctx.createRadialGradient(135, 200, 110, 135, 200, 250);
+    rg.addColorStop(0, "rgba(0,0,0,0)");
+    rg.addColorStop(0.65, "rgba(0,0,0,0)");
+    rg.addColorStop(1, "rgba(0,0,0,0.30)");
+    vctx.fillStyle = rg;
+    vctx.fillRect(0, 0, 270, 400);
+  }
+  const vignette = new Sprite(Texture.from(vigCv));
+  vignette.width = DW; vignette.height = KITCHEN_H;
+  vignette.blendMode = "multiply";
+  kitchenSpriteCont.addChild(warmGrade, vignette);
+
+  // BEFORE-state overlay (grimy desaturated kitchen) for the hook + the
+  // before/after curtain at reveal (items #3 and #8).
+  const beforeCont = new Container();
+  const beforeMul = new Graphics().rect(0, 0, DW, KITCHEN_H).fill({ color: 0x96897a });
+  beforeMul.blendMode = "multiply";
+  beforeCont.addChild(beforeMul);
+  let bseed = 13;
+  const brnd = () => { bseed = (bseed * 16807) % 2147483647; return bseed / 2147483647; };
+  for (let i = 0; i < 14; i++) {
+    beforeCont.addChild(new Graphics()
+      .circle(30 + brnd() * (DW - 60), 80 + brnd() * (KITCHEN_H - 160), 14 + brnd() * 30)
+      .fill({ color: 0x4a3c28, alpha: 0.10 + brnd() * 0.12 }));
+  }
+  kitchenSpriteCont.addChild(beforeCont);
+  let beforeRT: RenderTexture | null = null;
 
   interface LayerSlot { cont: Container; sprite: Sprite | null; key: string | null; }
   const layerSlots: Record<string, LayerSlot> = {
@@ -1133,6 +1192,27 @@ async function main(): Promise<void> {
     stepLabel.text = "";          // no floating hint over the full-bleed scene
     bottomZoneBg.visible = false; // scene covers the whole frame now
 
+    // BEFORE/AFTER curtain: the grimy snapshot wipes away bottom-up to expose
+    // the finished kitchen (contrast beat shown twice — research item #8).
+    let wipeDelay = 0;
+    if (beforeRT) {
+      wipeDelay = 0.8;
+      const beforeSpr = new Sprite(beforeRT);
+      const bm = new Graphics().rect(0, 0, DW, KITCHEN_H).fill({ color: 0xffffff });
+      beforeSpr.mask = bm;
+      kitchenSpriteCont.addChild(beforeSpr, bm);
+      const proxy = { h: KITCHEN_H };
+      gsap.to(proxy, {
+        h: 0, duration: 0.85, ease: "power2.inOut", delay: 0.1,
+        onUpdate: () => { bm.clear(); bm.rect(0, 0, DW, proxy.h).fill({ color: 0xffffff }); },
+        onComplete: () => {
+          beforeSpr.mask = null;
+          kitchenSpriteCont.removeChild(beforeSpr, bm);
+          beforeSpr.destroy(); bm.destroy();
+        },
+      });
+    }
+
     // Reveal: full-bleed zoom + roll-call + lights ON + confetti
     cameraRevealZoomOut(() => {
       busy = false;
@@ -1150,7 +1230,7 @@ async function main(): Promise<void> {
       [lowersCont,  DW / 2, LOWERS_BASE - LOWERS_H / 2],
     ];
     zones.forEach(([zc, zx, zy], i) => {
-      const d = 0.35 + i * 0.14;
+      const d = wipeDelay + 0.35 + i * 0.14;
       zc.pivot.set(zx, zy); zc.position.set(zx + (zc === uppersCont || zc === lowersCont ? ROWS_X_SHIFT : 0), zy);
       gsap.timeline({ delay: d })
         .to(zc.scale, { x: 1.03, y: 1.03, duration: 0.11, ease: "sine.inOut" })
@@ -1160,14 +1240,14 @@ async function main(): Promise<void> {
 
     // Pendant lights ON (staggered warm glow + flicker)
     pendantGlows.forEach((glow, i) => {
-      gsap.timeline({ delay: 0.95 + i * 0.12 })
+      gsap.timeline({ delay: wipeDelay + 0.95 + i * 0.12 })
         .to(glow, { alpha: 0.85, duration: 0.3, ease: "sine.out" })
         .to(glow, { alpha: 0.7, duration: 0.06 })
         .to(glow, { alpha: 0.85, duration: 0.06 });
     });
 
     // Confetti rain + camera punch
-    gsap.delayedCall(1.1, () => {
+    gsap.delayedCall(wipeDelay + 1.1, () => {
       if (state !== "reveal") return;
       for (let i = 0; i < 26; i++) {
         const q = new Graphics().rect(-4, -6, 8, 12).fill({ color: [0xC96F4A, 0xB5915A, 0xF5EFE3, 0x7FB069][i % 4] });
@@ -1206,9 +1286,9 @@ async function main(): Promise<void> {
 
     bannerG.alpha = 0;
     overlayLayer.addChild(bannerG);
-    gsap.to(bannerG, { alpha: 1, duration: 0.4, delay: 0.25 });
+    gsap.to(bannerG, { alpha: 1, duration: 0.4, delay: wipeDelay + 0.25 });
     gsap.to(bannerG, {
-      alpha: 0, duration: 0.3, delay: 0.25 + REVEAL_HOLD,
+      alpha: 0, duration: 0.3, delay: wipeDelay + 0.25 + REVEAL_HOLD,
       onComplete: () => { overlayLayer.removeChild(bannerG); bannerG.destroy({ children: true }); },
     });
   }
@@ -1380,7 +1460,43 @@ async function main(): Promise<void> {
     setKitchen(0, 0, 0);
     drawProgress(0.05);
     setHint("Tap your favorite style");
-    if (hasSprites) startStyleToggle();
+
+    // HOOK: grimy BEFORE-kitchen + challenge line, dissolves into the clean
+    // scene (first beat = before/after). Snapshot the before-state for the
+    // reveal curtain.
+    if (hasSprites) {
+      beforeCont.visible = true;
+      beforeCont.alpha = 1;
+      if (!beforeRT) {
+        beforeRT = RenderTexture.create({ width: DW, height: KITCHEN_H, resolution: 1 });
+        app.renderer.render({ container: kitchenSpriteCont, target: beforeRT, clear: true });
+      }
+      const hookT = new Text({
+        text: "Can you fix this kitchen?",
+        style: { fill: 0xffffff, fontFamily: FONT, fontWeight: "bold", fontSize: 34, align: "center", wordWrap: true, wordWrapWidth: DW - 80,
+          dropShadow: { color: 0x000000, blur: 6, distance: 2, alpha: 0.8 } },
+      });
+      hookT.anchor.set(0.5);
+      hookT.position.set(DW / 2, KITCHEN_H * 0.42);
+      hookT.scale.set(0.8); hookT.alpha = 0;
+      uiLayer.addChild(hookT);
+      gsap.to(hookT, { alpha: 1, duration: 0.3, delay: 0.3 });
+      gsap.to(hookT.scale, { x: 1, y: 1, duration: 0.4, ease: "back.out(2)", delay: 0.3 });
+      gsap.delayedCall(1.7, () => {
+        gsap.to(hookT, { alpha: 0, duration: 0.3, onComplete: () => { uiLayer.removeChild(hookT); hookT.destroy(); } });
+        gsap.to(beforeCont, { alpha: 0, duration: 0.55, ease: "power2.inOut",
+          onComplete: () => { beforeCont.visible = false; } });
+        whiteFlash();
+        sparkle(DW / 2, KITCHEN_H * 0.45, 10);
+        startStyleToggle();
+        // Pointer hint over the left card right after the dissolve (item #4)
+        gsap.delayedCall(1.0, () => {
+          if (state === "step1" && ghostFinger === null) {
+            showGhostFinger(CARD_L_X + CARD_W / 2, CARDS_Y + CARD_H / 2);
+          }
+        });
+      });
+    }
 
     showSwatches(1, (idx) => {
       if (busy || state !== "step1") return;
