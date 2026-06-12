@@ -1,10 +1,41 @@
-import { Application, Container, Graphics, Text } from "pixi.js";
+import { Application, Container, Graphics, NineSliceSprite, Sprite, Text, Texture } from "pixi.js";
 import { gsap } from "gsap";
 import type { PlayableConfig } from "../../src/types.js";
 import { makeArc, randomLaunchAngle, DifficultyController } from "../../src/assetgen/kit/motion.js";
 
 declare const __PLAYABLE_CONFIG__: PlayableConfig;
 const cfg: PlayableConfig = __PLAYABLE_CONFIG__;
+
+// ── Texture registry + brand font ─────────────────────────────────────────────
+const TEX: Record<string, Texture> = {};
+async function preloadTextures(): Promise<void> {
+  await Promise.all(Object.entries(cfg.assets).map(async ([k, uri]) => {
+    if (!/\.(webp|png)$/i.test(k)) return;
+    const img = new Image(); img.src = uri as string;
+    try { await img.decode(); } catch { return; }
+    TEX[k] = Texture.from(img);
+  }));
+}
+function tex(key: string): Texture | null { return TEX[key] ?? null; }
+function makeSprite(key: string, targetW: number): Sprite | null {
+  const t = tex(key);
+  if (!t) return null;
+  const s = new Sprite(t);
+  s.anchor.set(0.5);
+  s.scale.set(targetW / t.width);
+  return s;
+}
+let FONT = cfg.style.font.family;
+async function loadBrandFont(): Promise<void> {
+  const data = cfg.assets["font.woff2"] as string | undefined;
+  if (!data) return;
+  try {
+    const ff = new FontFace("BrandFont", `url(${data})`);
+    await ff.load();
+    document.fonts.add(ff);
+    FONT = `BrandFont, ${cfg.style.font.family}`;
+  } catch { /* keep fallback */ }
+}
 
 declare global {
   interface Window {
@@ -24,11 +55,10 @@ const COL_WHITE   = 0xffffff;
 
 // ── Defect 7: Readable fruit definitions — solid saturated fills, ≥56px diameter ──
 const FRUITS = [
-  { name: "Vitamin C",  color: 0xFF6B00, r: 30, shape: "orange"  },   // bold orange
-  { name: "Greens",     color: 0x2ECC40, r: 28, shape: "spinach" },   // bright green blob
-  { name: "Protein",    color: 0xC0392B, r: 28, shape: "berry"   },   // deep red berry cluster
-  { name: "Vitamin C",  color: 0xFFD700, r: 30, shape: "circle"  },   // bright lemon
-  { name: "Greens",     color: 0x27AE60, r: 32, shape: "spinach" },   // kiwi flesh
+  { name: "Vitamin C", color: 0xFF6B00, r: 30, shape: "orange",  key: "orange"     },
+  { name: "Greens",    color: 0x27AE60, r: 32, shape: "spinach", key: "kiwi"       },
+  { name: "Protein",   color: 0xC0392B, r: 28, shape: "berry",   key: "strawberry" },
+  { name: "Energy",    color: 0xFFD700, r: 30, shape: "circle",  key: "banana"     },
 ] as const;
 
 // Junk items: donut, soda can — react with bounce/poof
@@ -40,6 +70,9 @@ const JUNK = [
 async function main(): Promise<void> {
   if (!window.FbPlayableAd) window.FbPlayableAd = { onCTAClick: () => {} };
   void (() => window.FbPlayableAd.onCTAClick); // validator grep anchor
+
+  await preloadTextures();
+  await loadBrandFont();
 
   const app = new Application();
   await app.init({
@@ -106,16 +139,25 @@ async function main(): Promise<void> {
     }
   }
 
-  // ─────────────────────── GLASS METER ───────────────────────
-  // Defects 3 & 4: Glass fully inset from right edge, lives in play area only
+  // ─────────────────────── BLENDER METER (AI sprites) ───────────────────────
+  // liquid (procedural, masked to jar interior) renders BEHIND the transparent
+  // glass jar sprite, on top of the blender base.
   const glassCont   = new Container();
   const glassBody   = new Graphics();
   const liquidMask  = new Graphics();
   const liquidFill  = new Graphics();
   const glassShine  = new Graphics();
-  const meterLabel  = new Text({ text: "Morning\nBlend", style: { fill: COL_TEXT, fontFamily: cfg.style.font.family, fontSize: 11, fontWeight: "700", align: "center", lineHeight: 14 } });
+  const meterLabel  = new Text({ text: "Morning\nBlend", style: { fill: COL_TEXT, fontFamily: FONT, fontSize: 11, fontWeight: "700", align: "center", lineHeight: 14 } });
   meterLabel.anchor.set(0.5, 0);
-  glassCont.addChild(glassBody, liquidFill, glassShine, meterLabel);
+  const jarTex = tex("blender-jar.webp"), baseTex = tex("blender-base.webp");
+  let jarSp: Sprite | null = null, baseSp: Sprite | null = null;
+  if (jarTex && baseTex) {
+    jarSp = new Sprite(jarTex);   jarSp.anchor.set(0.5, 1);
+    baseSp = new Sprite(baseTex); baseSp.anchor.set(0.5, 1);
+    glassCont.addChild(baseSp, liquidFill, jarSp, meterLabel);
+  } else {
+    glassCont.addChild(glassBody, liquidFill, glassShine, meterLabel);
+  }
   liquidFill.mask = liquidMask;
   glassCont.addChild(liquidMask);
   uiLayer.addChild(glassCont);
@@ -130,38 +172,58 @@ async function main(): Promise<void> {
   let ZONE_CTA_H    = 80;   // px: CTA bottom zone
 
   function drawGlass(w: number, h: number): void {
-    const gw = 52;
-    // Defect 4: glass lives in play area only — below header + instr zone
     const playTop = ZONE_HEADER_H + ZONE_INSTR_H + 10;
     const playBot = h - ZONE_CTA_H - 16;
     const availH  = playBot - playTop;
+
+    if (jarSp && baseSp) {
+      // Blender bottom-right: base on the floor of the play zone, jar on top.
+      const bw = Math.min(110, w * 0.26);
+      baseSp.scale.set(bw / baseSp.texture.width);
+      const baseH = baseSp.texture.height * baseSp.scale.x;
+      const jw = bw * 0.94;
+      jarSp.scale.set(jw / jarSp.texture.width);
+      const jarH = jarSp.texture.height * jarSp.scale.x;
+
+      glassCont.x = w - bw / 2 - 16;
+      glassCont.y = playBot;
+      baseSp.position.set(0, 0);
+      jarSp.position.set(0, -baseH * 0.92);
+
+      // Liquid inside the jar: rounded rect masked to jar interior
+      const jarBot = -baseH * 0.92 - jarH * 0.06;
+      const innerW = jw * 0.74, innerH = jarH * 0.82;
+      const fillH = innerH * meterPct;
+      liquidMask.clear();
+      liquidMask.roundRect(-innerW / 2, jarBot - fillH, innerW, fillH, 6).fill({ color: 0xffffff });
+      liquidFill.clear();
+      liquidFill.roundRect(-innerW / 2, jarBot - innerH, innerW, innerH, 6).fill({ color: 0xFF9F1C, alpha: 0.92 });
+      // wobble bubbles on top of the liquid line
+      liquidFill.circle(-innerW * 0.2, jarBot - fillH + 4, 3).fill({ color: 0xFFC95C, alpha: 0.9 });
+      liquidFill.circle(innerW * 0.22, jarBot - fillH + 6, 2.4).fill({ color: 0xFFC95C, alpha: 0.9 });
+
+      meterLabel.x = 0;
+      meterLabel.y = -baseH - jarH - 26;
+      return;
+    }
+
+    // Fallback: procedural trapezoid glass
+    const gw = 52;
     const gh = Math.min(availH * 0.55, h * 0.32);
-
-    // Defect 3: right edge ≥ 12px from screen edge
     const gx = w - gw - 14;
-    const gy = playTop + (availH - gh) * 0.08; // slight top of play area
-
+    const gy = playTop + (availH - gh) * 0.08;
     glassCont.x = gx; glassCont.y = gy;
-
     glassBody.clear();
-    // Trapezoid glass shape
     glassBody.poly([8, 0, gw - 8, 0, gw, gh, 0, gh]).fill({ color: COL_WHITE, alpha: 0.12 });
     glassBody.poly([8, 0, gw - 8, 0, gw, gh, 0, gh]).stroke({ width: 2.5, color: COL_WHITE, alpha: 0.55 });
-    // Rim
     glassBody.roundRect(4, -6, gw - 8, 10, 4).fill({ color: COL_WHITE, alpha: 0.28 });
-
-    // Liquid fill (masked)
     const fillH = gh * meterPct;
     liquidMask.clear();
     liquidMask.poly([2, gh - fillH, gw - 2, gh - fillH, gw - 1, gh - 1, 1, gh - 1]).fill({ color: 0xffffff, alpha: 1 });
-
     liquidFill.clear();
     liquidFill.poly([1, 0, gw - 1, 0, gw - 1, gh, 1, gh]).fill({ color: 0xFF9F1C, alpha: 0.88 });
-
     glassShine.clear();
     glassShine.rect(gw * 0.18, 4, gw * 0.12, gh * 0.72).fill({ color: COL_WHITE, alpha: 0.12 });
-
-    // Label ABOVE the glass (inside safe area)
     meterLabel.x = gw / 2;
     meterLabel.y = -28;
   }
@@ -324,9 +386,17 @@ async function main(): Promise<void> {
 
     const cont = new Container();
     const body = new Graphics();
-    if (isKiwi) {
-      const kbody = makeKiwiFruit();
-      cont.addChild(kbody);
+    // AI sprite fruit (fallback: procedural shape)
+    const key = isKiwi ? "kiwi" : FRUITS[fruitIdx].key;
+    const sp = makeSprite(`fruit-${key}.webp`, (isKiwi ? 52 : r) * 2.3);
+    if (sp) {
+      cont.addChild(sp);
+      if (isCrit) {
+        const glow = new Graphics().circle(0, 0, r * 1.35).fill({ color: 0xFFE08A, alpha: 0.35 });
+        cont.addChildAt(glow, 0);
+      }
+    } else if (isKiwi) {
+      cont.addChild(makeKiwiFruit());
     } else {
       drawFruitShape(body, fruitIdx, r, isCrit);
       cont.addChild(body);
@@ -405,13 +475,20 @@ async function main(): Promise<void> {
 
   function spawnJuiceToGlass(x: number, y: number, color: number): void {
     const w = window.innerWidth, h = window.innerHeight;
-    const gw = 52;
-    const playTop = ZONE_HEADER_H + ZONE_INSTR_H + 10;
-    const playBot = h - ZONE_CTA_H - 16;
-    const availH  = playBot - playTop;
-    const gh = Math.min(availH * 0.55, h * 0.32);
-    const gx = (w - gw - 14) + gw / 2; // center of glass
-    const gy = playTop + (availH - gh) * 0.08 + gh * (1 - meterTarget);
+    // Aim at the blender jar mouth (sprite path) or the old glass (fallback)
+    let gx: number, gy: number;
+    if (jarSp && baseSp) {
+      gx = glassCont.x;
+      gy = glassCont.y + jarSp.y - jarSp.texture.height * jarSp.scale.x * 0.9;
+    } else {
+      const gw = 52;
+      const playTop = ZONE_HEADER_H + ZONE_INSTR_H + 10;
+      const playBot = h - ZONE_CTA_H - 16;
+      const availH  = playBot - playTop;
+      const gh = Math.min(availH * 0.55, h * 0.32);
+      gx = (w - gw - 14) + gw / 2;
+      gy = playTop + (availH - gh) * 0.08 + gh * (1 - meterTarget);
+    }
     const g = new Graphics();
     g.circle(0, 0, 6).fill({ color, alpha: 0.85 });
     g.x = x; g.y = y;
@@ -432,6 +509,18 @@ async function main(): Promise<void> {
 
   function spawnHalves(x: number, y: number, fruitIdx: number, r: number, angle: number): void {
     const col = FRUITS[fruitIdx % FRUITS.length].color;
+    // AI juicy cross-section sprite: pops at the cut point, spins and falls
+    const halfSp = makeSprite(`half-${FRUITS[fruitIdx % FRUITS.length].key}.webp`, r * 2.6);
+    if (halfSp) {
+      const c = new Container();
+      c.addChild(halfSp);
+      c.x = x; c.y = y; c.rotation = angle;
+      c.scale.set(0.6);
+      fxLayer.addChild(c);
+      gsap.to(c.scale, { x: 1, y: 1, duration: 0.18, ease: "back.out(2.5)" });
+      halves.push({ cont: c, body: new Graphics(), vx: (Math.random() - 0.5) * 120, vy: -110, rot: (Math.random() - 0.5) * 3, life: 0 });
+      return;
+    }
     for (const side of [-1, 1]) {
       const c = new Container();
       const hbody = new Graphics();
@@ -463,7 +552,7 @@ async function main(): Promise<void> {
   }
 
   // ─────────────────────── UI ELEMENTS ───────────────────────
-  const fam = cfg.style.font.family;
+  const fam = FONT;
 
   // ── Defects 1: Brand chip on its own row, headline below it ──
   // Brand name / "Z" logo (procedural) — ROW 1
@@ -658,11 +747,14 @@ async function main(): Promise<void> {
     ov.addChild(ovBg);
 
     // Solid centred panel, vertical rhythm via cy-cursor (zero overlaps).
-    // Panel bg height is computed AFTER content is laid out (no dead zone).
+    // Panel bg = AI 9-slice frame (fallback: Graphics); height computed AFTER content.
     const PW = Math.min(w - 40, 330);
     const panel = new Container();
     const panBg = new Graphics();
-    panel.addChild(panBg);
+    const frameTex = tex("ui-frame.webp");
+    const panFrame = frameTex ? new NineSliceSprite({ texture: frameTex, leftWidth: 70, rightWidth: 70, topHeight: 70, bottomHeight: 70 }) : null;
+    if (panFrame) panel.addChild(panFrame);
+    else panel.addChild(panBg);
 
     let pcy = 18;
     const brandBg = new Graphics().roundRect(0, 0, 180, 46, 12).fill({ color: COL_PRIMARY });
@@ -674,33 +766,28 @@ async function main(): Promise<void> {
     panel.addChild(brandCont);
     pcy += 56;
 
-    const tagline = new Text({ text: "Energy you can taste.", style: { fill: COL_LIME, fontFamily: fam, fontSize: 15, fontWeight: "700", align: "center" } });
-    tagline.anchor.set(0.5, 0); tagline.position.set(PW / 2, pcy);
-    panel.addChild(tagline);
-    pcy += tagline.height + 10;
-
-    const headline = new Text({ text: "Blend complete!", style: { fill: COL_WHITE, fontFamily: fam, fontSize: 28, fontWeight: "900", align: "center" } });
+    const txtCol = panFrame ? 0x1a3a38 : COL_WHITE;   // frame is cream → dark text
+    const headline = new Text({ text: "Blend complete!", style: { fill: txtCol, fontFamily: fam, fontSize: 30, fontWeight: "900", align: "center" } });
     headline.anchor.set(0.5, 0); headline.position.set(PW / 2, pcy);
     panel.addChild(headline);
-    pcy += headline.height + 10;
+    pcy += headline.height + 8;
 
     const offerLine = new Text({
-      text: "Continue to claim 20% off\nyour first month",
-      style: { fill: COL_TEXT, fontFamily: fam, fontSize: 16, fontWeight: "700", align: "center", wordWrap: true, wordWrapWidth: PW - 40, lineHeight: 22 }
+      text: "20% off your first month",
+      style: { fill: panFrame ? COL_PRIMARY : COL_TEXT, fontFamily: fam, fontSize: 18, fontWeight: "700", align: "center" }
     });
     offerLine.anchor.set(0.5, 0); offerLine.position.set(PW / 2, pcy);
     panel.addChild(offerLine);
-    pcy += offerLine.height + 14;
+    pcy += offerLine.height + 12;
 
-    const disclaimerStr = "*These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease. Results may vary.";
     const disc = new Text({
-      text: disclaimerStr,
-      style: { fill: COL_WHITE, fontFamily: fam, fontSize: 10, fontWeight: "400", align: "center", wordWrap: true, wordWrapWidth: PW - 36 }
+      text: "*Not evaluated by the FDA. Results may vary.",
+      style: { fill: txtCol, fontFamily: fam, fontSize: 10, fontWeight: "400", align: "center", wordWrap: true, wordWrapWidth: PW - 36 }
     });
     disc.alpha = 0.65;
     disc.anchor.set(0.5, 0); disc.position.set(PW / 2, pcy);
     panel.addChild(disc);
-    pcy += disc.height + 14;
+    pcy += disc.height + 12;
 
     // CTA inside the panel
     const inCtaW = PW - 32, inCtaH = 56;
@@ -721,8 +808,13 @@ async function main(): Promise<void> {
     pcy += inCtaH + 16;
 
     const PH = pcy;
-    panBg.roundRect(0, 0, PW, PH, 22).fill({ color: COL_BG });
-    panBg.roundRect(0, 0, PW, PH, 22).stroke({ width: 3, color: COL_PRIMARY });
+    if (panFrame) {
+      panFrame.width = PW;
+      panFrame.height = PH;
+    } else {
+      panBg.roundRect(0, 0, PW, PH, 22).fill({ color: COL_BG });
+      panBg.roundRect(0, 0, PW, PH, 22).stroke({ width: 3, color: COL_PRIMARY });
+    }
     panel.position.set((w - PW) / 2, (h - PH) / 2 - 10);
     ov.addChild(panel);
 

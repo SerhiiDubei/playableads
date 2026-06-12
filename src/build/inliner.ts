@@ -45,6 +45,7 @@ function mimeFor(file: string): string {
     ".mp3": "audio/mpeg",
     ".wav": "audio/wav",
     ".ogg": "audio/ogg",
+    ".woff2": "font/woff2",
   };
   return map[ext] ?? "application/octet-stream";
 }

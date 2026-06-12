@@ -49,7 +49,17 @@ const C_TXT   = num(cfg.style.colors.text);         // #1A3D2B dark green
 const C_RAIN  = 0x7ab8d4;
 const C_CLOUD = 0xdce8f0;
 const C_SUN   = 0xffe066;
-const FONT    = cfg.style.font.family;
+let FONT = cfg.style.font.family;
+async function loadBrandFont(): Promise<void> {
+  const data = cfg.assets["font.woff2"] as string | undefined;
+  if (!data) return;
+  try {
+    const ff = new FontFace("BrandFont", `url(${data})`);
+    await ff.load();
+    document.fonts.add(ff);
+    FONT = `BrandFont, ${cfg.style.font.family}`;
+  } catch { /* keep fallback */ }
+}
 
 // ── Phase / state ──────────────────────────────────────────────────────────────
 type Phase = "hook" | "bit1" | "bit2" | "bit3" | "reveal" | "end";
@@ -110,6 +120,7 @@ function tex(key: string): Texture | null { return TEX[key] ?? null; }
 async function main(): Promise<void> {
   // ── Preload sprites first ──────────────────────────────────────────────────
   await preloadTextures();
+  await loadBrandFont();
 
   const app = new Application();
   await app.init({
@@ -540,7 +551,7 @@ async function main(): Promise<void> {
     endcardCont.addChild(new Graphics().rect(0, 0, ww, hh).fill({ color: 0x000000, alpha: 0.5 }));
 
     const pw = Math.min(ww * 0.88, 360);
-    const ph = Math.min(hh * 0.62, 396);
+    const ph = Math.min(hh * 0.6, 348);
     const px = (ww - pw) / 2;
     const py = (hh - ph) / 2 - hh * 0.04;
 
@@ -560,7 +571,7 @@ async function main(): Promise<void> {
     endcardCont.addChild(brandTxt);
 
     const iconG = new Graphics();
-    const ix = ww / 2, iy = py + 102;
+    const ix = ww / 2, iy = py + 96;
     iconG.poly([ix - 30, iy, ix, iy - 40, ix + 30, iy]).fill({ color: C_PRI });
     iconG.poly([ix - 22, iy - 16, ix, iy - 50, ix + 22, iy - 16]).fill({ color: num("#3a7f60") });
     iconG.rect(ix - 4, iy, 8, 20).fill({ color: num("#6b4c2a") });
@@ -571,7 +582,7 @@ async function main(): Promise<void> {
     endcardCont.addChild(iconG);
 
     const badgeG = new Graphics()
-      .roundRect(ww / 2 - 68, py + 162, 136, 28, 10)
+      .roundRect(ww / 2 - 68, py + 150, 136, 28, 10)
       .fill({ color: C_PRI });
     endcardCont.addChild(badgeG);
     const badgeTxt = new Text({
@@ -579,23 +590,23 @@ async function main(): Promise<void> {
       style: { fill: 0xffffff, fontFamily: FONT, fontWeight: "bold", fontSize: 16, align: "center" },
     });
     badgeTxt.anchor.set(0.5);
-    badgeTxt.position.set(ww / 2, py + 176);
+    badgeTxt.position.set(ww / 2, py + 164);
     endcardCont.addChild(badgeTxt);
 
     const lineTxt = new Text({
-      text: "They stayed dry. Find a life plan\nthat fits — free plan match,\nno obligation.",
+      text: "They stayed dry — find a plan that fits.",
       style: {
         fill: C_TXT,
         fontFamily: FONT,
         fontWeight: "bold",
-        fontSize: 16,
+        fontSize: 17,
         align: "center",
         wordWrap: true,
         wordWrapWidth: pw * 0.84,
       },
     });
     lineTxt.anchor.set(0.5, 0);
-    lineTxt.position.set(ww / 2, py + 202);
+    lineTxt.position.set(ww / 2, py + 190);
     endcardCont.addChild(lineTxt);
 
     // CTA INSIDE the panel bottom; disclaimer right above it.

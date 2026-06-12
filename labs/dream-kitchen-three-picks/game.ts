@@ -37,7 +37,17 @@ function shade(c: number, f: number): number {
 const PRIMARY = num(cfg.style.colors.primary);
 const ACCENT = num(cfg.style.colors.accent);
 const TXT = cfg.style.colors.text;
-const FONT = cfg.style.font.family;
+let FONT = cfg.style.font.family;
+async function loadBrandFont(): Promise<void> {
+  const data = cfg.assets["font.woff2"] as string | undefined;
+  if (!data) return;
+  try {
+    const ff = new FontFace("BrandFont", `url(${data})`);
+    await ff.load();
+    document.fonts.add(ff);
+    FONT = `BrandFont, ${cfg.style.font.family}`;
+  } catch { /* keep fallback */ }
+}
 
 // ── Design canvas — portrait 9:16 ─────────────────────────────────────────────
 const DW = 540, DH = 960;
@@ -118,7 +128,7 @@ const ARCHETYPES: string[][][] = [
   [["The Cottage Dreamer",  "The Classic Homemaker"], ["The Rustic Romantic",  "The Warm Traditionalist"]],
 ];
 
-type State = "hook" | "step1" | "step2" | "step3" | "reveal" | "end";
+type State = "hook" | "step1" | "step2" | "step3" | "step4" | "reveal" | "end";
 
 async function main(): Promise<void> {
   const app = new Application();
@@ -137,6 +147,7 @@ async function main(): Promise<void> {
 
   // ── Preload textures ──────────────────────────────────────────────────────
   await preloadTextures();
+  await loadBrandFont();
 
   // ── Layers ────────────────────────────────────────────────────────────────
   const root    = new Container();
@@ -163,6 +174,7 @@ async function main(): Promise<void> {
   let pickStyle    = 0;
   let pickCt       = 0;
   let pickTile     = 0;
+  let pickLight    = 0;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function fit(t: Text, maxW: number): void {
@@ -298,28 +310,67 @@ async function main(): Promise<void> {
   kitchenSpriteCont.addChild(aoUnderUppers, uppersCont, shadowFloor, lowersCont, aoUnderCounter, counterCont);
 
   // Pendants: static garnish, gentle swing.
-  const tPend = tex("pendants.webp");
-  const pendantGlows: Graphics[] = [];
-  if (tPend) {
-    const pc = new Container();
-    const sp = new Sprite(tPend);
+  // Lighting layer — the 4th pick: globe duo vs linear bar (swappable).
+  const PENDANT_KEYS = ["pendants.webp", "pendants-bar.webp"];
+  const LIGHT_NAMES = ["Globe Duo", "Linear Bar"];
+  const pendCont = new Container();
+  pendCont.position.set(132, -4);   // foreground, left of the hood
+  kitchenSpriteCont.addChild(pendCont);
+  gsap.to(pendCont, { rotation: 0.008, duration: 2.8, yoyo: true, repeat: -1, ease: "sine.inOut" });
+  let pendantGlows: Graphics[] = [];
+  let pendKey = "";
+
+  function buildPendants(key: string): Container | null {
+    const t = tex(key);
+    if (!t) return null;
+    const c = new Container();
+    const sp = new Sprite(t);
     sp.anchor.set(0.5, 0);
-    const ps = 230 / tPend.height;
+    const ps = 230 / t.height;
     sp.scale.set(ps);
-    pc.addChild(sp);
-    // Warm glow per globe — lit during the final reveal ("lights ON" beat)
-    const dispW = tPend.width * ps;
-    for (const gx of [-dispW * 0.25, dispW * 0.25]) {
-      const glow = new Graphics().circle(0, 0, 40).fill({ color: 0xffd890, alpha: 1 });
-      glow.position.set(gx, 188);
-      glow.alpha = 0;
-      glow.blendMode = "add";
-      pc.addChild(glow);
-      pendantGlows.push(glow);
+    c.addChild(sp);
+    const dispW = t.width * ps;
+    const glows: Graphics[] = [];
+    if (key === "pendants-bar.webp") {
+      const glow = new Graphics().ellipse(0, 0, dispW * 0.5, 26).fill({ color: 0xffd890, alpha: 1 });
+      glow.position.set(0, 218);
+      glow.alpha = 0; glow.blendMode = "add";
+      c.addChild(glow); glows.push(glow);
+    } else {
+      for (const gx of [-dispW * 0.25, dispW * 0.25]) {
+        const glow = new Graphics().circle(0, 0, 40).fill({ color: 0xffd890, alpha: 1 });
+        glow.position.set(gx, 188);
+        glow.alpha = 0; glow.blendMode = "add";
+        c.addChild(glow); glows.push(glow);
+      }
     }
-    pc.position.set(132, -4);   // foreground pair left of the hood
-    kitchenSpriteCont.addChild(pc);
-    gsap.to(pc, { rotation: 0.008, duration: 2.8, yoyo: true, repeat: -1, ease: "sine.inOut" });
+    pendantGlows = glows;
+    return c;
+  }
+
+  function setLighting(idx: number, animate: boolean, onDone?: () => void): void {
+    const key = PENDANT_KEYS[idx];
+    if (key === pendKey || !tex(key)) { onDone?.(); return; }
+    pendKey = key;
+    const olds = [...pendCont.children];
+    const fresh = buildPendants(key);
+    if (!fresh) { onDone?.(); return; }
+    if (!animate) {
+      olds.forEach(o => { gsap.killTweensOf(o); pendCont.removeChild(o); o.destroy(); });
+      pendCont.addChild(fresh);
+      onDone?.();
+      return;
+    }
+    // Old fixture lifts UP off-screen; new one drops in and settles with a swing.
+    olds.forEach(o => {
+      gsap.killTweensOf(o);
+      gsap.to(o, { y: -260, alpha: 0, duration: 0.32, ease: "back.in(1.5)",
+        onComplete: () => { pendCont.removeChild(o); o.destroy(); } });
+    });
+    fresh.y = -260;
+    pendCont.addChild(fresh);
+    gsap.to(fresh, { y: 0, duration: 0.5, ease: "bounce.out", delay: 0.22,
+      onComplete: () => { sparkle(pendCont.x, 200, 6); onDone?.(); } });
   }
 
   // Unified grade + vignette over ALL scene layers ("one photo" — item #2).
@@ -814,6 +865,7 @@ async function main(): Promise<void> {
       setStyle(sIdx, false);
       setCounter(_cIdx, false);
       setSplash(_tIdx, false);
+      setLighting(0, false);
     } else {
       // Procedural fallback
       if (kitchenFallbackCont) {
@@ -970,10 +1022,14 @@ async function main(): Promise<void> {
       label  = CT_NAMES[idx];
       col    = idx === 0 ? num("#F0EEEC") : num("#C8B8A8");
       subCol = idx === 0 ? num("#C8C4C0") : num("#8A7060");
-    } else {
+    } else if (step === 3) {
       label  = TILE_NAMES[idx];
       col    = idx === 0 ? num("#F5F0EB") : num("#F8F6F4");
       subCol = idx === 0 ? num("#C8C0B8") : num("#D8D0C8");
+    } else {
+      label  = LIGHT_NAMES[idx];
+      col    = num("#26303A");
+      subCol = num("#FFD890");
     }
 
     const bg = new Graphics()
@@ -1010,6 +1066,20 @@ async function main(): Promise<void> {
           sG.roundRect(cc * bw + xo + 1, r * bh + 2, bw - 2, bh - 4, 2)
             .fill({ color: subCol, alpha: 0.5 });
       }
+    } else if (step === 4 && idx === 0) {
+      // two glowing globes on cords
+      for (const gx of [swatchW * 0.32, swatchW * 0.68]) {
+        sG.rect(gx + 4, 8, 2, 18).fill({ color: 0x111111 });
+        sG.circle(gx + 5, 36, 11).fill({ color: subCol, alpha: 0.95 });
+        sG.circle(gx + 5, 36, 15).fill({ color: subCol, alpha: 0.25 });
+      }
+    } else if (step === 4 && idx === 1) {
+      // linear bar with glow underneath
+      sG.rect(swatchW * 0.28, 12, 2, 14).fill({ color: 0x111111 });
+      sG.rect(swatchW * 0.72, 12, 2, 14).fill({ color: 0x111111 });
+      sG.roundRect(swatchW * 0.16, 26, swatchW * 0.68, 8, 4).fill({ color: 0x111111 });
+      sG.roundRect(swatchW * 0.18, 34, swatchW * 0.64, 6, 3).fill({ color: subCol, alpha: 0.85 });
+      sG.roundRect(swatchW * 0.14, 40, swatchW * 0.72, 12, 6).fill({ color: subCol, alpha: 0.22 });
     }
     // Clip the swatch pattern to its tile (step-3 brick rows overflow otherwise)
     const sMask = new Graphics().roundRect(6, 6, swatchW, CARD_H - 12, 6).fill({ color: 0xffffff });
@@ -1142,7 +1212,7 @@ async function main(): Promise<void> {
     state    = "step2";
     busy     = false;
     idleAccum = idleCount = 0;
-    setHint("Pick your countertop (2/3)");
+    setHint("Pick your countertop (2/4)");
     showSwatches(2, (idx) => {
       if (busy || state !== "step2") return;
       busy = true;
@@ -1154,7 +1224,7 @@ async function main(): Promise<void> {
         setCounter(pickCt, true, () => {
           shimmerBand(COUNTER_Y, COUNTER_H);
           sparkle(DW / 2, COUNTER_Y + COUNTER_H / 2);
-          drawProgress(0.66);
+          drawProgress(0.5);
           gsap.delayedCall(0.3, goStep3);
         });
       });
@@ -1165,7 +1235,7 @@ async function main(): Promise<void> {
     state    = "step3";
     busy     = false;
     idleAccum = idleCount = 0;
-    setHint("Choose your backsplash (3/3)");
+    setHint("Choose your backsplash (3/4)");
     showSwatches(3, (idx) => {
       if (busy || state !== "step3") return;
       busy = true;
@@ -1176,6 +1246,25 @@ async function main(): Promise<void> {
       setSplash(pickTile, true, () => {
         shimmerBand(SPLASH_Y, SPLASH_H);
         sparkle(DW / 2, SPLASH_Y + SPLASH_H / 2);
+        drawProgress(0.75);
+        gsap.delayedCall(0.3, goStep4);
+      });
+    });
+  }
+
+  function goStep4(): void {
+    state    = "step4";
+    busy     = false;
+    idleAccum = idleCount = 0;
+    setHint("Pick your lighting (4/4)");
+    showSwatches(4, (idx) => {
+      if (busy || state !== "step4") return;
+      busy = true;
+      hideGhostFinger();
+      pickLight = idx;
+      clearSwatches();
+      // Lighting LAYER swap: old fixture lifts away, new one drops in
+      setLighting(pickLight, true, () => {
         warmLightWash();
         drawProgress(1.0);
         setHint("Your kitchen is ready!");
@@ -1428,8 +1517,9 @@ async function main(): Promise<void> {
     idleCount++;
     setHint(
       state === "step1" ? "Tap your favorite style" :
-      state === "step2" ? "Pick your countertop (2/3)" :
-                          "Choose your backsplash (3/3)",
+      state === "step2" ? "Pick your countertop (2/4)" :
+      state === "step3" ? "Choose your backsplash (3/4)" :
+                          "Pick your lighting (4/4)",
     );
     if (idleCount >= AUTO_DEMO_AFTER && ghostFinger === null) {
       const gfX = CARD_L_X + CARD_W / 2;
@@ -1509,7 +1599,7 @@ async function main(): Promise<void> {
         whiteFlash(() => {
           setStyle(pickStyle, true, () => {
             sparkle(DW / 2, KITCHEN_H / 2);
-            drawProgress(0.33);
+            drawProgress(0.25);
             gsap.delayedCall(0.2, goStep2);
           });
         });

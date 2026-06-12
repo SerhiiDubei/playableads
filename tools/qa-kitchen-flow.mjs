@@ -32,23 +32,27 @@ async function runPath(name, pick) {
   page.on("console", (m) => { if (m.type() === "error") errors.push(`CONSOLE: ${m.text().slice(0, 140)}`); });
   await page.goto(pathToFileURL(file).href);
 
-  await page.waitForTimeout(1600);
+  await page.waitForTimeout(2100);
   await page.screenshot({ path: path.join(qaDir, `flow-${name}-1-hook.png`) });
 
   await page.mouse.click(pick.x, pick.y);            // style pick
-  await page.waitForTimeout(1400);
+  await page.waitForTimeout(2000);
   await page.screenshot({ path: path.join(qaDir, `flow-${name}-2-after-style.png`) });
 
   await page.mouse.click(pick.x, pick.y);            // counter pick
-  await page.waitForTimeout(1600);
+  await page.waitForTimeout(2100);
   await page.screenshot({ path: path.join(qaDir, `flow-${name}-3-after-counter.png`) });
 
   await page.mouse.click(pick.x, pick.y);            // splash pick
-  await page.waitForTimeout(1800);
-  await page.screenshot({ path: path.join(qaDir, `flow-${name}-4-reveal.png`) });
+  await page.waitForTimeout(2100);
+  await page.screenshot({ path: path.join(qaDir, `flow-${name}-4-after-splash.png`) });
 
-  await page.waitForTimeout(3500);                   // reveal hold → endcard
-  await page.screenshot({ path: path.join(qaDir, `flow-${name}-5-endcard.png`) });
+  await page.mouse.click(pick.x, pick.y);            // lighting pick (4/4)
+  await page.waitForTimeout(1800);
+  await page.screenshot({ path: path.join(qaDir, `flow-${name}-5-reveal.png`) });
+
+  await page.waitForTimeout(4000);                   // reveal hold → endcard
+  await page.screenshot({ path: path.join(qaDir, `flow-${name}-6-endcard.png`) });
 
   console.log(`[${name}] ${errors.length ? "ERRORS:\n  " + [...new Set(errors)].slice(0, 5).join("\n  ") : "no errors"}`);
   await ctx.close();

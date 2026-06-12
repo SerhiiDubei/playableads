@@ -52,7 +52,17 @@ const PAVER_COLORS = [
 const COL_GROUT = num("#7a7060");
 const COL_TILE_PAT = num("#3EC6C0");
 const COL_FOAM = num("#e8f4f8");
-const FONT = cfg.style.font.family;
+let FONT = cfg.style.font.family;
+async function loadBrandFont(): Promise<void> {
+  const data = cfg.assets["font.woff2"] as string | undefined;
+  if (!data) return;
+  try {
+    const ff = new FontFace("BrandFont", `url(${data})`);
+    await ff.load();
+    document.fonts.add(ff);
+    FONT = `BrandFont, ${cfg.style.font.family}`;
+  } catch { /* keep fallback */ }
+}
 
 // ── HUD zone ─────────────────────────────────────────────────────────────────
 const HUD_H = 44;
@@ -83,6 +93,7 @@ function tex(key: string): Texture | null {
 async function main(): Promise<void> {
   // ── Preload textures before building scene ────────────────────────────────
   await preloadTextures();
+  await loadBrandFont();
 
   const W = window.innerWidth, H = window.innerHeight;
   const app = new Application();
@@ -759,12 +770,11 @@ async function main(): Promise<void> {
 
     onRevealLights();
 
-    // ── Solid, centred panel — strict vertical rhythm, no overlaps ───────────
-    const PW = DW - 48, PH = 442;
+    // ── Solid, centred panel — strict vertical rhythm, no overlaps.
+    // Panel bg height is computed AFTER content (no dead zones, minimal copy).
+    const PW = DW - 48;
     const panel = new Container();
     const panBg = new Graphics();
-    panBg.roundRect(0, 0, PW, PH, 22).fill({ color: num("#f7fafa") });           // SOLID
-    panBg.roundRect(0, 0, PW, PH, 22).stroke({ width: 4, color: COL_ACCENT });
     panel.addChild(panBg);
 
     let cy = 18; // running y-cursor — every block advances it, nothing overlaps
@@ -781,38 +791,19 @@ async function main(): Promise<void> {
     panel.addChild(brandCont);
     cy += 42 + 10;
 
-    const tagT = new Text({
-      text: "Satisfaction, restored.",
-      style: { fill: COL_PRIMARY, fontFamily: FONT, fontWeight: "bold", fontSize: 14, align: "center" },
-    });
-    tagT.anchor.set(0.5, 0); tagT.position.set(PW / 2, cy);
-    panel.addChild(tagT);
-    cy += tagT.height + 8;
-
     const hlT = new Text({
-      text: cfg.copy.title,
+      text: "Patio: 100% spotless.",
       style: {
-        fill: 0x1a1a1a, fontFamily: FONT, fontWeight: "bold", fontSize: 26, align: "center",
+        fill: 0x1a1a1a, fontFamily: FONT, fontWeight: "bold", fontSize: 27, align: "center",
         wordWrap: true, wordWrapWidth: PW - 40,
       },
     });
     hlT.anchor.set(0.5, 0); hlT.position.set(PW / 2, cy);
     panel.addChild(hlT);
-    cy += hlT.height + 8;
-
-    const elT = new Text({
-      text: "Patio 100% clean! Licensed & insured in your state.\nBooking is open — get your free estimate.",
-      style: {
-        fill: 0x2a2a2a, fontFamily: FONT, fontWeight: "normal", fontSize: 14, align: "center",
-        wordWrap: true, wordWrapWidth: PW - 40,
-      },
-    });
-    elT.anchor.set(0.5, 0); elT.position.set(PW / 2, cy);
-    panel.addChild(elT);
-    cy += elT.height + 12;
+    cy += hlT.height + 12;
 
     // Photo preview strip — the ACTUAL clean patio art, masked (fallback: pavers)
-    const stripW = PW - 28, stripH = 64;
+    const stripW = PW - 28, stripH = 104;
     const stripCont = new Container();
     const cleanTex = TEX["patio-clean.webp"];
     if (cleanTex) {
@@ -837,7 +828,7 @@ async function main(): Promise<void> {
     cy += stripH + 10;
 
     const disT = new Text({
-      text: "Free estimate, no obligation. Results shown are illustrative.",
+      text: "Free estimate, no obligation.",
       style: {
         fill: 0x666666, fontFamily: FONT, fontWeight: "normal", fontSize: 11, align: "center",
         wordWrap: true, wordWrapWidth: PW - 40,
@@ -845,7 +836,7 @@ async function main(): Promise<void> {
     });
     disT.anchor.set(0.5, 0); disT.position.set(PW / 2, cy);
     panel.addChild(disT);
-    cy += disT.height + 14;
+    cy += disT.height + 12;
 
     // CTA INSIDE the panel — bottom block, full-width
     const inCtaW = PW - 28, inCtaH = 56;
@@ -865,6 +856,11 @@ async function main(): Promise<void> {
     inCta.position.set(14, cy);
     panel.addChild(inCta);
     gsap.to(inCta.scale, { x: 1.03, y: 1.03, duration: 0.68, yoyo: true, repeat: -1, ease: "sine.inOut", delay: 0.5 });
+
+    cy += inCtaH + 16;
+    const PH = cy;
+    panBg.roundRect(0, 0, PW, PH, 22).fill({ color: num("#f7fafa") });           // SOLID
+    panBg.roundRect(0, 0, PW, PH, 22).stroke({ width: 4, color: COL_ACCENT });
 
     // Centre the panel; keep the legacy bottom CTA hidden (panel owns the CTA now)
     panel.position.set((DW - PW) / 2, (DH - PH) / 2 - 16);
@@ -1180,9 +1176,8 @@ async function main(): Promise<void> {
   startAmbientMotion();
   gsap.delayedCall(0.05, doHook);
 
-  gsap.delayedCall(4.5, () => {
-    if (gState === "washing" || gState === "hook") triggerComplete();
-  });
+  // (no forced completion — the patio must be FULLY cleaned to 98.5%;
+  //  idle auto-demo carries passive viewers all the way)
 
   requestAnimationFrame(() => {
     layout();

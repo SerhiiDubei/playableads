@@ -33,7 +33,18 @@ const C_BG = num(cfg.style.colors.background);   // #0d2b3e
 const C_PRIMARY = num(cfg.style.colors.primary);  // #4ECDC4
 const C_ACCENT = num(cfg.style.colors.accent);    // #FFB627
 const C_TEXT = num(cfg.style.colors.text);        // #F7FFF7
-const FONT = cfg.style.font.family;
+let FONT = cfg.style.font.family;
+async function loadBrandFont(): Promise<void> {
+  const data = cfg.assets["font.woff2"] as string | undefined;
+  if (!data) return;
+  try {
+    const ff = new FontFace("BrandFont", `url(${data})`);
+    await ff.load();
+    document.fonts.add(ff);
+    FONT = `BrandFont, ${cfg.style.font.family}`;
+  } catch { /* keep fallback */ }
+}
+
 
 // Item colors: greens, berries, vitamins
 const ITEM_COLORS = [
@@ -103,6 +114,7 @@ async function main(): Promise<void> {
 
   // Preload all textures before building the scene
   await preloadTextures();
+  await loadBrandFont();
 
   const app = new Application();
   await app.init({
@@ -222,6 +234,11 @@ async function main(): Promise<void> {
   const fillBar = new Graphics();
   glassFillContainer.addChild(fillBar);
   glassFillContainer.mask = glassFillMaskG;
+  // Caught ingredients SETTLE inside the glass — drawn ON TOP of the glass
+  // sprite (the cartoon glass is semi-opaque), clipped by their own mask.
+  const settledCont = new Container();
+  const settledMaskG = new Graphics();
+  settledCont.mask = settledMaskG;
 
   // Procedural glass (fallback)
   const glassBody = new Graphics();
@@ -244,6 +261,7 @@ async function main(): Promise<void> {
   } else {
     glassWrap.addChild(glassBody, glassShine, glassOutline);
   }
+  glassWrap.addChild(settledCont, settledMaskG);
 
   let fillLevel = 0; // 0..1
 
@@ -263,6 +281,10 @@ async function main(): Promise<void> {
       const iw = gw - 10, ih = gh - 8, ib = bevel - 2;
       glassFillMaskG.clear();
       glassFillMaskG
+        .poly([-iw / 2, -ih / 2 + 4, iw / 2, -ih / 2 + 4, iw / 2 - ib, ih / 2, -iw / 2 + ib, ih / 2])
+        .fill({ color: 0xffffff });
+      settledMaskG.clear();
+      settledMaskG
         .poly([-iw / 2, -ih / 2 + 4, iw / 2, -ih / 2 + 4, iw / 2 - ib, ih / 2, -iw / 2 + ib, ih / 2])
         .fill({ color: 0xffffff });
       // Fill bar (water level rises from bottom)
@@ -810,6 +832,23 @@ async function main(): Promise<void> {
 
     // Green or golden catch
     const fillIncrease = item.kind === "golden" ? FILL_PER_GOLDEN : FILL_PER_GREEN;
+
+    // Drop a mini ingredient INTO the glass — it visibly settles at the
+    // rising liquid line and stays there.
+    const setKey = item.kind === "golden" ? "ing-golden.webp" : GREEN_SPRITE_KEYS[item.spriteIdx % GREEN_SPRITE_KEYS.length];
+    const setTex = tex(setKey);
+    if (setTex && settledCont.children.length < 12) {
+      const sp = new Sprite(setTex);
+      sp.anchor.set(0.5);
+      sp.scale.set(26 / setTex.width);
+      const iw = GLASS_W - 10, ih = GLASS_H - 8;
+      const ty = ih / 2 - Math.min(0.92, fillLevel + fillIncrease) * ih + 8 + Math.random() * 6;
+      sp.position.set((Math.random() - 0.5) * (iw - 32), -ih / 2 - 10);
+      sp.rotation = (Math.random() - 0.5) * 0.8;
+      settledCont.addChild(sp);
+      gsap.to(sp, { y: ty, duration: 0.45, ease: "bounce.out" });
+    }
+
     setFill(fillLevel + fillIncrease, true);
 
     const h = window.innerHeight;
@@ -962,7 +1001,7 @@ async function main(): Promise<void> {
     bg.rect(0, 0, w, h).fill({ color: 0x000000, alpha: 0.72 });
     ov.addChild(bg);
 
-    const pw = Math.min(w - 40, 360), ph = Math.min(h * 0.72, 560);
+    const pw = Math.min(w - 40, 360), ph = 330;   // compact: 1/3 the old copy
     const panel = new Container();
     const panelBg = new Graphics();
     panelBg.roundRect(-pw / 2, -ph / 2, pw, ph, 24).fill({ color: num("#0f3248") });
@@ -991,16 +1030,8 @@ async function main(): Promise<void> {
 
     panel.addChild(logoG, brandLogo);
 
-    const tagline = new Text({
-      text: "Fill up on good.",
-      style: { fill: C_PRIMARY, fontFamily: FONT, fontSize: 18, fontWeight: "700", align: "center" },
-    });
-    tagline.anchor.set(0.5);
-    tagline.y = -ph / 2 + 100;
-    panel.addChild(tagline);
-
     const mainMsg = new Text({
-      text: "Glass full!\nGet 20% off your first month",
+      text: "Glass full! 20% off\nyour first month",
       style: {
         fill: C_TEXT,
         fontFamily: FONT,
@@ -1012,22 +1043,8 @@ async function main(): Promise<void> {
       },
     });
     mainMsg.anchor.set(0.5);
-    mainMsg.y = -ph / 2 + 188;
+    mainMsg.y = -ph / 2 + 134;
     panel.addChild(mainMsg);
-
-    const subMsg = new Text({
-      text: "Intro offer for new members.",
-      style: {
-        fill: C_PRIMARY,
-        fontFamily: FONT,
-        fontSize: 18,
-        fontWeight: "700",
-        align: "center",
-      },
-    });
-    subMsg.anchor.set(0.5);
-    subMsg.y = -ph / 2 + 262;
-    panel.addChild(subMsg);
 
     const cBtn = new Container();
     const cBtnBg = new Graphics();
@@ -1040,7 +1057,7 @@ async function main(): Promise<void> {
     });
     cBtnText.anchor.set(0.5);
     cBtn.addChild(cBtnBg, cBtnText);
-    cBtn.y = -ph / 2 + 330;
+    cBtn.y = -ph / 2 + 226;
     cBtn.eventMode = "static";
     cBtn.cursor = "pointer";
     cBtn.on("pointertap", doCTA);
@@ -1051,25 +1068,8 @@ async function main(): Promise<void> {
       onUpdate: () => { cBtn.scale.set(cBtnProxy.s); },
     });
 
-    const rMayVary = new Text({
-      text: "Results may vary.",
-      style: {
-        fill: C_TEXT,
-        fontFamily: FONT,
-        fontSize: 13,
-        fontWeight: "700",
-        align: "center",
-        alpha: 0.8,
-      },
-    });
-    rMayVary.anchor.set(0.5);
-    rMayVary.y = -ph / 2 + 385;
-    panel.addChild(rMayVary);
-
-    const disclaimerText =
-      "*These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease. Results may vary.";
     const disclaimer = new Text({
-      text: disclaimerText,
+      text: "*Not evaluated by the FDA. Results may vary.",
       style: {
         fill: C_TEXT,
         fontFamily: FONT,
@@ -1078,11 +1078,11 @@ async function main(): Promise<void> {
         align: "center",
         wordWrap: true,
         wordWrapWidth: pw - 32,
-        alpha: 0.65,
       },
     });
+    disclaimer.alpha = 0.65;
     disclaimer.anchor.set(0.5, 0);
-    disclaimer.y = -ph / 2 + 412;
+    disclaimer.y = -ph / 2 + 278;
     panel.addChild(disclaimer);
 
     panel.x = w / 2;
