@@ -833,18 +833,21 @@ async function main(): Promise<void> {
     // Green or golden catch
     const fillIncrease = item.kind === "golden" ? FILL_PER_GOLDEN : FILL_PER_GREEN;
 
-    // Drop a mini ingredient INTO the glass — it visibly settles at the
-    // rising liquid line and stays there.
+    // Drop a mini ingredient INTO the glass — it STACKS neatly from the
+    // bottom up (rows of 3), like real fruit piling in a smoothie glass.
     const setKey = item.kind === "golden" ? "ing-golden.webp" : GREEN_SPRITE_KEYS[item.spriteIdx % GREEN_SPRITE_KEYS.length];
     const setTex = tex(setKey);
     if (setTex && settledCont.children.length < 12) {
+      const idx2 = settledCont.children.length;
+      const row = Math.floor(idx2 / 3), col = idx2 % 3;
       const sp = new Sprite(setTex);
       sp.anchor.set(0.5);
-      sp.scale.set(26 / setTex.width);
+      sp.scale.set(21 / Math.max(setTex.width, setTex.height));
       const iw = GLASS_W - 10, ih = GLASS_H - 8;
-      const ty = ih / 2 - Math.min(0.92, fillLevel + fillIncrease) * ih + 8 + Math.random() * 6;
-      sp.position.set((Math.random() - 0.5) * (iw - 32), -ih / 2 - 10);
-      sp.rotation = (Math.random() - 0.5) * 0.8;
+      const ty = ih / 2 - 16 - row * 19;
+      const tx = (col - 1) * (iw * 0.27) + (Math.random() - 0.5) * 5;
+      sp.position.set(tx, -ih / 2 - 10);
+      sp.rotation = (Math.random() - 0.5) * 0.5;
       settledCont.addChild(sp);
       gsap.to(sp, { y: ty, duration: 0.45, ease: "bounce.out" });
     }

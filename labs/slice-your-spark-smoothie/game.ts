@@ -150,11 +150,14 @@ async function main(): Promise<void> {
   const meterLabel  = new Text({ text: "Morning\nBlend", style: { fill: COL_TEXT, fontFamily: FONT, fontSize: 11, fontWeight: "700", align: "center", lineHeight: 14 } });
   meterLabel.anchor.set(0.5, 0);
   const jarTex = tex("blender-jar.webp"), baseTex = tex("blender-base.webp");
-  let jarSp: Sprite | null = null, baseSp: Sprite | null = null;
+  let jarSp: Sprite | null = null, baseSp: Sprite | null = null, jarOverlay: Sprite | null = null;
   if (jarTex && baseTex) {
     jarSp = new Sprite(jarTex);   jarSp.anchor.set(0.5, 1);
     baseSp = new Sprite(baseTex); baseSp.anchor.set(0.5, 1);
-    glassCont.addChild(baseSp, liquidFill, jarSp, meterLabel);
+    // liquid sits ON TOP of the jar so it's clearly visible; a translucent
+    // copy of the jar goes back over it so the glass highlights still read.
+    jarOverlay = new Sprite(jarTex); jarOverlay.anchor.set(0.5, 1); jarOverlay.alpha = 0.45;
+    glassCont.addChild(baseSp, jarSp, liquidFill, jarOverlay, meterLabel);
   } else {
     glassCont.addChild(glassBody, liquidFill, glassShine, meterLabel);
   }
@@ -189,18 +192,37 @@ async function main(): Promise<void> {
       glassCont.y = playBot;
       baseSp.position.set(0, 0);
       jarSp.position.set(0, -baseH * 0.92);
+      if (jarOverlay) {
+        jarOverlay.scale.set(jarSp.scale.x);
+        jarOverlay.position.set(0, -baseH * 0.92);
+      }
 
-      // Liquid inside the jar: rounded rect masked to jar interior
-      const jarBot = -baseH * 0.92 - jarH * 0.06;
-      const innerW = jw * 0.74, innerH = jarH * 0.82;
+      // Liquid inside the jar: masked by a TAPERED jar-interior shape
+      // (narrower at the bottom, kept clear of the right-side handle) so the
+      // liquid never pokes outside the glass silhouette.
+      const jarBot = -baseH * 0.92 - jarH * 0.12;
+      const innerH = jarH * 0.64;
       const fillH = innerH * meterPct;
+      // interior trapezoid edges as fractions of jar display width.
+      // The jar BODY sits left of the texture centre (the handle on the right
+      // widens the trimmed texture) — keep the right edge well clear of it.
+      const topL = -jw * 0.27, topR = jw * 0.14;
+      const botL = -jw * 0.20, botR = jw * 0.11;
+      const lerpEdge = (t: number, top: number, bot: number) => bot + (top - bot) * t;
+      const fTop = fillH / innerH;                  // 0..1 height of the fill
       liquidMask.clear();
-      liquidMask.roundRect(-innerW / 2, jarBot - fillH, innerW, fillH, 6).fill({ color: 0xffffff });
+      liquidMask.poly([
+        lerpEdge(fTop, topL, botL), jarBot - fillH,
+        lerpEdge(fTop, topR, botR), jarBot - fillH,
+        botR, jarBot,
+        botL, jarBot,
+      ]).fill({ color: 0xffffff });
       liquidFill.clear();
-      liquidFill.roundRect(-innerW / 2, jarBot - innerH, innerW, innerH, 6).fill({ color: 0xFF9F1C, alpha: 0.92 });
+      liquidFill.poly([topL, jarBot - innerH, topR, jarBot - innerH, botR, jarBot, botL, jarBot])
+        .fill({ color: 0xFF9F1C, alpha: 0.92 });
       // wobble bubbles on top of the liquid line
-      liquidFill.circle(-innerW * 0.2, jarBot - fillH + 4, 3).fill({ color: 0xFFC95C, alpha: 0.9 });
-      liquidFill.circle(innerW * 0.22, jarBot - fillH + 6, 2.4).fill({ color: 0xFFC95C, alpha: 0.9 });
+      liquidFill.circle(lerpEdge(fTop, topL, botL) * 0.5, jarBot - fillH + 5, 3).fill({ color: 0xFFC95C, alpha: 0.9 });
+      liquidFill.circle(lerpEdge(fTop, topR, botR) * 0.6, jarBot - fillH + 7, 2.4).fill({ color: 0xFFC95C, alpha: 0.9 });
 
       meterLabel.x = 0;
       meterLabel.y = -baseH - jarH - 26;
@@ -756,7 +778,9 @@ async function main(): Promise<void> {
     if (panFrame) panel.addChild(panFrame);
     else panel.addChild(panBg);
 
-    let pcy = 18;
+    // Content inset clears the thick 9-slice border (frame border ≈ 22px)
+    const INSET = panFrame ? 30 : 16;
+    let pcy = panFrame ? 34 : 18;
     const brandBg = new Graphics().roundRect(0, 0, 180, 46, 12).fill({ color: COL_PRIMARY });
     const brandTxt = new Text({ text: "Zestful", style: { fill: "#1a2a28", fontFamily: fam, fontWeight: "900", fontSize: 26 } });
     brandTxt.anchor.set(0.5); brandTxt.position.set(90, 23);
@@ -790,7 +814,7 @@ async function main(): Promise<void> {
     pcy += disc.height + 12;
 
     // CTA inside the panel
-    const inCtaW = PW - 32, inCtaH = 56;
+    const inCtaW = PW - INSET * 2, inCtaH = 56;
     const inCta = new Container();
     const inCtaBg = new Graphics();
     inCtaBg.roundRect(0, 0, inCtaW, inCtaH, 28).fill({ color: COL_PRIMARY });
@@ -802,10 +826,13 @@ async function main(): Promise<void> {
     inCta.eventMode = "static";
     inCta.cursor = "pointer";
     inCta.on("pointertap", (e: any) => { e.stopPropagation(); (window as any).FbPlayableAd.onCTAClick(); });
-    inCta.position.set(16, pcy);
+    inCta.position.set(INSET, pcy);
     panel.addChild(inCta);
     gsap.to(inCta.scale, { x: 1.03, y: 1.03, duration: 0.65, yoyo: true, repeat: -1, ease: "sine.inOut", delay: 0.6 });
-    pcy += inCtaH + 16;
+    pcy += inCtaH + (panFrame ? 30 : 16);
+
+    // The blender meter label would peek out from behind the panel — hide it
+    meterLabel.visible = false;
 
     const PH = pcy;
     if (panFrame) {
