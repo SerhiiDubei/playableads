@@ -1,0 +1,69 @@
+{
+  "id": "financial-foundation",
+  "name": "Soft Clay Foundation",
+  "version": "1.0.0",
+  "derivedFrom": "reference: soft polymer-clay / claymation stacking blocks — tactile matte 3D toy, premium calm finance vibe",
+
+  "artDirection": {
+    "artStyle": "claymation",
+    "mood": ["casual-cute", "premium-shiny", "minimalist"],
+    "theme": "soft polymer-clay stacking blocks, calm trustworthy, gentle studio light"
+  },
+
+  "palette": {
+    "source": "manual",
+    "background": "#e3ecf5",
+    "primary": "#5b7ba6",
+    "accent": "#f2b32e",
+    "text": "#27384a"
+  },
+
+  "rendering": {
+    "outline": { "style": "none", "color": "" },
+    "material": "matte",
+    "lighting": "soft-top",
+    "shading": "smooth-gradient",
+    "perspective": "slight-3d",
+    "shapeLanguage": "rounded-friendly",
+    "cornerRadius": "rounded"
+  },
+
+  "negative": [
+    "no text, no letters, no numbers, no logo, no UI, no watermark",
+    "no people, no hands, no faces",
+    "no harsh black cast shadows, no dark drop shadow on the ground",
+    "not a photograph, no photographic grain, no gritty realism"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1536x1024",
+    "quality": "medium",
+    "transparent": true
+  },
+
+  "assets": [
+    {
+      "key": "bg",
+      "kind": "background",
+      "subject": "a soft calming studio backdrop for a clay-toy scene: a smooth gentle vertical gradient from a soft pale blue-white at the top to a slightly deeper pastel periwinkle-blue at the bottom, a soft warm subtle radial glow of light in the upper-middle area, and a faint soft ambient shadow gently pooling toward the lower-centre where objects would rest; clean minimal calm premium, completely empty — no objects, no furniture, no horizon line, no pattern, just soft studio light and a gentle smooth gradient filling the whole frame edge-to-edge",
+      "overrides": { "defaults": { "transparent": false, "size": "1024x1536", "quality": "medium" }, "rendering": { "perspective": "front-flat", "lighting": "soft-top" } }
+    },
+    {
+      "key": "block-debt",
+      "kind": "sprite",
+      "subject": "a single horizontal rounded rectangular block made of soft matte polymer clay, a long wide low bar lying flat, smoothly rounded corners and softly beveled edges, VERY LIGHT desaturated warm off-white / pale grey clay (so it can be tinted later), gentle soft top sheen highlight along the upper edge and soft ambient occlusion along the lower edge, tactile hand-made clay surface, viewed straight from the front with a slight 3D thickness"
+    },
+    {
+      "key": "block-gold",
+      "kind": "sprite",
+      "subject": "a single horizontal rounded rectangular block made of soft matte polymer clay, a long wide low bar lying flat, smoothly rounded corners and softly beveled edges, warm rich GOLD / amber clay with a precious gentle inner glow, soft top sheen highlight and a faint warm halo, tactile premium hand-made clay surface, viewed straight from the front with a slight 3D thickness"
+    },
+    {
+      "key": "platform",
+      "kind": "sprite",
+      "subject": "a wide low pedestal base slab made of soft matte polymer clay, a long horizontal plinth with smoothly rounded corners and a softly beveled top edge, calm muted slate-blue clay, gentle soft top light and a subtle top sheen, tactile hand-made clay surface, viewed straight from the front with a slight 3D thickness"
+    }
+  ]
+}

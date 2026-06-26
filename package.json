@@ -18,6 +18,7 @@
     "connect": "tsx src/assetgen/build-connect.ts",
     "fix-the-floor": "tsx src/assetgen/build-fix-the-floor.ts",
     "dream-floor": "tsx src/assetgen/build-dream-floor.ts",
+    "financial-foundation": "tsx src/assetgen/build-financial-foundation.ts",
     "components": "tsx src/assetgen/build-components.ts",
     "visual": "tsx src/assetgen/visual-test.ts",
     "build:cli": "esbuild src/cli.ts --bundle --platform=node --packages=external --format=esm --outfile=dist/cli.js",

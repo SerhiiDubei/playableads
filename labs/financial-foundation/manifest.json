@@ -1,0 +1,23 @@
+{
+  "id": "financial-foundation",
+  "name": "Financial Foundation",
+  "description": "Jenga-style debt tower (Mortgage, College Fund, Car Loan, Credit Cards, Groceries) that wobbles and nearly falls until the player drags a glowing gold Life Insurance block into the empty foundation slot. Magnetic snap, golden impulse, tower aligns -> Foundation Secured! -> end card. Life-insurance vertical, US market. Stage 1 greybox (procedural soft-clay), portrait.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "params": {
+    "blockLabels": "Mortgage,College Fund,Car Loan,Credit Cards,Groceries",
+    "goldLabel": "Life Insurance",
+    "hookText": "Don't let it fall down.",
+    "successText": "Foundation Secured!",
+    "endHeadline": "Make your family's financial foundation unbreakable.",
+    "wobbleStartMs": 500,
+    "wobbleAmpDeg": 6,
+    "pauseAtMs": 3000,
+    "idleBounceMs": 4000,
+    "autoPlayMs": 6000,
+    "dragLag": 0.22,
+    "snapDist": 56,
+    "successHoldMs": 2400,
+    "ctaTarget": ""
+  }
+}
