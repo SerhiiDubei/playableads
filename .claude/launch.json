@@ -60,6 +60,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["-y", "serve", "test/dream-floor", "-l", "5070"],
       "port": 5070
+    },
+    {
+      "name": "financial-foundation",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "test/financial-foundation", "-l", "5064"],
+      "port": 5064
     }
   ]
 }

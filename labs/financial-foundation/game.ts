@@ -66,8 +66,13 @@ const BG = num(cfg.style.colors.background);
 const TXT = cfg.style.colors.text;
 const FONT = cfg.style.font.family;
 
-// Calm, trustworthy debt-block palette (muted blue / sage / grey / teal).
+// Calm, trustworthy debt-block palette (muted blue / sage / grey / teal). Used
+// as the procedural-clay fallback tint when a context sprite is absent.
 const DEBT_COLORS = [0x6f8fb0, 0x7fa183, 0xb6bdc6, 0x88a6b6, 0x9aa2ab];
+// Bespoke per-context clay sprites (pre-coloured, with a sculpted emblem on the
+// left). Index matches DEBT_LABELS bottom→top: Mortgage, College Fund, Car Loan,
+// Credit Cards, Groceries. Used as-is (no tint); falls back to procedural clay.
+const BLOCK_KEYS = ["block-mortgage.webp", "block-college.webp", "block-car.webp", "block-credit.webp", "block-groceries.webp"];
 
 // ── Audio: procedural WebAudio SFX (zero asset weight, no external loads) ──────
 // Synthesised on the fly — nothing base64-inlined, nothing fetched. The context
@@ -147,13 +152,27 @@ function tex(key: string): Texture | null {
 
 // ── Design canvas (fixed; scaled to fit the viewport — no reflow) ─────────────
 const DW = 400, DH = 720, CX = DW / 2;
-const BW = 196, BH = 46, GAP = 8, R = 12;
-const TOWER_N = 5;
-const STACK_H = TOWER_N * BH + (TOWER_N - 1) * GAP;     // 262
-const BASE_Y = 300 + STACK_H;                            // 562: top of foundation slot
-const SLOT_Y = BASE_Y + BH / 2;                          // 585: slot center
-const PLAT_Y = BASE_Y + BH + 15;                         // platform center
-const TRAY_Y = 678;                                      // gold "ready" position
+const BW = 214, BH = 50, GAP = 11, R = 13;
+
+// Per-block geometry for the debt tower (bottom i=0 → top i=4). Irregular widths,
+// heights, lean offsets and baked-in tilt make the stack read as top-heavy and
+// precarious — a hand-stacked Jenga tower about to go — instead of a tidy column.
+// Long labels (College Fund, Credit Cards) get the wider slabs so text stays legible.
+// Sized to fill the canvas: the stack is tall and starts high so there's no dead sky.
+const TOWER_SPECS = [
+  { w: 196, h: 64, dx: -14, rot: -0.045 }, // Mortgage
+  { w: 228, h: 50, dx:  18, rot:  0.06  }, // College Fund
+  { w: 160, h: 59, dx: -23, rot: -0.07  }, // Car Loan
+  { w: 214, h: 47, dx:  22, rot:  0.085 }, // Credit Cards
+  { w: 168, h: 66, dx: -12, rot: -0.075 }, // Groceries
+];
+const TOWER_N = TOWER_SPECS.length;
+const TOWER_TOP = 188;                                   // visual top of the stack (fills the upper canvas)
+const STACK_H = TOWER_SPECS.reduce((s, b) => s + b.h, 0) + (TOWER_N - 1) * GAP;  // ~330
+const BASE_Y = TOWER_TOP + STACK_H;                      // top of foundation slot
+const SLOT_Y = BASE_Y + BH / 2;                          // slot center
+const PLAT_Y = BASE_Y + BH + 16;                         // platform center
+const TRAY_Y = 660;                                      // gold "ready" position
 const slot = { x: CX, y: SLOT_Y };
 const goldHome = { x: CX, y: TRAY_Y };
 
@@ -161,12 +180,27 @@ type State = "boot" | "wobble" | "pause" | "drag" | "success" | "end";
 
 async function main(): Promise<void> {
   const app = new Application();
-  await app.init({ resizeTo: window, background: BG, antialias: true });
+  // Render at the device's native pixel density (capped) so edges stay crisp on
+  // high-DPI / retina phones instead of being upscaled into jaggies. autoDensity
+  // keeps the CSS size logical, so all app.screen-based layout math is unchanged.
+  await app.init({
+    resizeTo: window,
+    background: BG,
+    antialias: true,
+    resolution: Math.min(window.devicePixelRatio || 1, 3),
+    autoDensity: true,
+  });
   document.body.appendChild(app.canvas);
   app.stage.eventMode = "static";
   app.stage.hitArea = app.screen;
 
   await preloadTextures();
+  // Wait for the embedded premium font so Pixi measures & renders text with it
+  // (not the fallback). Times out gracefully if the face is missing (dev preview).
+  await Promise.race([
+    (async () => { try { await (document as Document).fonts.load('800 30px "Baloo 2"'); await (document as Document).fonts.ready; } catch (e) { void e; } })(),
+    new Promise((r) => setTimeout(r, 1500)),
+  ]);
 
   // Layers (design space).
   const root = new Container();
@@ -188,7 +222,7 @@ async function main(): Promise<void> {
   let wobbling = false;
   let wobPhase = 0;
   const wob = { amp: 0 };
-  const MAX_AMP = (WOBBLE_AMP_DEG * 1.4 * Math.PI) / 180;
+  const MAX_AMP = (WOBBLE_AMP_DEG * 1.75 * Math.PI) / 180;
   let dragging = false;
   let dragStarted = false;
   let succeeded = false;
@@ -199,7 +233,21 @@ async function main(): Promise<void> {
   let grabDX = 0, grabDY = 0;
   const dragTarget = { x: goldHome.x, y: goldHome.y };
   const blocks: Container[] = [];
-  let bgSprite: Sprite | null = null;
+  // Per-block rest pose + independent sway params (filled in buildTower). Each
+  // block sways/tilts on its own phase & frequency so the tower jitters like a
+  // loose stack rather than swinging as one rigid slab.
+  const baseX: number[] = [], baseY: number[] = [], baseRot: number[] = [];
+  const swayAmp: number[] = [], swayFreq: number[] = [], swayPh: number[] = [];
+  const rotAmp: number[] = [], rotPh: number[] = [];
+  // Pose captured when the wobble freezes at the critical lean — idle breathing
+  // adds a subtle living tremor around it while the player decides (pause/drag).
+  const freezeX: number[] = [], freezeRot: number[] = [];
+  let breathPhase = 0;
+  // Background: three stacked full-viewport states (calm base, tension, rescue)
+  // crossfaded by setMood() on FSM transitions. `moodOverlay` is the procedural
+  // fallback (a tintable full-screen wash) when the bg textures are absent.
+  const bgSprites: (Sprite | null)[] = [];
+  let moodOverlay: Graphics | null = null;
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
   function fit(t: Text, maxW: number): void {
@@ -273,20 +321,31 @@ async function main(): Promise<void> {
     return c;
   }
   function blockLabel(label: string, color: string, w: number): Text {
-    const t = new Text({ text: label, style: { fill: color, fontFamily: FONT, fontWeight: "800", fontSize: 21 } });
+    const t = new Text({ text: label, style: { fill: color, fontFamily: FONT, fontWeight: "800", fontSize: 23 } });
     t.anchor.set(0.5);
     fit(t, w * 0.84);
     return t;
   }
 
-  // ── Background (generated studio backdrop full-viewport, else procedural gradient) ──
+  // ── Background (3 generated emotional states, crossfaded; else procedural) ──────
   function buildBg(): void {
-    const t = tex("bg.webp");
-    if (t) {
-      bgSprite = new Sprite(t);
-      app.stage.addChildAt(bgSprite, 0); // behind root; covers the whole viewport (sized in layout)
+    const keys = ["bg.webp", "bg-tension.webp", "bg-rescue.webp"];
+    if (tex("bg.webp")) {
+      // Stack calm (bottom) → tension → rescue (top). Only calm starts visible;
+      // upper layers fade in over it on demand (they're opaque, so alpha = a clean
+      // crossfade). Sized to cover the viewport in layout().
+      keys.forEach((k, i) => {
+        const t = tex(k);
+        const sp = t ? new Sprite(t) : null;
+        if (sp) {
+          sp.alpha = i === 0 ? 1 : 0;
+          app.stage.addChildAt(sp, i);
+        }
+        bgSprites[i] = sp;
+      });
       return;
     }
+    // Procedural fallback: gradient + a tintable mood wash driven by setMood().
     const top = shade(BG, 0.42), bot = shade(BG, -0.05);
     const bands = 28;
     const g = new Graphics();
@@ -295,6 +354,38 @@ async function main(): Promise<void> {
       g.rect(0, (DH / bands) * i, DW, DH / bands + 1).fill({ color: c });
     }
     bgLayer.addChild(g);
+    moodOverlay = new Graphics().rect(0, 0, DW, DH).fill({ color: 0xffffff });
+    moodOverlay.alpha = 0;
+    bgLayer.addChild(moodOverlay);
+  }
+  // Crossfade the backdrop through three emotional beats: calm (wobble start) →
+  // tension (near-fall) → rescue (foundation secured).
+  function setMood(mood: "calm" | "tension" | "rescue", dur = 0.9): void {
+    if (bgSprites.length) {
+      if (bgSprites[1]) gsap.to(bgSprites[1], { alpha: mood === "calm" ? 0 : 1, duration: dur, ease: "sine.inOut" });
+      if (bgSprites[2]) gsap.to(bgSprites[2], { alpha: mood === "rescue" ? 1 : 0, duration: dur, ease: "sine.inOut" });
+      return;
+    }
+    if (moodOverlay) {
+      const c = mood === "tension" ? 0x16223c : mood === "rescue" ? ACCENT : 0xffffff;
+      const a = mood === "tension" ? 0.5 : mood === "rescue" ? 0.3 : 0;
+      moodOverlay.clear().rect(0, 0, DW, DH).fill({ color: c });
+      gsap.to(moodOverlay, { alpha: a, duration: dur });
+    }
+  }
+  // Per-frame mood drive: during the wobble buildup the tense backdrop creeps in
+  // proportionally to how hard the tower is leaning, so the dread ramps smoothly
+  // instead of snapping on at the pause. enterPause() then tweens it the rest of
+  // the way to full tension.
+  function moodTick(): void {
+    if (state !== "wobble") return;
+    const a = Math.min(1, wob.amp / MAX_AMP) * 0.55;
+    if (bgSprites[1]) { gsap.killTweensOf(bgSprites[1]); bgSprites[1].alpha = a; }
+    else if (moodOverlay) {
+      gsap.killTweensOf(moodOverlay);
+      moodOverlay.clear().rect(0, 0, DW, DH).fill({ color: 0x16223c });
+      moodOverlay.alpha = a * 0.9;
+    }
   }
   function lerpColor(a: number, b: number, f: number): number {
     const ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255;
@@ -306,9 +397,58 @@ async function main(): Promise<void> {
     );
   }
 
+  // ── VFX / PFX (procedural, zero asset weight) ─────────────────────────────────
+  // Soft clay-dust / spark puff: small fading circles drifting up & out from (x,y).
+  function puff(x: number, y: number, color: number, n: number, spread: number, rise: number): void {
+    for (let i = 0; i < n; i++) {
+      const s = new Graphics().circle(0, 0, 1.6 + Math.random() * 3).fill({ color, alpha: 0.45 + Math.random() * 0.35 });
+      s.position.set(x + (Math.random() - 0.5) * spread, y + (Math.random() - 0.5) * spread * 0.5);
+      fx.addChild(s);
+      gsap.to(s, { x: s.x + (Math.random() - 0.5) * spread * 1.4, y: s.y - rise - Math.random() * rise, alpha: 0, duration: 0.5 + Math.random() * 0.45, ease: "power1.out", onComplete: () => s.destroy() });
+      gsap.to(s.scale, { x: 0.3, y: 0.3, duration: 0.65, ease: "power1.out" });
+    }
+  }
+  // Bright twinkle burst (4-point stars) — used on grab and on success.
+  function sparkleBurst(x: number, y: number, color: number, n: number): void {
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + Math.random();
+      const d = 14 + Math.random() * 30;
+      const s = new Graphics().star(0, 0, 4, 4.5, 1.8).fill({ color, alpha: 0.95 });
+      s.position.set(x, y);
+      s.rotation = Math.random() * Math.PI;
+      fx.addChild(s);
+      gsap.to(s, { x: x + Math.cos(a) * d, y: y + Math.sin(a) * d, alpha: 0, duration: 0.45 + Math.random() * 0.3, ease: "power2.out", onComplete: () => s.destroy() });
+      gsap.fromTo(s.scale, { x: 0.2, y: 0.2 }, { x: 1, y: 1, duration: 0.2, yoyo: true, repeat: 1 });
+    }
+  }
+  // Quick full-screen wash (white relief flash on success).
+  function screenFlash(color: number, alpha: number): void {
+    const f = new Graphics().rect(0, 0, DW, DH).fill({ color });
+    f.alpha = 0;
+    fx.addChild(f);
+    gsap.to(f, { alpha, duration: 0.1, ease: "power2.out", onComplete: () => gsap.to(f, { alpha: 0, duration: 0.45, ease: "power2.in", onComplete: () => f.destroy() }) });
+  }
+  // Ambient drifting dust motes — subtle life in the empty studio air.
+  function buildMotes(): void {
+    for (let i = 0; i < 7; i++) {
+      const m = new Graphics().circle(0, 0, 1.5 + Math.random() * 2).fill({ color: 0xffffff, alpha: 0.1 + Math.random() * 0.08 });
+      m.position.set(Math.random() * DW, Math.random() * DH);
+      bgLayer.addChild(m);
+      const drift = (): void => {
+        gsap.to(m, {
+          y: m.y - 50 - Math.random() * 70, x: m.x + (Math.random() - 0.5) * 50,
+          duration: 6 + Math.random() * 5, ease: "sine.inOut",
+          onComplete: () => { m.y = DH + 8; m.x = Math.random() * DW; drift(); },
+        });
+      };
+      gsap.delayedCall(Math.random() * 4, drift);
+    }
+  }
+  let dustT = 0; // throttles clay-dust emission while the tower strains
+
   // ── Platform ───────────────────────────────────────────────────────────────────
   function buildScene(): void {
-    const plat = blockBody("platform.webp", 300, 46, shade(PRIMARY, 0.18));
+    const plat = blockBody("platform.webp", 340, 52, shade(PRIMARY, 0.18));
     plat.position.set(CX, PLAT_Y);
     scene.addChild(plat);
   }
@@ -338,26 +478,68 @@ async function main(): Promise<void> {
   function buildTower(): void {
     tower.position.set(CX, BASE_Y);
     tower.pivot.set(0, 0);
+    // Stack cumulatively from the slot upward so blocks of different heights butt
+    // together with a consistent gap (no fixed BH grid).
+    let bottomY = 0; // bottom edge of the current block, measured up from the slot
     for (let i = 0; i < TOWER_N; i++) {
+      const spec = TOWER_SPECS[i];
       const c = new Container();
-      const w = BW - (i % 2) * 8;
       const color = DEBT_COLORS[i % DEBT_COLORS.length];
-      const body = blockBody("block-debt.webp", w, BH, color, color); // light clay sprite tinted per debt color
-      c.addChild(body, blockLabel(DEBT_LABELS[i] ?? "", "#ffffff", BW));
-      // local y: block 0 sits just above the pivot (top of slot), stacking upward.
-      c.position.set((Math.random() - 0.5) * 4, -BH / 2 - i * (BH + GAP));
+      const body = blockBody(BLOCK_KEYS[i] ?? "", spec.w, spec.h, color); // bespoke context clay, used as-is
+      // The sprite carries a sculpted emblem on its left ~22%; centre the label in
+      // the smooth area to the right of it so text never collides with the icon.
+      const lbl = blockLabel(DEBT_LABELS[i] ?? "", "#ffffff", spec.w * 0.78);
+      lbl.x = spec.w * 0.13;
+      c.addChild(body, lbl);
+      const cy = bottomY - spec.h / 2;
+      bottomY = cy - spec.h / 2 - GAP;
+      // Rest pose: baked lean (dx) + tilt (rot). Higher blocks sway & tilt more,
+      // each on its own frequency/phase → the stack looks loose and top-heavy.
+      baseX[i] = spec.dx; baseY[i] = cy; baseRot[i] = spec.rot;
+      swayAmp[i] = 3 + i * 3.0;
+      swayFreq[i] = 0.85 + i * 0.22;
+      swayPh[i] = i * 1.15;
+      rotAmp[i] = 0.012 + i * 0.014;
+      rotPh[i] = i * 0.7 + 0.4;
+      c.position.set(spec.dx, cy);
+      c.rotation = spec.rot;
       tower.addChild(c);
       blocks.push(c);
     }
   }
-  // Whole-tower sway + extra slide on the top blocks (the "about to fall" read).
+  // Whole-tower sway PLUS each block sliding & tilting on its own phase — the loose,
+  // top-heavy "about to topple" read. Amplitude scales with the master wobble (k).
   function wobbleTick(dtMs: number): void {
     if (!wobbling) return;
-    wobPhase += (dtMs / 1000) * 2.4;
+    wobPhase += (dtMs / 1000) * 2.6;
     tower.rotation = Math.sin(wobPhase) * wob.amp;
     const k = wob.amp / MAX_AMP;
-    if (blocks[4]) blocks[4].x = Math.sin(wobPhase * 1.3) * 7 * k;
-    if (blocks[3]) blocks[3].x = Math.sin(wobPhase * 1.1 + 0.5) * 4 * k;
+    for (let i = 0; i < blocks.length; i++) {
+      const b = blocks[i];
+      b.x = baseX[i] + Math.sin(wobPhase * swayFreq[i] + swayPh[i]) * swayAmp[i] * k;
+      b.rotation = baseRot[i] + Math.sin(wobPhase * 1.7 + rotPh[i]) * rotAmp[i] * k;
+    }
+    // Clay dust shaken loose at the strained base joint when the tower leans hard.
+    if (k > 0.55) {
+      dustT += dtMs;
+      if (dustT > 460) { dustT = 0; puff(CX + Math.sin(wobPhase) * 42, BASE_Y - 4, 0xcdbfa6, 2, 24, 13); }
+    }
+  }
+  // Capture the frozen pose so idle breathing has a stable base to tremble around.
+  function freezePose(): void {
+    for (let i = 0; i < blocks.length; i++) { freezeX[i] = blocks[i].x; freezeRot[i] = blocks[i].rotation; }
+  }
+  // Subtle living tremor while the tower hangs at the critical lean (pause/drag):
+  // each block breathes on its own phase, higher blocks strain a little more, so
+  // the stack never looks dead-frozen while the player decides.
+  function idleBreathTick(dtMs: number): void {
+    if (wobbling || succeeded || (state !== "pause" && state !== "drag")) return;
+    breathPhase += (dtMs / 1000) * 1.6;
+    for (let i = 0; i < blocks.length; i++) {
+      const strain = 0.5 + i * 0.32; // top blocks tremble more
+      blocks[i].x = (freezeX[i] ?? baseX[i]) + Math.sin(breathPhase * (0.9 + i * 0.13) + i) * 0.9 * strain;
+      blocks[i].rotation = (freezeRot[i] ?? baseRot[i]) + Math.sin(breathPhase * 1.3 + i * 0.8) * 0.005 * strain;
+    }
   }
 
   // ── Gold "Life Insurance" block ────────────────────────────────────────────────
@@ -409,7 +591,7 @@ async function main(): Promise<void> {
   const hook = new Text({ text: "", style: { fill: TXT, fontFamily: FONT, fontWeight: "800", fontSize: 30, align: "center", wordWrap: true, wordWrapWidth: 340 } });
   function buildHud(): void {
     hook.anchor.set(0.5);
-    hook.position.set(CX, 60);
+    hook.position.set(CX, 58);
     hud.addChild(hook);
   }
   // ── Sound toggle (persistent, top-right) ──────────────────────────────────────
@@ -443,7 +625,7 @@ async function main(): Promise<void> {
   function showSuccessText(): void {
     const t = new Text({ text: SUCCESS, style: { fill: shade(ACCENT, -0.25), fontFamily: FONT, fontWeight: "800", fontSize: 36, align: "center" } });
     t.anchor.set(0.5);
-    t.position.set(CX, 250);
+    t.position.set(CX, 120);
     const base = Math.min(1, 360 / t.width); // fit baked into the pop so it never overflows
     t.scale.set(base * 0.6);
     t.alpha = 0;
@@ -465,6 +647,7 @@ async function main(): Promise<void> {
     grabDX = gold.x - p.x;
     grabDY = gold.y - p.y;
     gsap.to(gold.scale, { x: 1.06, y: 1.06, duration: 0.15 });
+    sparkleBurst(gold.x, gold.y, ACCENT, 6); // golden twinkle on pick-up
   }
   function onMove(e: { global: { x: number; y: number } }): void {
     if (!dragging) return;
@@ -533,12 +716,15 @@ async function main(): Promise<void> {
   function runSuccess(): void {
     track("foundation_secured");
     sfx.success();
+    setMood("rescue", 1.15); // backdrop blooms warm & golden, gradually — the tower is saved
+    screenFlash(0xffffff, 0.5);
     impulse();
     wobbling = false;
     stopSlotPulse();
     hideHand();
     gsap.to(tower, { rotation: 0, duration: 0.5, ease: "power2.out" });
-    blocks.forEach((b, i) => gsap.to(b, { x: 0, duration: 0.45, delay: i * 0.03, ease: "power2.out" }));
+    // Everything snaps from its precarious lean/tilt into a solid, aligned column.
+    blocks.forEach((b, i) => gsap.to(b, { x: 0, rotation: 0, duration: 0.5, delay: i * 0.04, ease: "back.out(1.5)" }));
     setHook("");
     showSuccessText();
     if (!DBG) gsap.delayedCall(SUCCESS_HOLD / 1000, showEndcard); // DBG: step() advances manually
@@ -552,7 +738,7 @@ async function main(): Promise<void> {
     gsap.to(ring.scale, { x: 5.5, y: 5.5, duration: 0.7, ease: "power2.out" });
     gsap.to(ring, { alpha: 0, duration: 0.7, ease: "power1.out", onComplete: () => ring.destroy() });
     // Energy washing up the tower.
-    const beam = new Graphics().roundRect(slot.x - BW / 2, 300, BW, STACK_H + BH, R).fill({ color: ACCENT, alpha: 0 });
+    const beam = new Graphics().roundRect(slot.x - BW / 2, TOWER_TOP, BW, STACK_H + BH, R).fill({ color: ACCENT, alpha: 0 });
     fx.addChild(beam);
     gsap.timeline({ onComplete: () => beam.destroy() })
       .to(beam, { alpha: 0.35, duration: 0.18 })
@@ -562,6 +748,20 @@ async function main(): Promise<void> {
       s.position.set(slot.x + (Math.random() - 0.5) * BW, slot.y);
       fx.addChild(s);
       gsap.to(s, { y: s.y - 120 - Math.random() * 160, alpha: 0, duration: 0.7 + Math.random() * 0.3, ease: "power1.out", onComplete: () => s.destroy() });
+    }
+    // Twinkle burst at the slot + sparkles racing up the secured column.
+    sparkleBurst(slot.x, slot.y, ACCENT, 14);
+    for (let i = 0; i < TOWER_N; i++) {
+      gsap.delayedCall(0.12 + i * 0.07, () => sparkleBurst(CX + (Math.random() - 0.5) * 60, BASE_Y + baseY[i], shade(ACCENT, 0.2), 4));
+    }
+    // Golden confetti raining down over the saved tower.
+    for (let i = 0; i < 18; i++) {
+      const c = new Graphics().roundRect(-2.5, -4, 5, 8, 1.5).fill({ color: i % 3 ? ACCENT : shade(ACCENT, 0.25), alpha: 0.95 });
+      c.position.set(CX + (Math.random() - 0.5) * 280, 280 + Math.random() * 40);
+      c.rotation = Math.random() * Math.PI;
+      fx.addChild(c);
+      gsap.to(c, { y: c.y + 200 + Math.random() * 220, rotation: c.rotation + (Math.random() - 0.5) * 8, alpha: 0, duration: 1.1 + Math.random() * 0.7, ease: "power1.in", onComplete: () => c.destroy() });
+      gsap.to(c, { x: c.x + (Math.random() - 0.5) * 120, duration: 1.4, ease: "sine.inOut" });
     }
   }
 
@@ -632,7 +832,7 @@ async function main(): Promise<void> {
     succeeded = false; autoPlaying = false; dragging = false; dragStarted = false; bouncing = false;
     interacted = false; idleMs = 0; wobPhase = 0; wob.amp = 0;
     tower.rotation = 0; tower.alpha = 1; slotLayer.alpha = 1; scene.alpha = 1;
-    blocks.forEach((b, i) => { b.x = (Math.random() - 0.5) * 4; b.y = -BH / 2 - i * (BH + GAP); });
+    blocks.forEach((b, i) => { b.x = baseX[i]; b.y = baseY[i]; b.rotation = baseRot[i]; });
     gold.visible = false; gold.eventMode = "none"; gold.scale.set(1); gold.rotation = 0;
     gold.position.set(CX, DH + 80);
     ui.visible = true;
@@ -644,6 +844,7 @@ async function main(): Promise<void> {
   function start(): void {
     state = "wobble";
     setHook(HOOK);
+    setMood("calm"); // calm at the start of the wobble (crossfades back on replay)
     track("game_start");
     gsap.delayedCall(WOBBLE_START / 1000, () => {
       wobbling = true;
@@ -654,10 +855,16 @@ async function main(): Promise<void> {
   function enterPause(): void {
     if (state !== "wobble") return;
     state = "pause";
-    // Freeze at a critical lean.
+    // Freeze at a critical lean — the near-fall beat. The backdrop darkens to the
+    // tense state, dust shudders off the base and anxious sparks flick off the top.
     wobbling = false;
+    freezePose(); // snapshot the lean so idle breathing trembles around it
     gsap.to(tower, { rotation: MAX_AMP * 0.85, duration: 0.4, ease: "power2.out" });
+    setMood("tension", 0.45); // snap the rest of the way to full dread at the brink
     sfx.creak();
+    puff(CX + 36, BASE_Y - 2, 0xcdbfa6, 7, 64, 20);
+    const top = blocks.length - 1;
+    sparkleBurst(CX + baseX[top] + 22, BASE_Y + baseY[top] - 8, 0xe8a23a, 5);
     // Gold block flies in from the bottom.
     gold.visible = true;
     gold.position.set(CX, DH + 80);
@@ -679,6 +886,8 @@ async function main(): Promise<void> {
     const dt = ticker.deltaMS;
     layout(); // re-fit every frame: some hosts resize the canvas without a JS resize event
     wobbleTick(dt);
+    idleBreathTick(dt);
+    moodTick(); // tension creeps in proportionally as the tower leans harder
     if (state === "drag" && dragging && !succeeded) {
       gold.x += (dragTarget.x - gold.x) * DRAG_LAG;
       gold.y += (dragTarget.y - gold.y) * DRAG_LAG;
@@ -692,11 +901,12 @@ async function main(): Promise<void> {
     const s = Math.min(app.screen.width / DW, app.screen.height / DH);
     root.scale.set(s);
     root.position.set((app.screen.width - DW * s) / 2, (app.screen.height - DH * s) / 2);
-    if (bgSprite) { bgSprite.width = app.screen.width; bgSprite.height = app.screen.height; } // cover gutters
+    for (const sp of bgSprites) { if (sp) { sp.width = app.screen.width; sp.height = app.screen.height; } } // cover gutters
   }
 
   // ── Build + start ──────────────────────────────────────────────────────────────
   buildBg();
+  buildMotes();
   buildScene();
   buildSlot();
   buildTower();

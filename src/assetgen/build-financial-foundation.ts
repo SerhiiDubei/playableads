@@ -9,11 +9,16 @@ import path from "node:path";
 import { bundleTemplate } from "../build/bundler.js";
 import { buildHtml, loadAssets } from "../build/inliner.js";
 import { validate } from "../build/validator.js";
+import { fontFace } from "./kit/kit.js";
 import { loadStyle, ROOT } from "../loader.js";
 import type { PlayableConfig, TemplateManifest } from "../types.js";
 
 const GAME_DIR = path.join(ROOT, "labs", "financial-foundation");
 const OUT_DIR = path.join(ROOT, "test", "financial-foundation");
+// Premium rounded font (Baloo 2, weight 800) — embedded base64, self-contained,
+// no network. Matches the soft-clay claymation art direction; Pixi text uses it
+// once the game awaits document.fonts.load("Baloo 2").
+const FONT_FACE = fontFace("Baloo 2", path.join(ROOT, "src", "assetgen", "fonts", "Baloo2-800-Latin.woff2"), 800);
 
 async function loadLabsManifest(): Promise<TemplateManifest> {
   const raw = await readFile(path.join(GAME_DIR, "manifest.json"), "utf8");
@@ -39,7 +44,9 @@ export async function buildFinancialFoundation(styleId = "financial-foundation")
     assets,
   };
   const js = await bundleTemplate(path.join(GAME_DIR, manifest.entry), config);
-  const html = buildHtml(js, config.copy.title);
+  // Inject the embedded @font-face into the document head so the canvas font is
+  // available (the game awaits its load before drawing any text).
+  const html = buildHtml(js, config.copy.title).replace("</style>", `${FONT_FACE}</style>`);
   const validation = validate(html);
   mkdirSync(OUT_DIR, { recursive: true });
   const outPath = path.join(OUT_DIR, "index.html");
