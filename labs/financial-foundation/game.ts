@@ -27,7 +27,6 @@ const HOST = window as unknown as {
 
 // ── Tunables (manifest defaults; brief params override) ───────────────────────
 const WOBBLE_START = Number(cfg.params.wobbleStartMs ?? 500);
-const WOBBLE_AMP_DEG = Number(cfg.params.wobbleAmpDeg ?? 6);
 const PAUSE_AT = Number(cfg.params.pauseAtMs ?? 3000);
 const IDLE_BOUNCE = Number(cfg.params.idleBounceMs ?? 4000);
 const AUTO_PLAY = Number(cfg.params.autoPlayMs ?? 6000);
@@ -40,11 +39,12 @@ const HOOK = String(cfg.params.hookText ?? "Don't let it fall down.");
 const SUCCESS = String(cfg.params.successText ?? "Foundation Secured!");
 const HEADLINE = String(cfg.params.endHeadline ?? "Make your family's financial foundation unbreakable.");
 const GOLD_LABEL = String(cfg.params.goldLabel ?? "Life Insurance");
-const DEBT_LABELS = String(cfg.params.blockLabels ?? "Mortgage,College Fund,Car Loan,Credit Cards,Groceries")
-  .split(",")
-  .map((s) => s.trim());
 
+// `?dbg` exposes the window.__ff console hooks (and the maxhw QA probe) but the
+// ad still AUTO-PLAYS normally — so a leftover ?dbg URL can never look "stuck".
+// Manual step-through (auto-play disabled) requires the explicit `?step` flag.
 const DBG = /dbg/.test(location.search);
+const MANUAL = /step/.test(location.search);
 
 // ── Color helpers ─────────────────────────────────────────────────────────────
 function num(hex: string): number {
@@ -69,10 +69,6 @@ const FONT = cfg.style.font.family;
 // Calm, trustworthy debt-block palette (muted blue / sage / grey / teal). Used
 // as the procedural-clay fallback tint when a context sprite is absent.
 const DEBT_COLORS = [0x6f8fb0, 0x7fa183, 0xb6bdc6, 0x88a6b6, 0x9aa2ab];
-// Bespoke per-context clay sprites (pre-coloured, with a sculpted emblem on the
-// left). Index matches DEBT_LABELS bottom→top: Mortgage, College Fund, Car Loan,
-// Credit Cards, Groceries. Used as-is (no tint); falls back to procedural clay.
-const BLOCK_KEYS = ["block-mortgage.webp", "block-college.webp", "block-car.webp", "block-credit.webp", "block-groceries.webp"];
 
 // ── Audio: procedural WebAudio SFX (zero asset weight, no external loads) ──────
 // Synthesised on the fly — nothing base64-inlined, nothing fetched. The context
@@ -152,29 +148,44 @@ function tex(key: string): Texture | null {
 
 // ── Design canvas (fixed; scaled to fit the viewport — no reflow) ─────────────
 const DW = 400, DH = 720, CX = DW / 2;
-const BW = 214, BH = 50, GAP = 11, R = 13;
+// Foundation slot + gold "Life Insurance" block geometry (a wide plinth under the
+// stack of life-objects). R = corner radius shared by the slot, gold bar & beams.
+const BW = 156, BH = 48, GAP = -8, R = 13; // GAP < 0 → objects nestle/overlap into a solid stack
 
-// Per-block geometry for the debt tower (bottom i=0 → top i=4). Irregular widths,
-// heights, lean offsets and baked-in tilt make the stack read as top-heavy and
-// precarious — a hand-stacked Jenga tower about to go — instead of a tidy column.
-// Long labels (College Fund, Credit Cards) get the wider slabs so text stays legible.
-// Sized to fill the canvas: the stack is tall and starts high so there's no dead sky.
-const TOWER_SPECS = [
-  { w: 196, h: 64, dx: -14, rot: -0.045 }, // Mortgage
-  { w: 228, h: 50, dx:  18, rot:  0.06  }, // College Fund
-  { w: 160, h: 59, dx: -23, rot: -0.07  }, // Car Loan
-  { w: 214, h: 47, dx:  22, rot:  0.085 }, // Credit Cards
-  { w: 168, h: 66, dx: -12, rot: -0.075 }, // Groceries
+// The tower is a stack of REAL clay objects (bottom i=0 → top i=4): the home you
+// mortgage, the education you save for, the car you finance, the cards, the
+// weekly groceries — life's obligations literally piled up and teetering. w/h are
+// the on-canvas render size, kept to each sprite's TRUE aspect (srcW×srcH below)
+// so nothing is squished. `rest` is the baked joint lean that gives the stack its
+// hand-stacked zig-zag character before the physics takes over.
+//   house 640×610 · college 640×554 · car 640×460 · credit 640×400 · groceries 541×640
+const TOWER_OBJECTS = [
+  { key: "obj-house.webp",     w: 109, h: 104, rest: -0.018 }, // Mortgage
+  { key: "obj-college.webp",   w: 111, h: 97,  rest:  0.026 }, // College Fund
+  { key: "obj-car.webp",       w: 115, h: 83,  rest: -0.032 }, // Car Loan
+  { key: "obj-credit.webp",    w: 102, h: 64,  rest:  0.040 }, // Credit Cards
+  { key: "obj-groceries.webp", w: 78,  h: 92,  rest: -0.050 }, // Groceries
 ];
-const TOWER_N = TOWER_SPECS.length;
-const TOWER_TOP = 188;                                   // visual top of the stack (fills the upper canvas)
-const STACK_H = TOWER_SPECS.reduce((s, b) => s + b.h, 0) + (TOWER_N - 1) * GAP;  // ~330
-const BASE_Y = TOWER_TOP + STACK_H;                      // top of foundation slot
+const TOWER_N = TOWER_OBJECTS.length;
+const STACK_H = TOWER_OBJECTS.reduce((s, b) => s + b.h, 0) + (TOWER_N - 1) * GAP; // ~408
+const TOWER_TOP = 112;                                   // visual top of the stack (fills the upper canvas)
+const BASE_Y = TOWER_TOP + STACK_H;                      // top of foundation slot (~520)
 const SLOT_Y = BASE_Y + BH / 2;                          // slot center
 const PLAT_Y = BASE_Y + BH + 16;                         // platform center
 const TRAY_Y = 660;                                      // gold "ready" position
 const slot = { x: CX, y: SLOT_Y };
 const goldHome = { x: CX, y: TRAY_Y };
+
+// Camera framing: fit to the CONTENT box (not the whole 400×720 canvas) so the
+// scene fills the screen with minimal dead sky/ground. CONTENT_HALF_W is the
+// tower's worst-case lean half-width (measured in ?dbg via __ff.maxhw) + a safety
+// margin, so a hard lurch never clips off-screen; the vertical span is tight to
+// text → tower → gold tray, trimming the empty bands top & bottom.
+const LEAN_XMAX = 156;        // soft-wall: max rendered half-width (design px) the stack may reach
+const CONTENT_HALF_W = 174;  // framed half-width = LEAN_XMAX + safety margin
+const TEXT_W = CONTENT_HALF_W * 2 - 28; // max text width that stays inside the framed view (~316)
+const CONTENT_TOP = 44;
+const CONTENT_BOT = 666;
 
 type State = "boot" | "wobble" | "pause" | "drag" | "success" | "end";
 
@@ -219,10 +230,6 @@ async function main(): Promise<void> {
 
   // State.
   let state: State = "boot";
-  let wobbling = false;
-  let wobPhase = 0;
-  const wob = { amp: 0 };
-  const MAX_AMP = (WOBBLE_AMP_DEG * 1.75 * Math.PI) / 180;
   let dragging = false;
   let dragStarted = false;
   let succeeded = false;
@@ -233,16 +240,32 @@ async function main(): Promise<void> {
   let grabDX = 0, grabDY = 0;
   const dragTarget = { x: goldHome.x, y: goldHome.y };
   const blocks: Container[] = [];
-  // Per-block rest pose + independent sway params (filled in buildTower). Each
-  // block sways/tilts on its own phase & frequency so the tower jitters like a
-  // loose stack rather than swinging as one rigid slab.
-  const baseX: number[] = [], baseY: number[] = [], baseRot: number[] = [];
-  const swayAmp: number[] = [], swayFreq: number[] = [], swayPh: number[] = [];
-  const rotAmp: number[] = [], rotPh: number[] = [];
-  // Pose captured when the wobble freezes at the critical lean — idle breathing
-  // adds a subtle living tremor around it while the player decides (pause/drag).
-  const freezeX: number[] = [], freezeRot: number[] = [];
-  let breathPhase = 0;
+  // ── Articulated-stack physics ───────────────────────────────────────────────
+  // The tower is a chain of rigid segments (one per block) hinged at each joint.
+  // Every joint runs a torsional spring toward its baked rest lean, viscous
+  // damping, a top-heavy gravity torque that *destabilises* (positive feedback —
+  // the further it leans, the harder it keeps going), and a ramping random drive.
+  // The emergent motion teeters and lurches like a real loose stack instead of a
+  // scripted sine. One sim covers every beat: the build-up, the held near-fall
+  // (gravity off, faint tremble), and the success straighten (stiff, rest→0).
+  const ang: number[] = [];       // absolute tilt of each block (rad)
+  const vel: number[] = [];       // angular velocity
+  const restRel: number[] = [];   // baked rest angle at joint i (block i vs i-1)
+  const leanBias: number[] = [];  // one-sided lean per joint, scaled by phys.lean
+  const halfH: number[] = [];     // half segment length (block half-height + thickness)
+  const halfW: number[] = [];     // half object width (for the horizontal soft-wall)
+  const loadAbove: number[] = []; // gravity / drive weighting per joint
+  const stiffMul: number[] = [];  // per-joint stiffness (base rigid, upper joints loose)
+  // Live gains, tweened by the FSM (gsap) at each beat. rest 1→0 straightens the
+  // stack on success; lean 0→1 tips it to the near-fall brink at the pause.
+  const phys = { grav: 0, noise: 0, lean: 0, rest: 1, stiff: 58, damp: 5.6, sway: 0 };
+  const LEAN_REF = 0.44;          // tilt (rad) read as "fully leaning" for the mood drive
+  const SWAY_FREQ = 1.35;         // rad/s of the slow, weighted balancing wave
+  let physReady = false;
+  let swayPhase = 0;              // ever-advancing phase of the continuous sway
+  let dustT = 0;                  // throttles clay-dust emission while straining
+  let lurchT = 0, lurchEvery = 1100; // cadence of the recurring near-topple jolts
+  let dbgMaxHW = 0; // DBG-only: running worst-case tower half-width (lean clip check)
   // Background: three stacked full-viewport states (calm base, tension, rescue)
   // crossfaded by setMood() on FSM transitions. `moodOverlay` is the procedural
   // fallback (a tintable full-screen wash) when the bg textures are absent.
@@ -377,9 +400,9 @@ async function main(): Promise<void> {
   // proportionally to how hard the tower is leaning, so the dread ramps smoothly
   // instead of snapping on at the pause. enterPause() then tweens it the rest of
   // the way to full tension.
-  function moodTick(): void {
+  function moodDrive(): void {
     if (state !== "wobble") return;
-    const a = Math.min(1, wob.amp / MAX_AMP) * 0.55;
+    const a = Math.min(1, Math.abs(ang[blocks.length - 1]) / LEAN_REF) * 0.6;
     if (bgSprites[1]) { gsap.killTweensOf(bgSprites[1]); bgSprites[1].alpha = a; }
     else if (moodOverlay) {
       gsap.killTweensOf(moodOverlay);
@@ -444,11 +467,9 @@ async function main(): Promise<void> {
       gsap.delayedCall(Math.random() * 4, drift);
     }
   }
-  let dustT = 0; // throttles clay-dust emission while the tower strains
-
   // ── Platform ───────────────────────────────────────────────────────────────────
   function buildScene(): void {
-    const plat = blockBody("platform.webp", 340, 52, shade(PRIMARY, 0.18));
+    const plat = blockBody("platform.webp", 250, 50, shade(PRIMARY, 0.18));
     plat.position.set(CX, PLAT_Y);
     scene.addChild(plat);
   }
@@ -478,67 +499,110 @@ async function main(): Promise<void> {
   function buildTower(): void {
     tower.position.set(CX, BASE_Y);
     tower.pivot.set(0, 0);
-    // Stack cumulatively from the slot upward so blocks of different heights butt
-    // together with a consistent gap (no fixed BH grid).
-    let bottomY = 0; // bottom edge of the current block, measured up from the slot
     for (let i = 0; i < TOWER_N; i++) {
-      const spec = TOWER_SPECS[i];
+      const spec = TOWER_OBJECTS[i];
       const c = new Container();
       const color = DEBT_COLORS[i % DEBT_COLORS.length];
-      const body = blockBody(BLOCK_KEYS[i] ?? "", spec.w, spec.h, color); // bespoke context clay, used as-is
-      // The sprite carries a sculpted emblem on its left ~22%; centre the label in
-      // the smooth area to the right of it so text never collides with the icon.
-      const lbl = blockLabel(DEBT_LABELS[i] ?? "", "#ffffff", spec.w * 0.78);
-      lbl.x = spec.w * 0.13;
-      c.addChild(body, lbl);
-      const cy = bottomY - spec.h / 2;
-      bottomY = cy - spec.h / 2 - GAP;
-      // Rest pose: baked lean (dx) + tilt (rot). Higher blocks sway & tilt more,
-      // each on its own frequency/phase → the stack looks loose and top-heavy.
-      baseX[i] = spec.dx; baseY[i] = cy; baseRot[i] = spec.rot;
-      swayAmp[i] = 3 + i * 3.0;
-      swayFreq[i] = 0.85 + i * 0.22;
-      swayPh[i] = i * 1.15;
-      rotAmp[i] = 0.012 + i * 0.014;
-      rotPh[i] = i * 0.7 + 0.4;
-      c.position.set(spec.dx, cy);
-      c.rotation = spec.rot;
+      // Real clay object at its true aspect (w/h match the sprite) → no squish;
+      // the procedural clay block is the fallback when the sprite key is absent.
+      c.addChild(blockBody(spec.key, spec.w, spec.h, color));
+      // Physics segment: hinged at its bottom edge, half-length = half its height.
+      halfH[i] = spec.h / 2;
+      halfW[i] = spec.w / 2;
+      restRel[i] = spec.rest;
+      leanBias[i] = 0.022 + i * 0.004; // a slight steady tip; the balancing wave sways it around this
+      loadAbove[i] = 0.7 + i * 0.16;   // top objects wander & lurch the most
+      stiffMul[i] = 1.5 - i * 0.13;    // base joints hold firm, upper joints wobble loose
       tower.addChild(c);
       blocks.push(c);
     }
+    resetPhysics(); // seat each object at its baked rest lean
   }
-  // Whole-tower sway PLUS each block sliding & tilting on its own phase — the loose,
-  // top-heavy "about to topple" read. Amplitude scales with the master wobble (k).
-  function wobbleTick(dtMs: number): void {
-    if (!wobbling) return;
-    wobPhase += (dtMs / 1000) * 2.6;
-    tower.rotation = Math.sin(wobPhase) * wob.amp;
-    const k = wob.amp / MAX_AMP;
+  // Walk the hinged chain from the base joint upward, seating each object on top
+  // of the one below at its current tilt — the stack reads as one physically
+  // connected tower, not independent sprites.
+  function applyPose(): void {
+    let jx = 0, jy = 0; // base joint at tower-local origin (top of the slot)
     for (let i = 0; i < blocks.length; i++) {
-      const b = blocks[i];
-      b.x = baseX[i] + Math.sin(wobPhase * swayFreq[i] + swayPh[i]) * swayAmp[i] * k;
-      b.rotation = baseRot[i] + Math.sin(wobPhase * 1.7 + rotPh[i]) * rotAmp[i] * k;
+      const a = ang[i], hH = halfH[i];
+      const cx = jx + Math.sin(a) * hH;
+      const cy = jy - Math.cos(a) * hH;
+      blocks[i].position.set(cx, cy);
+      blocks[i].rotation = a;
+      jx = cx + Math.sin(a) * (hH + GAP);
+      jy = cy - Math.cos(a) * (hH + GAP);
     }
-    // Clay dust shaken loose at the strained base joint when the tower leans hard.
-    if (k > 0.55) {
+  }
+  // Seat every object at its baked rest lean (cumulative), motionless.
+  function resetPhysics(): void {
+    let acc = 0;
+    for (let i = 0; i < blocks.length; i++) { acc += restRel[i] * phys.rest; ang[i] = acc; vel[i] = 0; }
+    applyPose();
+  }
+  // One integration of the articulated stack. Per joint: a torsional spring back
+  // toward its rest+lean target, a top-heavy DEstabilising gravity torque (the
+  // more it leans the harder it keeps going — that positive feedback is the
+  // teeter), viscous damping, and a random drive. Sub-stepped for stability;
+  // angles clamped so a hard lurch never blows the sim up.
+  function physicsStep(dtMs: number): void {
+    if (!physReady) return;
+    const dt = Math.min(dtMs, 34) / 1000;
+    const sub = 3, h = dt / sub, n = blocks.length;
+    swayPhase += dt * SWAY_FREQ; // continuous rocking phase (never stops while active)
+    for (let s = 0; s < sub; s++) {
+      for (let i = 0; i < n; i++) {
+        const below = i > 0 ? ang[i - 1] : 0;
+        const target = restRel[i] * phys.rest + leanBias[i] * phys.lean;
+        const spring = -phys.stiff * stiffMul[i] * ((ang[i] - below) - target);
+        const grav = phys.grav * Math.sin(ang[i]) * loadAbove[i];
+        const damp = -phys.damp * vel[i];
+        const drive = phys.noise * (Math.random() * 2 - 1) * loadAbove[i];
+        // The balancing wave: two slow incommensurate travelling waves summed (so
+        // it never repeats like a metronome) propagating up the chain with a phase
+        // lag — the base shifts, the top trails with weight, the whole body sways
+        // as one smooth wave. This is the *only* lateral drive (no jolts), and it
+        // stays well under the soft wall so the motion never bounces off it.
+        const rock = phys.sway * (Math.sin(swayPhase + i * 0.55) * 0.72 + Math.sin(swayPhase * 0.63 + i * 0.85 + 2.1) * 0.4) * loadAbove[i];
+        vel[i] += (spring + grav + damp + drive + rock) * h;
+        ang[i] += vel[i] * h;
+        if (ang[i] > 0.72) { ang[i] = 0.72; vel[i] *= -0.25; }
+        else if (ang[i] < -0.72) { ang[i] = -0.72; vel[i] *= -0.25; }
+      }
+    }
+    // Soft wall: walk the chain, find the widest reaching point, and if it would
+    // exceed LEAN_XMAX pull every joint proportionally back inside — so the stack
+    // can lurch and teeter hard but never slides off the framed width.
+    {
+      let jx = 0, ext = 0;
+      for (let i = 0; i < n; i++) {
+        const si = Math.sin(ang[i]), co = Math.cos(ang[i]);
+        const cx = jx + si * halfH[i];
+        // rotated-AABB half-width of this object → matches the actual rendered bounds
+        const e = Math.abs(cx) + halfW[i] * Math.abs(co) + halfH[i] * Math.abs(si);
+        if (e > ext) ext = e;
+        jx = cx + si * (halfH[i] + GAP);
+      }
+      if (ext > LEAN_XMAX) {
+        const f = LEAN_XMAX / ext;
+        for (let i = 0; i < n; i++) { ang[i] *= f; vel[i] *= f * 0.6; }
+      }
+    }
+    // Soft strain ambiance while it balances on the edge: an occasional gentle
+    // creak and a wisp of clay dust under the weight — NO jolts. The motion itself
+    // is the smooth balancing wave above; this only adds the sense of strain.
+    if ((state === "pause" || state === "drag") && !succeeded) {
+      lurchT += dtMs;
+      if (lurchT > lurchEvery) {
+        lurchT = 0;
+        lurchEvery = 1700 + Math.random() * 1500;
+        sfx.creak();
+        puff(CX + Math.sin(ang[n - 1]) * 34, BASE_Y - 4, 0xcdbfa6, 2, 22, 11);
+      }
+    }
+    // Extra clay dust shaken from the strained base at the peak of the build-up.
+    if (phys.grav > 30 && Math.abs(ang[n - 1]) > 0.14) {
       dustT += dtMs;
-      if (dustT > 460) { dustT = 0; puff(CX + Math.sin(wobPhase) * 42, BASE_Y - 4, 0xcdbfa6, 2, 24, 13); }
-    }
-  }
-  // Capture the frozen pose so idle breathing has a stable base to tremble around.
-  function freezePose(): void {
-    for (let i = 0; i < blocks.length; i++) { freezeX[i] = blocks[i].x; freezeRot[i] = blocks[i].rotation; }
-  }
-  // Subtle living tremor while the tower hangs at the critical lean (pause/drag):
-  // each block breathes on its own phase, higher blocks strain a little more, so
-  // the stack never looks dead-frozen while the player decides.
-  function idleBreathTick(dtMs: number): void {
-    if (wobbling || succeeded || (state !== "pause" && state !== "drag")) return;
-    breathPhase += (dtMs / 1000) * 1.6;
-    for (let i = 0; i < blocks.length; i++) {
-      const strain = 0.5 + i * 0.32; // top blocks tremble more
-      blocks[i].x = (freezeX[i] ?? baseX[i]) + Math.sin(breathPhase * (0.9 + i * 0.13) + i) * 0.9 * strain;
-      blocks[i].rotation = (freezeRot[i] ?? baseRot[i]) + Math.sin(breathPhase * 1.3 + i * 0.8) * 0.005 * strain;
+      if (dustT > 460) { dustT = 0; puff(CX + Math.sin(ang[n - 1]) * 38, BASE_Y - 4, 0xcdbfa6, 2, 22, 12); }
     }
   }
 
@@ -588,7 +652,9 @@ async function main(): Promise<void> {
   }
 
   // ── HUD (hook + success text) ────────────────────────────────────────────────────
-  const hook = new Text({ text: "", style: { fill: TXT, fontFamily: FONT, fontWeight: "800", fontSize: 30, align: "center", wordWrap: true, wordWrapWidth: 340 } });
+  // Hook must read on BOTH the calm (light) and tension (dark slate) backdrops, so
+  // the dark navy fill carries a white outline + soft shadow to lift it off either.
+  const hook = new Text({ text: "", style: { fill: TXT, fontFamily: FONT, fontWeight: "800", fontSize: 30, align: "center", wordWrap: true, wordWrapWidth: TEXT_W, stroke: { color: 0xffffff, width: 4, join: "round" }, dropShadow: { color: 0x1a2940, alpha: 0.3, blur: 4, distance: 2, angle: 1.6 } } });
   function buildHud(): void {
     hook.anchor.set(0.5);
     hook.position.set(CX, 58);
@@ -619,14 +685,16 @@ async function main(): Promise<void> {
   }
   function setHook(s: string): void {
     hook.text = s;
-    fit(hook, 350);
+    fit(hook, TEXT_W);
     if (s) gsap.fromTo(hook, { alpha: 0.3 }, { alpha: 1, duration: 0.3 });
   }
   function showSuccessText(): void {
-    const t = new Text({ text: SUCCESS, style: { fill: shade(ACCENT, -0.25), fontFamily: FONT, fontWeight: "800", fontSize: 36, align: "center" } });
+    // Gold-on-gold (rescue backdrop) reads poorly — give the gold fill a dark brown
+    // outline + shadow so "Foundation Secured!" stays crisp over the golden bloom.
+    const t = new Text({ text: SUCCESS, style: { fill: shade(ACCENT, 0.12), fontFamily: FONT, fontWeight: "800", fontSize: 36, align: "center", stroke: { color: shade(ACCENT, -0.62), width: 6, join: "round" }, dropShadow: { color: 0x4a3208, alpha: 0.4, blur: 4, distance: 2, angle: 1.6 } } });
     t.anchor.set(0.5);
     t.position.set(CX, 120);
-    const base = Math.min(1, 360 / t.width); // fit baked into the pop so it never overflows
+    const base = Math.min(1, TEXT_W / t.width); // fit baked into the pop so it never overflows
     t.scale.set(base * 0.6);
     t.alpha = 0;
     hud.addChild(t);
@@ -683,7 +751,7 @@ async function main(): Promise<void> {
     gold.y = goldHome.y;
   }
   function idleTick(dtMs: number): void {
-    if (DBG || state !== "drag" || dragging || succeeded || autoPlaying) return;
+    if (MANUAL || state !== "drag" || dragging || succeeded || autoPlaying) return;
     idleMs += dtMs;
     if (idleMs >= IDLE_BOUNCE) startBounce();
     if (idleMs >= AUTO_PLAY) autoPlay();
@@ -719,15 +787,15 @@ async function main(): Promise<void> {
     setMood("rescue", 1.15); // backdrop blooms warm & golden, gradually — the tower is saved
     screenFlash(0xffffff, 0.5);
     impulse();
-    wobbling = false;
     stopSlotPulse();
     hideHand();
-    gsap.to(tower, { rotation: 0, duration: 0.5, ease: "power2.out" });
-    // Everything snaps from its precarious lean/tilt into a solid, aligned column.
-    blocks.forEach((b, i) => gsap.to(b, { x: 0, rotation: 0, duration: 0.5, delay: i * 0.04, ease: "back.out(1.5)" }));
+    // The whole stack snaps from its precarious lean into a solid, aligned column:
+    // gravity & jitter off, lean off, rest→0 (vertical), springs stiffen to settle.
+    for (let i = 0; i < blocks.length; i++) vel[i] = 0;
+    gsap.to(phys, { grav: 0, noise: 0, lean: 0, rest: 0, stiff: 150, damp: 13, sway: 0, duration: 0.5, ease: "power2.out" });
     setHook("");
     showSuccessText();
-    if (!DBG) gsap.delayedCall(SUCCESS_HOLD / 1000, showEndcard); // DBG: step() advances manually
+    if (!MANUAL) gsap.delayedCall(SUCCESS_HOLD / 1000, showEndcard); // ?step: __ff.step() advances manually
   }
   function impulse(): void {
     // Golden ring expanding from the slot.
@@ -752,7 +820,7 @@ async function main(): Promise<void> {
     // Twinkle burst at the slot + sparkles racing up the secured column.
     sparkleBurst(slot.x, slot.y, ACCENT, 14);
     for (let i = 0; i < TOWER_N; i++) {
-      gsap.delayedCall(0.12 + i * 0.07, () => sparkleBurst(CX + (Math.random() - 0.5) * 60, BASE_Y + baseY[i], shade(ACCENT, 0.2), 4));
+      gsap.delayedCall(0.12 + i * 0.07, () => sparkleBurst(CX + blocks[i].x + (Math.random() - 0.5) * 40, BASE_Y + blocks[i].y, shade(ACCENT, 0.2), 4));
     }
     // Golden confetti raining down over the saved tower.
     for (let i = 0; i < 18; i++) {
@@ -785,7 +853,7 @@ async function main(): Promise<void> {
     gsap.killTweensOf(goldGlow.scale);
     gsap.to(goldGlow.scale, { x: 1.18, y: 1.18, duration: 0.9, yoyo: true, repeat: -1, ease: "sine.inOut" });
 
-    const headline = new Text({ text: HEADLINE, style: { fill: TXT, fontFamily: FONT, fontWeight: "800", fontSize: 26, align: "center", wordWrap: true, wordWrapWidth: 320 } });
+    const headline = new Text({ text: HEADLINE, style: { fill: TXT, fontFamily: FONT, fontWeight: "800", fontSize: 26, align: "center", wordWrap: true, wordWrapWidth: TEXT_W } });
     headline.anchor.set(0.5);
     headline.position.set(CX, 110);
     headline.alpha = 0;
@@ -830,9 +898,11 @@ async function main(): Promise<void> {
     gsap.killTweensOf(goldGlow.scale);
     goldGlow.scale.set(1);
     succeeded = false; autoPlaying = false; dragging = false; dragStarted = false; bouncing = false;
-    interacted = false; idleMs = 0; wobPhase = 0; wob.amp = 0;
+    interacted = false; idleMs = 0;
+    phys.grav = 0; phys.noise = 0; phys.lean = 0; phys.rest = 1; phys.stiff = 58; phys.damp = 5.6; phys.sway = 0;
+    physReady = false; lurchT = 0; lurchEvery = 1100;
     tower.rotation = 0; tower.alpha = 1; slotLayer.alpha = 1; scene.alpha = 1;
-    blocks.forEach((b, i) => { b.x = baseX[i]; b.y = baseY[i]; b.rotation = baseRot[i]; });
+    resetPhysics();
     gold.visible = false; gold.eventMode = "none"; gold.scale.set(1); gold.rotation = 0;
     gold.position.set(CX, DH + 80);
     ui.visible = true;
@@ -846,25 +916,28 @@ async function main(): Promise<void> {
     setHook(HOOK);
     setMood("calm"); // calm at the start of the wobble (crossfades back on replay)
     track("game_start");
+    physReady = true;
     gsap.delayedCall(WOBBLE_START / 1000, () => {
-      wobbling = true;
-      gsap.to(wob, { amp: MAX_AMP, duration: 2.0, ease: "power1.in" });
+      // The stack loosens and the teeter escalates — gravity, jitter & lurch
+      // strength all ramp up while damping eases off so the sway lingers.
+      gsap.to(phys, { grav: 16, noise: 4, damp: 4.8, sway: 1.1, duration: 2.8, ease: "power1.inOut" });
     });
-    if (!DBG) gsap.delayedCall(PAUSE_AT / 1000, enterPause);
+    if (!MANUAL) gsap.delayedCall(PAUSE_AT / 1000, enterPause);
   }
   function enterPause(): void {
     if (state !== "wobble") return;
     state = "pause";
-    // Freeze at a critical lean — the near-fall beat. The backdrop darkens to the
-    // tense state, dust shudders off the base and anxious sparks flick off the top.
-    wobbling = false;
-    freezePose(); // snapshot the lean so idle breathing trembles around it
-    gsap.to(tower, { rotation: MAX_AMP * 0.85, duration: 0.4, ease: "power2.out" });
-    setMood("tension", 0.45); // snap the rest of the way to full dread at the brink
+    // Freeze the teeter at a critical lean — the near-fall beat. Gravity eases off
+    // and the springs hold the stack tipped at the brink with only a faint nervous
+    // tremble; the backdrop darkens and anxious sparks flick off the top object.
+    // Hold the stack tipped at the brink but keep it visibly fighting gravity —
+    // strong strain, light damping and ongoing lurches, NOT a parked freeze.
+    gsap.to(phys, { grav: 9, noise: 3, lean: 1, stiff: 45, damp: 4.4, sway: 2.4, duration: 0.7, ease: "power2.out" });
+    setMood("tension", 0.5); // snap the rest of the way to full dread at the brink
     sfx.creak();
-    puff(CX + 36, BASE_Y - 2, 0xcdbfa6, 7, 64, 20);
+    puff(CX + 34, BASE_Y - 2, 0xcdbfa6, 7, 60, 20);
     const top = blocks.length - 1;
-    sparkleBurst(CX + baseX[top] + 22, BASE_Y + baseY[top] - 8, 0xe8a23a, 5);
+    sparkleBurst(CX + blocks[top].x + 14, BASE_Y + blocks[top].y - 8, 0xe8a23a, 5);
     // Gold block flies in from the bottom.
     gold.visible = true;
     gold.position.set(CX, DH + 80);
@@ -885,9 +958,10 @@ async function main(): Promise<void> {
   app.ticker.add((ticker) => {
     const dt = ticker.deltaMS;
     layout(); // re-fit every frame: some hosts resize the canvas without a JS resize event
-    wobbleTick(dt);
-    idleBreathTick(dt);
-    moodTick(); // tension creeps in proportionally as the tower leans harder
+    physicsStep(dt);
+    applyPose();
+    if (DBG) { const b = tower.getLocalBounds(); const hw = Math.max(Math.abs(b.minX), Math.abs(b.maxX)); if (hw > dbgMaxHW) dbgMaxHW = hw; }
+    moodDrive(); // tension creeps in proportionally as the tower leans harder
     if (state === "drag" && dragging && !succeeded) {
       gold.x += (dragTarget.x - gold.x) * DRAG_LAG;
       gold.y += (dragTarget.y - gold.y) * DRAG_LAG;
@@ -896,12 +970,15 @@ async function main(): Promise<void> {
     idleTick(dt);
   });
 
-  // ── Layout (portrait 9:16 only — scale design canvas into viewport, contain) ───
+  // ── Layout — fit the content box into the viewport (contain), centred on the
+  // tower. Zooms closer than full-canvas contain so there's little dead sky/ground,
+  // while CONTENT_HALF_W guarantees the leaning tower never clips off the sides. ──
   function layout(): void {
-    const s = Math.min(app.screen.width / DW, app.screen.height / DH);
+    const sw = app.screen.width, sh = app.screen.height;
+    const s = Math.min(sw / (CONTENT_HALF_W * 2), sh / (CONTENT_BOT - CONTENT_TOP));
     root.scale.set(s);
-    root.position.set((app.screen.width - DW * s) / 2, (app.screen.height - DH * s) / 2);
-    for (const sp of bgSprites) { if (sp) { sp.width = app.screen.width; sp.height = app.screen.height; } } // cover gutters
+    root.position.set(sw / 2 - CX * s, sh / 2 - ((CONTENT_TOP + CONTENT_BOT) / 2) * s);
+    for (const sp of bgSprites) { if (sp) { sp.width = sw; sp.height = sh; } } // cover gutters
   }
 
   // ── Build + start ──────────────────────────────────────────────────────────────
@@ -941,6 +1018,8 @@ async function main(): Promise<void> {
       cta: () => fireCTA(),
       reset: () => resetAll(),
       shot: () => app.renderer.extract.base64({ target: app.stage }),
+      maxhw: () => dbgMaxHW,
+      reseths: () => { dbgMaxHW = 0; },
     };
   }
 

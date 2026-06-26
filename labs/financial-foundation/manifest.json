@@ -14,7 +14,7 @@
     "wobbleAmpDeg": 6,
     "pauseAtMs": 3000,
     "idleBounceMs": 4000,
-    "autoPlayMs": 6000,
+    "autoPlayMs": 8000,
     "dragLag": 0.22,
     "snapDist": 56,
     "successHoldMs": 2400,
