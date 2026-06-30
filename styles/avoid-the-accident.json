@@ -1,0 +1,14 @@
+{
+  "id": "avoid-the-accident",
+  "name": "SafeDrive Insurance",
+  "colors": {
+    "background": "#7CC576",
+    "primary": "#2DA44E",
+    "accent": "#F4C740",
+    "text": "#FFFFFF"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 800
+  }
+}

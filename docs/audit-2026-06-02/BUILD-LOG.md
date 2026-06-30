@@ -544,3 +544,65 @@ Brief → (planner gate) → (cost gate) → assetgen → build → validate, з
 **Зроблено:** (1) **Smoothie**: 14 AI-асетів (4 фрукти + 4 juicy-halves + blender-base/jar + ui-frame) — фрукти/розрізи спрайтами, блендер з прозорою чашею і рідиною що наповнюється (masked за склом), endcard на 9-slice NineSliceSprite рамці, текст /3, шрифт Baloo 2. (2) **Brimful/greens**: новий фон (світла кухня з боке), спіймані інгредієнти ВИДИМО осідають у склянці (поверх спрайта склянки з власною маскою, bounce-приземлення на лінію рідини), endcard компактний (panel 330, текст /3), шрифт Comfortaa. (3) **Umbrella**: endcard стиснутий (348, 1-рядковий боді), шрифт Bitter. (4) **Power-wash**: ВИДАЛЕНО прихований gsap.delayedCall(4.5s)→triggerComplete (БАГ «закінчується на 60%») — тепер тільки 0.985; endcard: заголовок «Patio: 100% spotless.», стрічка 104px, мінімум тексту; шрифт Lilita One. (5) **Kitchen**: 4-й крок Lighting (Globe Duo vs Linear Bar pendants-bar.webp) — світильник-шар свапається (старий вгору back.in, новий bounce-drop), свотчі з glow-іконками, прогрес 4 фракції, шрифт Fraunces. Інфраструктура: woff2 у inliner mime-map, FontFace-лоадер з cfg.assets у 5 іграх (fontsource CDN, 10-19KB).
 **Перевірено:** build 5/5 OK · QA: kitchen flow L/R (4 кроки), power-wash scrub до 100%, monkey smoothie/greens/umbrella — 0 помилок · особистий перегляд: спрайти фруктів/halves у польоті, блендер з рідиною, інгредієнти в склянці (фікс: settled поверх напівпрозорого спрайта склянки), нові endcards всіх 5, step-4 картки.
 **Відкрито:** бренд-хедер greens у bg-шарі (item може перекрити на верхніх траєкторіях) — мінорний z-нюанс.
+
+---
+
+## 2026-06-25 — The Repair Bill RB1–RB2: каркас estimate-reveal ($0) 🆕
+**Зроблено:** Новий layout `src/assetgen/layouts/estimate-reveal.ts` (+ реєстрація в `layouts/index.ts`) — guess-and-reveal слайдером для задачі #3 «пояснити важливість послуги» (auto-insurance, демо-бренд **Coverly**). 6 екранів: intro → r1g(слайдер) → r1r(reveal) → r2g → r2r → end(endcard). Слайдер на чистому CSS+pointer (без асетів → стиль-агностичний, $0 на будь-якому стилі); reveal трьома **пер-елементними каскадами** (number-roll суми з overshoot-pop → бар точності → бейдж промаху); running total; deductible-хук ($500) у фіналі → CTA «Get your quote». Машини оголошено в `meta.assets` (car_clean/rear/front, `fallbackHero:true`) — на стилях без них builder підставляє hero. Прогін `forge -- cyber-heist --layout estimate-reveal --no-open` = **$0** (13 асетів skip-existing).
+**Перевірено:** typecheck — мої файли чисті (labs/* помилки pre-existing, не мої); `check:layouts -- all` — estimate-reveal **PASS**; `npm run visual` — **ALL PASS** (8 viewports + 6 екранів, 0 overflow, зони валідні, primary=actions скрізь); single-file **564.6 KB / 2048 KB** PASS; інтерактив перевірено особисто (Playwright demo): drag слайдера, lockIn 2 раунди, reveal $3,200 (31% low) / total $7,800, endcard з deductible-хуком.
+**AC:** RB1 (layout+slider+інтерактив+CTA, білдиться $0) ✅; RB2 (forge $0 + estimate-reveal PASS lint + visual ALL PASS) ✅.
+**Відкрито/борг:** (1) шрифт каркасу — Cinzel (зашитий у `build-test-playable` FONT); мої тексти на rounded-sans через pageCss, kit-кнопки лишились Cinzel — для Coverly підмінити. (2) 9 pre-existing FAIL у `check:layouts` (CTA-зона immersive 749..840 > 828) — окремий борг репо, поза скоупом RB, не зачеплено. (3) машини = hero-fallback (cyber-heist) — реальний арт у RB3 (coverly brief).
+**Чекпойнт:** 🛑 CHECKPOINT каркас → **review** (чекаю human-підтвердження структури/слайдера/reveal перед платним AI-артом RB3).
+
+---
+
+## 2026-06-25 — The Repair Bill RB3–RB4: AI-арт Coverly, 2 версії (A/B на рендер) 🆕
+**Зроблено:** 2 стиль-брифи — `styles/coverly-soft.brief.json` (cartoon-3d-glossy, IP-anchor Lemonade) + `styles/coverly-flat.brief.json` (flat-vector, IP-anchor Stripe), **однакова палітра Coverly** (navy #0E1A3A / mint #00E0A4 / coral #FF5470) → чистий A/B на рендер. 14 спрайтів кожен (UI-кіт + 6 іконок + bg + hero + car_rear + car_front). Стиль **стабілізовано** через глобальний artDirection/rendering/palette/negative (compose.ts приклеює до кожного subject) + IP-anchor; авто-консистентність — однаковий опис across hero/rear/front. Розширено `defaultAssetPlan` (build-test-playable.ts): per-style resolution для meta.assets (out/<style>/<name>.png → fallbackHero → literal). Layout: чисте авто = hero-слот (a["knight"]). Білд обох з `--layout estimate-reveal`.
+**Перевірено:** typecheck чистий; `visual` обидві версії **ALL PASS** (8 vp × 6 екранів, 0 overflow, zones valid, primary=actions); single-file soft **612.5 KB** / flat **439.0 KB** < 2MB; особистий огляд кадрів — авто консистентне в обох ракурсах, обидва стилі вдались.
+**AC:** RB3 (2 версії згенеровано+білд) ✅; RB4 (гейти ALL PASS обидві) ✅.
+**Відкрито/борг:** (1) **soft bg** намалював insurance-об'єкти (щит/clipboard/серце/машинки) внизу попри "empty center, NO characters" → захаращує actions-зону, deductible-текст тісний. Flat bg чистий (геометрія). Фікс у RB5: перегенерувати soft bg жорстким "plain empty gradient, no objects". (2) шрифт кнопок Cinzel (борг RB1) — підмінити rounded-sans під Coverly. (3) rate-limit: паралельні прогони конкурували за org-ліміт 5/min → 4+1 асетів добито послідовно (skip-existing). (4) car consistency — за потреби точніше через images.edit. Витрачено ~$0.74.
+**Чекпойнт:** 🛑 вибір напряму (Soft 3D + fix bg / Flat Editorial) → **review**.
+
+---
+
+## 2026-06-25 — The Repair Bill RB5: Soft фінал (фон + шрифт) 🆕
+**Зроблено:** За вибором — **Soft 3D**. (1) Перегенеровано лише `bg` coverly-soft жорстким промптом (plain empty gradient, explicit NO objects/icons/cars/shields/hearts) — `rm bg.png` + forge skip-existing (13 skipped, $0.075). (2) Шрифт кнопок: override зашитого Cinzel-serif на rounded-sans (`--er-ff`) локально в layout `pageCss` (`.c-btn !important`) — глобальний FONT не чіпав, інші layouts недоторкані.
+**Перевірено:** `visual` ALL PASS (8 vp × 6 екранів); single-file **596.8 KB**; огляд кадрів — bg чистий (зайві об'єкти зникли), кнопки rounded-sans, deductible-текст повний; reveal-каскад на фінальному арті (demo: $3,200 / «31% low», бар точності mint+coral). Авто консистентне в усіх ракурсах.
+**AC:** RB5 (bg чистий + шрифт Coverly) ✅.
+**Відкрито/борг:** flat-версія лишається в `out/menu-coverly-flat-estimate-reveal.html` як альтернатива. Залишковий борг: за потреби точніша car-consistency через `images.edit`; локалізація (текст — оверлей, дешево); juice-поліш переходів/слайдера.
+**Чекпойнт:** 🛑 CHECKPOINT 2 — фінальний арт Soft готовий → **review**.
+
+---
+
+## 2026-06-25 — The Repair Bill RB6: juice-пас (анімації) 🆕
+**Зроблено:** Перед роботою — motion-ресерч (фоновий агент) з конкретними значеннями. Реалізовано на чистому CSS+JS (без GSAP): (1) **пер-елементний каскад входу** — лінійний флоу дозволив CSS-only через `.screen.active .er-up/.er-pop` + stagger `.er-s1..4` (без перевизначення глобального go з білдера); порядок title→hero(pop)→slider→cta, вхід 450ms/stagger 80ms cubic-bezier(.16,1,.3,1), hero pop cubic-bezier(.34,1.56,.64,1). (2) **тактильний слайдер** — handle scale 1.18 + mint halo + bubble pop на `.dragging` (transition лише transform/shadow; позиція 1:1 без лагу). (3) **shock-reveal** — count-up 1200ms easeOutCubic → overshoot pop + coral glow×2 + shake-удар; бар точності повзе паралельно (+550ms), бейдж після лічби (+1320ms). Додано `prefers-reduced-motion` fallback. $0 (тільки rebuild).
+**Перевірено:** typecheck чистий; `visual` ALL PASS (8 vp × 6 екранів); 599.5 KB; кадри **в русі** (Playwright demo) — каскад входу на різних фазах (авто ще pop-iн, поки текст влетів), слайдер drag-стан (handle scaled + halo, bubble підстрибнув), count-up у процесі ($1,774 між $0 і $3,200).
+**AC:** RB6 (juice живий, гейти зелені) ✅.
+**Відкрито/борг:** flat-версія лишається альтернативою; локалізація (текст — оверлей); звук — поза скоупом MVP.
+**Чекпойнт:** 🛑 CHECKPOINT 3 — juice доведено в русі → **review**.
+
+---
+
+## 2026-06-25 — The Repair Bill: фіналізація (MVP shipped) 🏁
+**Зроблено:** Soft 3D — фінальна версія. Запаковано single-file HTML → `_deliverables/repair-bill-coverly.zip` (index.html, Meta single-file, 454 KB zip). Flat-версія лишається в `out/` як A/B-альтернатива.
+**Перевірено:** фінальний білд 613.9 KB / 2MB · `visual` ALL PASS · typecheck чистий. Усі чекпойнти (каркас / CP2 / CP3) пройдено.
+**Підсумок:** новий переюзовний layout `estimate-reveal` (задача #3 «пояснити важливість послуги» через guess-the-price), демо-бренд Coverly, ~$0.82 на 2 арт-версії. Шлях: бриф → каркас ($0) → 2 арт-версії → вибір → фікс bg/шрифт → juice → ship. Layout доступний для будь-якого наступного клієнта з цією задачею (новий brief.json + swap асетів).
+**Чекпойнт:** 🏁 MVP shipped.
+
+---
+
+## 2026-06-25 — The Repair Bill RB8: close-up пошкоджень + фікс блимання 🆕
+**Фідбек юзера:** (1) авто блимало (з'являлось/зникало); (2) треба крупний close-up саме зламаної деталі; (3) підсвічене.
+**Зроблено:** (1) **стабілізація входу** — прибрано `opacity:0` з бази `.er-up/.er-pop`; `animation` both-fill сам ховає під час stagger (backwards) і тримає видимим при виході (фон гасне плавно → без блимання); авто на close-up більше не scale-вистрибує. (2) **close-up композиція** — геймплейні екрани показують крупний план деталі (`.er-dmg-lg` 196px guess / `.er-dmg-sm` 126px reveal, wrapper=entrance + img=pulse щоб animation не конфліктували); перегенеровано `car_rear`/`car_front` як extreme close-up (розбитий бампер+ліхтар / розтрощена фара). (3) **підсвітка** — rim + warning red-orange glow у спрайті + пульсуючий coral drop-shadow CSS (`erPulse`). Слайдер лишився в stage під close-up (slider+hint+button в actions → overflow `c-btn>actions`, відкотив). intro/endcard — ціла машина (контекст). Перепаковано deliverable.
+**Перевірено:** typecheck чистий; `visual` ALL PASS (8vp×6скр, після фіксу overflow на r1g/r2g); 742.2KB; кадри — close-up бампера/фари крупно з glow, reveal з меншим close-up + сума. $0.11 (2 спрайти).
+**Відкрито/борг:** flat-версія не оновлена під close-up (ціла машина); розмір close-up обмежено stage-band (слайдер у тій же зоні) — за бажання крупніше → винести слайдер в окремий layout-режим.
+**Чекпойнт:** оновлений Soft (close-up + стабільний вхід) → review.
+
+---
+
+## 2026-06-25 — The Repair Bill RB9: конкретика (Tesla + чек СТО + слайдер-ділення) 🆕
+**Фідбек юзера:** (1) слайдер допрацювати — ділення + росте під пальцем; (2) машина має бути конкретна впізнавана й підписана (Tesla абощо) — інакше «скільки фара в неіснуючій машині» не має сенсу; (3) reveal = чек як на СТО з рядковою деталізацією (деталь/робота/простій), щоб налякати. «Тоді логіка взвʼязана, а так — не працює».
+**Зроблено:** (1) **слайдер** — tick-марки на $500/$2k/$4k/$6k/$8k (JS-generated на точних позиціях handle, перебудова на resize) з підписами; handle grow scale 1.18→1.32 + back-ease + bubble scale 1.12 на drag. (2) **Tesla Model 3** — перегенеровано hero+car_rear+car_front як силует Model 3 (grille-less, fastback) БЕЗ лого/бейджів (копірайт); підпис «2022 Tesla Model 3» у title кожного екрана. (3) **reveal = чек СТО** — картка з head, 5 рядків деталізації (bumper/tail light/recalibration/labor/loaner — суми точно сходяться в real $3,200 / $4,600), нагнітальна поява рядків (stagger 200ms) → dashed rule → TOTAL count-up + shake/pop/glow → бейдж промаху. Прибрано графічний бар точності (місце під чек), лишився текст-бейдж.
+**Перевірено:** typecheck чистий; `visual` ALL PASS (8vp×6скр); 725.7KB; кадри — Tesla Model 3 ціла (intro) з підписом, слайдер з діленнями (r1g), заповнений чек (demo: 5 рядків + TOTAL $3,200 + «31% low»). $0.16 (3 спрайти).
+**Відкрито/борг:** flat-версія не оновлена; силует Tesla без лого (бренд лише текстом-підписом).
+**Чекпойнт:** оновлений Soft (Tesla + чек + слайдер-ділення) → review.

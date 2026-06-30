@@ -59,12 +59,19 @@ export function defaultAssetPlan(src: string, layout: Layout): AssetPlan {
       // base: every template gets the bg + main hero
       { key: "bg-castle", src: bgSrc, size: 680 },
       { key: "knight", src: heroSrc, size: 520 },
-      // template-declared extras (meta.assets) — asset list lives WITH the template
-      ...(layout.meta.assets ?? []).map((as) => ({
-        key: as.key,
-        src: as.fallbackHero && !existsSync(as.src) ? heroSrc : as.src,
-        size: as.size ?? 520,
-      })),
+      // template-declared extras (meta.assets) — asset list lives WITH the template.
+      // Resolution order: a per-style file (out/<style>/<name>.png) wins, so a template
+      // can ship its own content per style; else fallbackHero (builds on ANY style at $0);
+      // else the literal src.
+      ...(layout.meta.assets ?? []).map((as) => {
+        const scoped = `${src}/${as.src.split(/[\\/]/).pop()}`;
+        const resolved = existsSync(scoped)
+          ? scoped
+          : as.fallbackHero && !existsSync(as.src)
+            ? heroSrc
+            : as.src;
+        return { key: as.key, src: resolved, size: as.size ?? 520 };
+      }),
     ],
   };
 }

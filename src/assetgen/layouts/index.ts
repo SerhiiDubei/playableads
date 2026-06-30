@@ -10,6 +10,7 @@ import { twoChoice } from "./two-choice.js";
 import { matchCluster } from "./match-cluster.js";
 import { featureList } from "./feature-list.js";
 import { showcase } from "./showcase.js";
+import { estimateReveal } from "./estimate-reveal.js";
 
 export const LAYOUTS: Record<string, Layout> = {
   [menu5.id]: menu5,
@@ -23,6 +24,7 @@ export const LAYOUTS: Record<string, Layout> = {
   [twoChoice.id]: twoChoice,
   [matchCluster.id]: matchCluster,
   [featureList.id]: featureList,
+  [estimateReveal.id]: estimateReveal,
 };
 
 export const DEFAULT_LAYOUT = "menu5";

@@ -1,0 +1,15 @@
+{
+  "id": "blago-match",
+  "name": "Blago Match",
+  "description": "TODO: one line — what we advertise + the final action.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "style": "blago-match",
+  "copy": {
+    "title": "TODO Title",
+    "cta": "Learn more"
+  },
+  "params": {
+    "gameDurationSec": 20
+  }
+}

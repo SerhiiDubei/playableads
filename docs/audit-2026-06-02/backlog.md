@@ -66,6 +66,32 @@
 | — | 2 | 🛑 CHECKPOINT 2 | арт+ворота зелені (human) | D2-D3 | **review** (чекає підтвердження) |
 | D4 | 3 final | промоція `labs/`→`templates/` за TEMPLATE-STANDARD; build через брифа | у templates/, білд з брифа | CP2 | **todo** |
 
+## The Repair Bill (estimate-reveal) — auto-insurance playable
+
+Демо-бренд **Coverly**. Задача #3 «пояснити важливість послуги», механіка Estimate-and-Reveal
+(слайдер-гадання, 2 раунди, близькість+бар точності), CTA «Get your quote». Арт: стилізована 3D, US$.
+Пайплайн (як dream-floor): **каркас на існуючих асетах ($0) → AI-арт (premium) → гейти**.
+Layout-підхід (не FSM-labs): новий `src/assetgen/layouts/estimate-reveal.ts` + slider kit-компонент.
+
+| ID | Етап | Задача | Acceptance | Залежить | Статус |
+|----|------|--------|-----------|----------|--------|
+| RB0 | 0 | бриф + розкрій (задача→наратив→механіка→асети+$) | бриф зафіксовано | — | **done** (checkpoint #1, 2026-06-25) |
+| RB1 | 1 prototype | layout `estimate-reveal` + slider-компонент + інтерактив (drag, 2 раунди, reveal+accuracy, running total) + endcard CTA | білдиться, $0 | RB0 | **done** (2026-06-25) |
+| RB2 | 1 prototype | прогін `forge -- cyber-heist --layout estimate-reveal` ($0) + check:layouts (estimate-reveal PASS) + visual ALL PASS | каркас живий, ворота зелені | RB1 | **done** (2026-06-25, 564.6KB) |
+| — | 1 | 🛑 CHECKPOINT каркас | структура/зони/слайдер/reveal-анімація доведені на чужих асетах (human) | RB1-RB2 | **review** |
+| RB3 | 2 draft | 2 стиль-брифи `coverly-soft` (3d-glossy) + `coverly-flat` (flat-vector), 14 спрайтів кожен, premium gen + webp | 2 версії білдяться, ≤2MB | CP-каркас | **done** (2026-06-25, ~$0.74) |
+| RB4 | 2 draft | гейти на обох версіях (typecheck/visual) + BUILD-LOG | ALL PASS | RB3 | **done** (soft 612KB / flat 439KB, visual ALL PASS) |
+| — | 2 | 🛑 вибір напряму (Soft+fix bg / Flat) | human обирає рендер | RB3-RB4 | **review** |
+| RB5 | 2 draft | фікс Soft: перегенеровано bg (чистий градієнт) + шрифт кнопок rounded-sans (override зашитого Cinzel) | bg чистий, шрифт Coverly | вибір | **done** (2026-06-25, $0.08) |
+| — | 2 | 🛑 CHECKPOINT 2 | арт прийнято (Soft 3D), рухаємось у поліш | RB5 | **done** |
+| RB6 | 3 polish | juice: пер-елементні каскади входу + тактильний слайдер (scale/halo/bubble) + shock-reveal (count-up 1200ms/pop/shake/glow), motion-ресерч | анімації живі, гейти зелені, $0 | CP2 | **done** (2026-06-25) |
+| — | 3 | 🛑 CHECKPOINT 3 | juice доведено в русі (human) | RB6 | **done** |
+| RB7 | 3 ship | фіналізація: zip у `_deliverables/repair-bill-coverly.zip` | артефакт готовий | CP3 | **done** (2026-06-25) |
+| — | — | 🏁 MVP SHIPPED | The Repair Bill (Coverly Soft 3D) | RB0–RB7 | **done** |
+| RB8 | 3 polish | фідбек-ітерація: фікс блимання авто (both-fill) + крупний close-up пошкодження з підсвіткою (перегенер. car_rear/front close-up) | стабільно/крупно/підсвічено | ship | **done** (2026-06-25, $0.11) |
+| RB9 | 3 polish | фідбек-2: слайдер з діленнями (ticks)+помітніший grow; конкретна Tesla Model 3 (підписана); reveal=чек СТО з деталізацією (деталь/робота/ADAS-калібрування/простій)→TOTAL з нагнітанням | логіка взаємозв'язана | RB8 | **done** (2026-06-25, $0.16) |
+| RB10 | ship | деплой на Vercel (repair-bill-site/index.html) → публічний URL | live, 200 OK | RB9 | **done** — https://repair-bill-site.vercel.app |
+
 ## Правила ведення
 - Беремо задачу → `wip`; закрили за AC + тести → `done`; чекпойнт → `review` поки користувач не підтвердить.
 - Після кожної ФАЗИ — обовʼязковий запис у `BUILD-LOG.md` (це HARD-правило, див. `CLAUDE.md`).

@@ -1,0 +1,82 @@
+{
+  "id": "avoid-the-accident",
+  "name": "Avoid the Accident — Traffic Run! style",
+  "version": "1.0.0",
+  "derivedFrom": "reference: Traffic Run! by Geisha Tokyo — orthographic high 3/4 low-poly toy traffic, soft large facets, no outlines, candy-clean colors",
+
+  "artDirection": {
+    "artStyle": "stylized orthographic low-poly toy traffic (Traffic Run! by Geisha Tokyo)",
+    "mood": ["clean", "casual-cute", "toy-like", "bright"],
+    "theme": "a tilted floating diorama of toy traffic on a calm road"
+  },
+
+  "palette": {
+    "source": "manual",
+    "background": "#7CC576",
+    "primary": "#3D7BE0",
+    "secondary": "#5A6270",
+    "accent": "#F4C740",
+    "text": "#ffffff",
+    "extra": ["#E14B43", "#E8EAED", "#A8AEB8", "#54C7C0", "#F3F0E2", "#2B3A4A"]
+  },
+
+  "rendering": {
+    "outline": { "style": "none", "color": "#2E3440" },
+    "material": "matte",
+    "lighting": "soft-top",
+    "shading": "flat-facets",
+    "perspective": "high 3/4 orthographic top-down angle (~60deg tilt), no perspective distortion, no converging lines",
+    "shapeLanguage": "rounded-friendly",
+    "cornerRadius": "rounded"
+  },
+
+  "negative": [
+    "no text", "no letters", "no numbers", "no watermark",
+    "no photorealism", "no realistic car", "no glossy chrome",
+    "no black outline", "no outline stroke", "no perspective distortion",
+    "no converging lines", "no baked ground shadow", "no harsh shadows",
+    "no busy background", "no scenery", "no fine polygonal noise",
+    "no pure white body", "no pure black", "no lens flare"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1024x1024",
+    "quality": "high",
+    "transparent": true
+  },
+
+  "assets": [
+    {
+      "key": "player-car",
+      "kind": "sprite",
+      "subject": "Top-down game sprite of a friendly blue sedan seen from DIRECTLY ABOVE (bird's-eye view) with only a slight tilt: the car axis is perfectly VERTICAL, its windshield and front bumper at the TOP of the frame and the rear at the BOTTOM, we mainly see the ROOF and the dark blue-graphite glass canopy, two tiny headlight dots at the very top edge. Cute compact low-poly car with soft large facets, rounded toy body (length-to-width about 1.9 to 1), flat clean shading. Body color saturated friendly blue #3D7BE0, centered and pointing straight up"
+    },
+    {
+      "key": "stalled-car",
+      "kind": "sprite",
+      "subject": "Top-down game sprite of a neutral off-white car standing still with amber hazard lights glowing on its corners, seen from DIRECTLY ABOVE (bird's-eye view) with only a slight tilt: the car axis is perfectly VERTICAL, windshield and front at the TOP and rear at the BOTTOM, we mainly see the ROOF and dark blue-graphite glass canopy. Cute compact low-poly body with soft facets, rounded toy proportions, flat clean shading. Body color off-white #E8EAED with light grey #A8AEB8 lower facets, centered and pointing straight up"
+    },
+    {
+      "key": "oncoming-car",
+      "kind": "sprite",
+      "subject": "Top-down game sprite of an aggressive fast red car seen from DIRECTLY ABOVE (bird's-eye view) with only a slight tilt: the car axis is perfectly VERTICAL, windshield and front bumper at the TOP and rear at the BOTTOM, we mainly see the ROOF and dark blue-graphite glass canopy, two tiny headlight dots at the very top edge. Cute compact low-poly body with soft facets and a slightly sportier silhouette, rounded toy proportions, flat clean shading. Body color hot danger red #E14B43, centered and pointing straight up"
+    },
+    {
+      "key": "cyclist",
+      "kind": "sprite",
+      "subject": "Top-down game sprite of a single cyclist seen from above: very simplified low-poly figure, round bright orange helmet seen from the top, hunched shoulders, a thin bike frame with two dark thin oval wheels in front and behind the rider, flat clean shading, facing UP. High 3/4 top-down angle, small scale, cute and minimal, perfectly centered"
+    },
+    {
+      "key": "dog",
+      "kind": "sprite",
+      "subject": "Top-down game sprite of a small running dog seen from above: cute simplified low-poly animal, rounded back and head with two little triangular ears, hint of a tail, legs slightly splayed in a running pose, warm tan-brown fur #D49A5E with darker ears and tail, flat clean shading. High 3/4 top-down angle, tiny and adorable, minimal detail, perfectly centered"
+    },
+    {
+      "key": "tree",
+      "kind": "sprite",
+      "subject": "Top-down game sprite of a single roadside tree seen mostly from above: cute low-poly lollipop tree, a round faceted green canopy (bright green #7CC576 on top, darker #5FB16A facets at the edges) on a short brown trunk barely peeking out beneath, soft and chunky, flat clean shading. High 3/4 top-down angle, perfectly centered"
+    }
+  ]
+}

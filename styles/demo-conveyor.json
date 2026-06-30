@@ -1,0 +1,14 @@
+{
+  "id": "demo-conveyor",
+  "name": "Demo Conveyor",
+  "colors": {
+    "background": "#101820",
+    "primary": "#2DA44E",
+    "accent": "#F5A623",
+    "text": "#FFFFFF"
+  },
+  "font": {
+    "family": "Arial, sans-serif",
+    "weight": 800
+  }
+}

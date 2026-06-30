@@ -1,0 +1,73 @@
+{
+  "id": "coverly-soft",
+  "name": "Coverly Soft 3D",
+  "version": "1.0.0",
+  "derivedFrom": "friendly glossy 3D insurtech app illustration (Lemonade / Duolingo character-3D aesthetic), warm and approachable",
+
+  "artDirection": {
+    "artStyle": "cartoon-3d-glossy",
+    "mood": ["premium-shiny", "playful", "minimalist"],
+    "theme": "modern friendly auto insurance, trustworthy, clean"
+  },
+
+  "palette": {
+    "source": "manual",
+    "background": "#0E1A3A",
+    "primary": "#00E0A4",
+    "secondary": "#1A2A4A",
+    "accent": "#FF5470",
+    "text": "#F5F7FB",
+    "extra": ["#00B487", "#FF8088"]
+  },
+
+  "rendering": {
+    "outline": { "style": "thin", "color": "#0E1A3A" },
+    "material": "glossy",
+    "lighting": "soft-top",
+    "perspective": "slight-3d",
+    "shapeLanguage": "rounded-friendly",
+    "shading": "cel",
+    "cornerRadius": "rounded"
+  },
+
+  "typography": {
+    "case": "none",
+    "weight": "bold",
+    "textColor": "#F5F7FB",
+    "textStroke": "#0E1A3A"
+  },
+
+  "negative": [
+    "no text", "no letters", "no numbers", "no watermark", "no logo text",
+    "no background scenery", "no extra padding around subject", "no harsh shadows",
+    "no photorealism", "no gore", "no blood"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1024x1024",
+    "quality": "low",
+    "transparent": true
+  },
+
+  "assets": [
+    { "key": "btn-frame", "kind": "icon", "subject": "wide horizontal pill-shaped app button, solid mint-green fill, smooth rounded ends, completely blank flat center for a label, perfectly symmetric top-to-bottom AND left-to-right, absolutely NO text NO letters NO numerals", "overrides": { "typography": null } },
+    { "key": "panel-frame", "kind": "icon", "subject": "rounded-corner app card panel, deep navy surface, soft subtle highlight, completely blank flat center, equal margins on all four sides, NO text", "overrides": { "typography": null } },
+    { "key": "bar-track", "kind": "icon", "subject": "horizontal rounded progress-bar track, hollow navy channel with smooth pill ends, perfectly symmetric, empty inside, NO text", "overrides": { "typography": null } },
+    { "key": "banner", "kind": "icon", "subject": "horizontal rounded title plate, navy surface with a subtle mint edge, completely blank flat center for a title, NO text", "overrides": { "typography": null } },
+
+    { "key": "ic-settings", "kind": "icon", "subject": "round app icon button, mint-green gear settings glyph centered on a navy circle face", "overrides": { "typography": null } },
+    { "key": "ic-back", "kind": "icon", "subject": "round app icon button, mint-green left-arrow back glyph centered on a navy circle face", "overrides": { "typography": null } },
+    { "key": "ic-sound", "kind": "icon", "subject": "round app icon button, mint-green speaker sound glyph centered on a navy circle face", "overrides": { "typography": null } },
+    { "key": "ic-plus", "kind": "icon", "subject": "round app icon button, mint-green plus add glyph centered on a navy circle face", "overrides": { "typography": null } },
+    { "key": "ic-check", "kind": "icon", "subject": "round app icon button, mint-green checkmark glyph centered on a navy circle face", "overrides": { "typography": null } },
+    { "key": "ic-close", "kind": "icon", "subject": "round app icon button, coral-pink X close glyph centered on a navy circle face", "overrides": { "typography": null } },
+
+    { "key": "bg", "kind": "background", "subject": "vertical mobile app background, a smooth plain calm gradient from deep navy at the top to a slightly lighter navy-blue at the bottom, very faint subtle bokeh light only, completely empty and clean — the ENTIRE center and lower area MUST stay empty for UI overlay, absolutely NO objects, NO icons, NO illustrations, NO cars, NO shields, NO clipboards, NO hearts, NO characters, NO clutter, just a soft premium gradient", "overrides": { "defaults": { "size": "1024x1536", "quality": "medium", "transparent": false }, "typography": null } },
+
+    { "key": "hero", "kind": "sprite", "subject": "a modern electric sedan in the unmistakable clean silhouette of a Tesla Model 3 — smooth grille-less front, sleek fastback roofline, flush door handles, three-quarter front-left view, pristine white body, sitting level, NO badges NO logos NO brand emblems NO text", "overrides": { "defaults": { "quality": "medium" }, "typography": null } },
+    { "key": "car_rear", "kind": "sprite", "subject": "extreme close-up of a Tesla Model 3 style white electric sedan's damaged rear corner filling the frame — crumpled dented rear bumper with deep scratches and a cracked shattered tail light, broken parking sensor housing, isolated detail of the collision damage, dramatic rim lighting and a subtle warning red-orange glow highlighting the broken area, NO badges NO logos NO text", "overrides": { "defaults": { "quality": "medium" }, "typography": null } },
+    { "key": "car_front", "kind": "sprite", "subject": "extreme close-up of a Tesla Model 3 style white electric sedan's damaged front corner filling the frame — crumpled dented front fender with a smashed cracked LED headlight and broken sensor housing, shattered glass shards and scratched paint, isolated detail of the collision damage, dramatic rim lighting and a subtle warning red-orange glow highlighting the broken area, NO badges NO logos NO text", "overrides": { "defaults": { "quality": "medium" }, "typography": null } }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "avoid-the-accident",
+  "name": "Avoid the Accident",
+  "description": "Swipe to change lanes, hold to brake — dodge a cyclist, a dog and stopped cars across a 20s drive. The 5th crash isn't your fault. Good drivers still need insurance.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "style": "avoid-the-accident",
+  "copy": {
+    "title": "Avoid the Accident",
+    "cta": "Get a free quote"
+  },
+  "params": {
+    "gameDurationSec": 20,
+    "laneCount": 3,
+    "totalThreats": 5,
+    "baseScrollPxPerSec": 520,
+    "brakeScrollFactor": 0.32,
+    "subtitle": "Good drivers still need insurance."
+  }
+}

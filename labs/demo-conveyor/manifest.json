@@ -1,0 +1,15 @@
+{
+  "id": "demo-conveyor",
+  "name": "Demo Conveyor",
+  "description": "TODO: one line — what we advertise + the final action.",
+  "entry": "game.ts",
+  "assetBudgetBytes": 1468006,
+  "style": "demo-conveyor",
+  "copy": {
+    "title": "TODO Title",
+    "cta": "Learn more"
+  },
+  "params": {
+    "gameDurationSec": 20
+  }
+}

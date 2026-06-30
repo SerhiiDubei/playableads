@@ -3,6 +3,12 @@
 CLI toolchain that builds Meta playable ads from `templates × styles × briefs` (TS/ESM, PixiJS + GSAP).
 AI asset-generation lives in `src/assetgen/`. Full experiment journal: `test/EXPERIMENT-LOG.md`.
 
+> **Governance:** the studio root `../CLAUDE.md` is the index + HARD non-negotiables +
+> the fixed pipeline (read it first when working from the repo root). Before building
+> ANYTHING, read [`docs/ANTIPATTERNS.md`](docs/ANTIPATTERNS.md) — recorded problems +
+> causes. **No freelancing: audit before create, UI = kit (never hand-draw in Pixi or
+> spin a parallel UI module), stay on the pipeline, pass the gates.**
+
 ## Project documentation discipline (HARD — обовʼязково)
 
 Після **КОЖНОГО** стейджу/фази роботи — обовʼязковий запис у `docs/audit-2026-06-02/BUILD-LOG.md`:

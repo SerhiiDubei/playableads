@@ -1,0 +1,73 @@
+{
+  "id": "coverly-flat",
+  "name": "Coverly Flat Editorial",
+  "version": "1.0.0",
+  "derivedFrom": "modern flat vector editorial fintech illustration (Stripe / Wise aesthetic), clean geometric and premium",
+
+  "artDirection": {
+    "artStyle": "flat-vector",
+    "mood": ["minimalist", "premium-shiny"],
+    "theme": "modern premium auto insurance, editorial, geometric"
+  },
+
+  "palette": {
+    "source": "manual",
+    "background": "#0E1A3A",
+    "primary": "#00E0A4",
+    "secondary": "#1A2A4A",
+    "accent": "#FF5470",
+    "text": "#F5F7FB",
+    "extra": ["#00B487", "#FF8088"]
+  },
+
+  "rendering": {
+    "outline": { "style": "none", "color": "#0E1A3A" },
+    "material": "matte",
+    "lighting": "flat",
+    "perspective": "slight-3d",
+    "shapeLanguage": "geometric",
+    "shading": "flat",
+    "cornerRadius": "rounded"
+  },
+
+  "typography": {
+    "case": "none",
+    "weight": "bold",
+    "textColor": "#F5F7FB",
+    "textStroke": "#0E1A3A"
+  },
+
+  "negative": [
+    "no text", "no letters", "no numbers", "no watermark", "no logo text",
+    "no background scenery", "no extra padding around subject", "no gradients on flat shapes",
+    "no photorealism", "no gore", "no blood", "no heavy drop shadows"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1024x1024",
+    "quality": "low",
+    "transparent": true
+  },
+
+  "assets": [
+    { "key": "btn-frame", "kind": "icon", "subject": "wide horizontal pill-shaped app button, solid mint-green fill, smooth rounded ends, completely blank flat center for a label, perfectly symmetric top-to-bottom AND left-to-right, absolutely NO text NO letters NO numerals", "overrides": { "typography": null } },
+    { "key": "panel-frame", "kind": "icon", "subject": "rounded-corner app card panel, deep navy surface, completely blank flat center, equal margins on all four sides, NO text", "overrides": { "typography": null } },
+    { "key": "bar-track", "kind": "icon", "subject": "horizontal rounded progress-bar track, hollow navy channel with smooth pill ends, perfectly symmetric, empty inside, NO text", "overrides": { "typography": null } },
+    { "key": "banner", "kind": "icon", "subject": "horizontal rounded title plate, navy surface with a subtle mint edge, completely blank flat center for a title, NO text", "overrides": { "typography": null } },
+
+    { "key": "ic-settings", "kind": "icon", "subject": "round app icon button, mint-green gear settings glyph centered on a navy circle face", "overrides": { "typography": null } },
+    { "key": "ic-back", "kind": "icon", "subject": "round app icon button, mint-green left-arrow back glyph centered on a navy circle face", "overrides": { "typography": null } },
+    { "key": "ic-sound", "kind": "icon", "subject": "round app icon button, mint-green speaker sound glyph centered on a navy circle face", "overrides": { "typography": null } },
+    { "key": "ic-plus", "kind": "icon", "subject": "round app icon button, mint-green plus add glyph centered on a navy circle face", "overrides": { "typography": null } },
+    { "key": "ic-check", "kind": "icon", "subject": "round app icon button, mint-green checkmark glyph centered on a navy circle face", "overrides": { "typography": null } },
+    { "key": "ic-close", "kind": "icon", "subject": "round app icon button, coral-pink X close glyph centered on a navy circle face", "overrides": { "typography": null } },
+
+    { "key": "bg", "kind": "background", "subject": "vertical mobile app background, clean flat geometric composition in deep navy with subtle lighter navy geometric shapes and a few minimal mint and coral accent dots, lots of calm empty space in the center for UI overlay, premium and minimal, NO text NO characters", "overrides": { "defaults": { "size": "1024x1536", "quality": "medium", "transparent": false }, "typography": null } },
+
+    { "key": "hero", "kind": "sprite", "subject": "a friendly modern compact hatchback car, pristine undamaged clean condition, white body with a mint-green accent stripe, three-quarter front-left view, cute approachable rounded proportions, sitting level", "overrides": { "defaults": { "quality": "medium" }, "typography": null } },
+    { "key": "car_rear", "kind": "sprite", "subject": "the same friendly modern compact white hatchback car with a mint-green accent stripe, three-quarter rear-left view, with a clearly dented and scratched rear bumper and one cracked broken red tail light, minor fender-bender collision damage, still tidy and not gory", "overrides": { "defaults": { "quality": "medium" }, "typography": null } },
+    { "key": "car_front", "kind": "sprite", "subject": "the same friendly modern compact white hatchback car with a mint-green accent stripe, three-quarter front-left view, with a crumpled dented front fender and one smashed cracked headlight, minor fender-bender collision damage, still tidy and not gory", "overrides": { "defaults": { "quality": "medium" }, "typography": null } }
+  ]
+}
