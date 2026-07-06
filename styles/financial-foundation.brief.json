@@ -1,0 +1,142 @@
+{
+  "id": "financial-foundation",
+  "name": "Soft Clay Foundation",
+  "version": "1.2.0",
+  "derivedFrom": "reference: soft polymer-clay / claymation stacking blocks — tactile matte 3D toy, premium calm finance vibe",
+
+  "artDirection": {
+    "artStyle": "claymation",
+    "mood": ["casual-cute", "premium-shiny", "minimalist"],
+    "theme": "soft polymer-clay stacking blocks, calm trustworthy, gentle studio light"
+  },
+
+  "palette": {
+    "source": "manual",
+    "background": "#e3ecf5",
+    "primary": "#5b7ba6",
+    "accent": "#f2b32e",
+    "text": "#27384a"
+  },
+
+  "rendering": {
+    "outline": { "style": "none", "color": "" },
+    "material": "matte",
+    "lighting": "soft-top",
+    "shading": "smooth-gradient",
+    "perspective": "slight-3d",
+    "shapeLanguage": "rounded-friendly",
+    "cornerRadius": "rounded"
+  },
+
+  "negative": [
+    "no text, no letters, no numbers, no logo, no UI, no watermark",
+    "no people, no hands, no faces",
+    "no harsh black cast shadows, no dark drop shadow on the ground",
+    "not a photograph, no photographic grain, no gritty realism"
+  ],
+
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1.5",
+    "size": "1536x1024",
+    "quality": "medium",
+    "transparent": true
+  },
+
+  "assets": [
+    {
+      "key": "bg",
+      "kind": "background",
+      "subject": "a soft calming studio backdrop for a clay-toy scene: a smooth gentle vertical gradient from a soft pale blue-white at the top to a slightly deeper pastel periwinkle-blue at the bottom, a soft warm subtle radial glow of light in the upper-middle area, and a faint soft ambient shadow gently pooling toward the lower-centre where objects would rest; clean minimal calm premium, completely empty — no objects, no furniture, no horizon line, no pattern, just soft studio light and a gentle smooth gradient filling the whole frame edge-to-edge",
+      "overrides": { "defaults": { "transparent": false, "size": "1024x1536", "quality": "medium" }, "rendering": { "perspective": "front-flat", "lighting": "soft-top" } }
+    },
+    {
+      "key": "bg-tension",
+      "kind": "background",
+      "subject": "a soft studio backdrop for a clay-toy scene at a tense, anxious, almost-failing moment: a smooth vertical gradient shifting from a dim cool greyish-periwinkle at the top to a deeper desaturated stormy slate-blue toward the bottom, the warm light of the upper-middle has dimmed and cooled, a faint uneasy warm amber worried glow low in the lower-centre, and a soft cool shadow vignette creeping inward from all four corners darkening the edges; noticeably moodier, dimmer and more overcast than calm, still completely empty — no objects, no horizon line, no pattern, just tense moody soft studio light and a gentle smooth gradient filling the whole frame edge-to-edge",
+      "overrides": { "defaults": { "transparent": false, "size": "1024x1536", "quality": "medium" }, "rendering": { "perspective": "front-flat", "lighting": "soft-top" } }
+    },
+    {
+      "key": "bg-rescue",
+      "kind": "background",
+      "subject": "a soft studio backdrop for a clay-toy scene at a triumphant, relieved, hopeful moment: a smooth gradient glowing from a warm soft golden cream at the upper-centre out to a gentle hopeful pale sky-blue at the edges, a bright warm radial sunburst of soft golden light blooming from the centre with faint soft gentle light rays, an uplifting bright airy relieved warm atmosphere, clean minimal and completely empty — no objects, no horizon line, no pattern, just warm golden hopeful soft studio light filling the whole frame edge-to-edge",
+      "overrides": { "defaults": { "transparent": false, "size": "1024x1536", "quality": "medium" }, "rendering": { "perspective": "front-flat", "lighting": "soft-top" } }
+    },
+    {
+      "key": "block-debt",
+      "kind": "sprite",
+      "subject": "a single horizontal rounded rectangular block made of soft matte polymer clay, a long wide low bar lying flat, smoothly rounded corners and softly beveled edges, VERY LIGHT desaturated warm off-white / pale grey clay (so it can be tinted later), gentle soft top sheen highlight along the upper edge and soft ambient occlusion along the lower edge, tactile hand-made clay surface, viewed straight from the front with a slight 3D thickness"
+    },
+    {
+      "key": "block-gold",
+      "kind": "sprite",
+      "subject": "a single horizontal rounded rectangular block made of soft matte polymer clay, a long wide low bar lying flat, smoothly rounded corners and softly beveled edges, warm rich GOLD / amber clay with a precious gentle inner glow, soft top sheen highlight and a faint warm halo, tactile premium hand-made clay surface, viewed straight from the front with a slight 3D thickness"
+    },
+    {
+      "key": "platform",
+      "kind": "sprite",
+      "subject": "a wide low pedestal base slab made of soft matte polymer clay, a long horizontal plinth with smoothly rounded corners and a softly beveled top edge, calm muted slate-blue clay, gentle soft top light and a subtle top sheen, tactile hand-made clay surface, viewed straight from the front with a slight 3D thickness"
+    },
+    {
+      "key": "block-mortgage",
+      "kind": "sprite",
+      "subject": "a single horizontal rounded rectangular block hand-sculpted from soft matte polymer clay, a long wide low bar lying flat with smoothly rounded corners and softly beveled edges, calm muted slate-blue clay with a refined tactile finish, gentle subsurface warmth and a delicate studio softbox sheen along the upper edge with soft ambient occlusion settling into the lower crevice; sculpted in crisp clean raised relief on the LEFT end of the bar is a small charming clay cottage in a slightly lighter warm cream clay — a little pitched roof, a tiny chimney, a round door and a small window, clearly readable and neatly defined; the rest of the bar surface to the right is smooth and empty for a label; premium clay-toy product-photography look, viewed straight from the front with a gentle 3D thickness",
+      "overrides": { "defaults": { "quality": "high" } }
+    },
+    {
+      "key": "block-college",
+      "kind": "sprite",
+      "subject": "a single horizontal rounded rectangular block hand-sculpted from soft matte polymer clay, a long wide low bar lying flat with smoothly rounded corners and softly beveled edges, soft muted sage-green clay with a refined tactile finish, gentle subsurface warmth and a delicate studio softbox sheen along the upper edge with soft ambient occlusion settling into the lower crevice; sculpted in crisp clean raised relief on the LEFT end of the bar is a small neat clay graduation cap (mortarboard) in a slightly lighter warm cream clay with a little hanging tassel and a tiny button on top, clearly readable and neatly defined; the rest of the bar surface to the right is smooth and empty for a label; premium clay-toy product-photography look, viewed straight from the front with a gentle 3D thickness",
+      "overrides": { "defaults": { "quality": "high" } }
+    },
+    {
+      "key": "block-car",
+      "kind": "sprite",
+      "subject": "a single horizontal rounded rectangular block hand-sculpted from soft matte polymer clay, a long wide low bar lying flat with smoothly rounded corners and softly beveled edges, soft warm muted greige-taupe clay with a refined tactile finish, gentle subsurface warmth and a delicate studio softbox sheen along the upper edge with soft ambient occlusion settling into the lower crevice; sculpted in crisp clean raised relief on the LEFT end of the bar is a small cute rounded clay car seen from the side in a slightly lighter warm cream clay — a little cabin with a tiny window and two round wheels, clearly readable and neatly defined; the rest of the bar surface to the right is smooth and empty for a label; premium clay-toy product-photography look, viewed straight from the front with a gentle 3D thickness",
+      "overrides": { "defaults": { "quality": "high" } }
+    },
+    {
+      "key": "block-credit",
+      "kind": "sprite",
+      "subject": "a single horizontal rounded rectangular block hand-sculpted from soft matte polymer clay, a long wide low bar lying flat with smoothly rounded corners and softly beveled edges, soft muted dusty-teal clay with a refined tactile finish, gentle subsurface warmth and a delicate studio softbox sheen along the upper edge with soft ambient occlusion settling into the lower crevice; sculpted in crisp clean raised relief on the LEFT end of the bar is a small neat clay credit card (a little rounded rectangle tilted slightly) in a slightly lighter warm cream clay with a tiny golden raised chip and a thin embossed stripe, clearly readable and neatly defined; the rest of the bar surface to the right is smooth and empty for a label; premium clay-toy product-photography look, viewed straight from the front with a gentle 3D thickness",
+      "overrides": { "defaults": { "quality": "high" } }
+    },
+    {
+      "key": "block-groceries",
+      "kind": "sprite",
+      "subject": "a single horizontal rounded rectangular block hand-sculpted from soft matte polymer clay, a long wide low bar lying flat with smoothly rounded corners and softly beveled edges, soft muted dusty lavender-grey clay with a refined tactile finish, gentle subsurface warmth and a delicate studio softbox sheen along the upper edge with soft ambient occlusion settling into the lower crevice; sculpted in crisp clean raised relief on the LEFT end of the bar is a small charming clay grocery paper bag in a slightly lighter warm cream clay with a leafy green vegetable and a little round fruit poking out of the top, clearly readable and neatly defined; the rest of the bar surface to the right is smooth and empty for a label; premium clay-toy product-photography look, viewed straight from the front with a gentle 3D thickness",
+      "overrides": { "defaults": { "quality": "high" } }
+    },
+
+    {
+      "key": "obj-house",
+      "kind": "sprite",
+      "subject": "a single charming chunky toy house hand-sculpted from soft matte polymer clay, standing alone, centered, complete and fully inside the frame; a WIDE FLAT solid bottom so it sits and stacks like a building block; gentle rounded friendly proportions, a cube-ish cottage body in calm muted slate-blue clay, a soft low pitched cream-clay roof with a tiny chimney, a small warm round arched door and two little square windows with cream frames; soft subsurface warmth, a delicate studio softbox sheen on the upper-left, soft ambient occlusion underneath; premium clay-toy product-photography look, viewed straight from the front at a gentle slight-3d angle, generous empty transparent margin all around the object",
+      "overrides": { "defaults": { "quality": "high", "size": "1024x1024" } }
+    },
+    {
+      "key": "obj-college",
+      "kind": "sprite",
+      "subject": "a small neat stack of three chunky clay books lying flat and squarely on top of one another forming a stable FLAT-TOPPED pile with a wide flat base, hand-sculpted from soft matte polymer clay, soft muted sage-green and warm cream clay covers with smoothly rounded spines and softly raised page layers, and a small charming clay graduation cap (mortarboard) with a little round button and a short tassel resting centered flat on top; standing alone, centered, complete and fully inside the frame; soft subsurface warmth, delicate studio softbox sheen on the upper-left, soft ambient occlusion underneath; premium clay-toy product-photography look, viewed straight from the front at a gentle slight-3d angle, generous empty transparent margin all around the object",
+      "overrides": { "defaults": { "quality": "high", "size": "1024x1024" } }
+    },
+    {
+      "key": "obj-car",
+      "kind": "sprite",
+      "subject": "a single cute rounded toy car hand-sculpted from soft matte polymer clay, seen from the side, standing alone, centered, complete and fully inside the frame; soft warm muted greige-taupe clay body with a smooth cream-clay cabin and one little rounded window, two soft round clay wheels set so the car has a flat-ish stable footing to sit on, friendly chunky rounded proportions, a tiny round headlight; soft subsurface warmth, delicate studio softbox sheen along the upper edge, soft ambient occlusion underneath; premium clay-toy product-photography look, viewed straight from the side at a gentle slight-3d angle, generous empty transparent margin all around the object",
+      "overrides": { "defaults": { "quality": "high", "size": "1024x1024" } }
+    },
+    {
+      "key": "obj-credit",
+      "kind": "sprite",
+      "subject": "a small neat stack of three chunky rounded clay credit cards lying flat and only very slightly fanned, forming a low FLAT-TOPPED stackable pile with a wide flat base, hand-sculpted from soft matte polymer clay in soft muted dusty-teal and warm cream clay, the top card showing a tiny raised golden chip and a thin embossed horizontal stripe; standing alone, centered, complete and fully inside the frame; soft subsurface warmth, delicate studio softbox sheen on the upper-left, soft ambient occlusion underneath; premium clay-toy product-photography look, viewed straight from the front at a gentle slight-3d angle, generous empty transparent margin all around the object",
+      "overrides": { "defaults": { "quality": "high", "size": "1024x1024" } }
+    },
+    {
+      "key": "obj-groceries",
+      "kind": "sprite",
+      "subject": "a single charming clay grocery paper bag standing upright with a FLAT square bottom so it sits and stacks, hand-sculpted from soft matte polymer clay, soft muted dusty lavender-grey bag with a softly rolled folded rim and gentle creases, and poking out of the top a leafy green clay vegetable, a little round red fruit and the rounded end of a cream-clay baguette; standing alone, centered, complete and fully inside the frame; soft subsurface warmth, delicate studio softbox sheen on the upper-left, soft ambient occlusion underneath; premium clay-toy product-photography look, viewed straight from the front at a gentle slight-3d angle, generous empty transparent margin all around the object",
+      "overrides": { "defaults": { "quality": "high", "size": "1024x1024" } }
+    }
+  ]
+}

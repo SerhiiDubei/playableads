@@ -1,0 +1,14 @@
+{
+  "id": "financial-foundation",
+  "name": "Soft Clay Pastel",
+  "colors": {
+    "background": "#e3ecf5",
+    "primary": "#5b7ba6",
+    "accent": "#f2b32e",
+    "text": "#27384a"
+  },
+  "font": {
+    "family": "\"Baloo 2\", system-ui, Arial, sans-serif",
+    "weight": 800
+  }
+}
