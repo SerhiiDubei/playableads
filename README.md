@@ -1,70 +1,111 @@
 # playable-forge
 
-CLI toolchain that builds **Meta playable ads** from `templates × styles × briefs`, with an
-AI **asset-generation pipeline** (OpenAI `gpt-image-1.5`) and a reusable, weight-optimized **UI kit**.
+CLI-конвеєр для збірки Meta playable ads: шаблон механіки × стиль × бриф → один HTML-файл до 2 МБ.
 
-> Single-file output, ≤ 2 MB (Meta limit). TypeScript / ESM · PixiJS + GSAP · sharp · Playwright.
+> **TL;DR (EN):** CLI toolchain that builds Meta playable ads from templates × styles × briefs: an OpenAI image-generation pipeline, a 9-slice PixiJS UI kit, zone-based layouts, Playwright visual regression across 8 viewports, and a validator that ships everything as a single HTML file under Meta's 2 MB limit.
 
-## What's inside
+## Що це таке, простими словами?
 
-- **Asset generation** (`src/assetgen/`)
-  - Versioned **style briefs** (`styles/*.brief.json`, schema `src/assetgen/brief.schema.json`) →
-    `composePrompt` (IP-anchor + isolation-clause) → parallel pool with retry/skip-existing → sidecar JSON for reproducibility.
-  - `prompt-lab` for A/B prompt-strategy experiments; `ref-test` for character consistency via `images.edit`.
-- **UI kit** (`src/assetgen/kit/kit.ts`) — single source of truth: 9-slice `button / panel / bar / pill / avatar / banner`,
-  embedded font, `stripBackground` fallback. Buttons carry a **visual hierarchy** (`level: primary | default | tertiary`)
-  so each screen has one clear primary action.
-- **Responsive stage** (`src/assetgen/kit/stage.ts`) — fixed design-canvas (400×860) scaled to any viewport (no fluid reflow).
-- **Zone-based layout** (`src/assetgen/kit/layout.ts`) — `resolveLayout(screenType)` deep-merges a universal `BASE`
-  (safe areas, thumb-zone CTA, ≥44px tap targets, HUD corners) with per-screen archetypes (`menu / pick-hero / endcard`).
-  Elements are placed by zone (`zone("actions", …)`), not ad-hoc coordinates; a debug overlay is available via `?zones=1`.
-- **Single-file builder + Meta validator** — `playable menu <style>` inlines everything, wires `FbPlayableAd.onCTAClick()`,
-  and validates size / CTA / no-redirects / no-external-loads.
-- **Visual tests** (`npm run visual`) — Playwright screenshots across 8 viewports; asserts **no overflow**, that every
-  element stays inside its zone, and that the **primary CTA lands in the thumb-reachable `actions` zone**.
+Playable ad — це реклама, в яку можна пограти: пів хвилини міні-гри прямо в стрічці Facebook чи Instagram, а в кінці — кнопка «Install». Уяви ательє з пошиття костюмів: є лекала *(шаблони — готові ігрові механіки: меню, «з'єднай точки», «тапни по цілі»)*, є тканина *(стиль — JSON-файл, який каже «малюй у дусі Heroes III» або «як 16-бітна гра з дев'яностих»)*, і є замовлення клієнта *(бриф)*. playable-forge — це таке ательє, тільки замість кравця — конвеєр: він сам замовляє нейромережі всі «тканини й ґудзики» — кнопки, панелі, героїв, стрічки-банери, — сам розкроює їх на деталі інтерфейсу, розставляє по екрану так, щоб головна кнопка завжди опинялася під великим пальцем, і пакує все в один HTML-файл, легший за два фото з телефона. Наприкінці роботу приймає ВТК: скрипт фотографує результат на восьми розмірах екранів *(через Playwright — інструмент, що керує браузером як робот)* і перевіряє, що ніде нічого не вилізло за межі.
 
-Two reference styles ship end-to-end: **Heroes III** (painterly) and **Pixel Quest** (16-bit).
+> **Дисклеймер.** Усі графічні асети в проєкті згенеровані AI (OpenAI `gpt-image-1.5`). Назви ігор у стильових брифах — Heroes III, Diablo II — це лише текстові стильові референси в промптах («намалюй у такому дусі»); жодні оригінальні матеріали, спрайти чи арт цих ігор не використовувалися. Репозиторій некомерційний, зібраний як портфоліо-проєкт.
 
-## Commands
+## Як це працює
 
-```bash
-npm run playable -- list             # list mechanics + styles
-npm run playable -- menu heroes3     # build kit playable -> out/menu-heroes3.html (validated)
-npm run playable -- menu pixelart    # 16-bit variant
-npm run menu                         # 10-screen test playable (heroes3)
-npm run experiments                  # 5 art-direction layouts on one zone system
-npm run recipes                      # screens composed purely from group@zone recipes
-npm run game                         # tap-to-attack interactive playable
-npm run connect                      # drag-to-connect game (3 levels, scene bg, juice)
-npm run catalog                      # regenerate docs/KIT.md (component + group bible)
-npm run components                   # component-kit showcase
-npm run visual                       # visual regression across viewports (auto-discovers screens)
-npm run typecheck
+```mermaid
+flowchart TD
+    subgraph GEN["Генерація графіки"]
+        BRIEF["📝 Бриф стилю: styles/*.brief.json"] --> PROMPT["composePrompt: IP-anchor + isolation-clause"]
+        PROMPT --> OPENAI["🎨 OpenAI gpt-image-1.5: паралельний пул, retry, skip-existing"]
+        OPENAI --> SHARP["sharp: зрізання фону, нарізка 9-slice"]
+        OPENAI --> SIDECAR["Sidecar JSON: промпт + версія для відтворюваності"]
+    end
+    subgraph BUILD["Збірка"]
+        KIT["UI-кіт kit.ts: button, panel, bar, pill, avatar, banner"]
+        LAYOUT["Зонна верстка layout.ts: BASE + архетип екрана"]
+        STAGE["Stage 400x860, масштабування під будь-який екран"]
+        KIT --> HTML["Один HTML-файл: усе інлайном, FbPlayableAd.onCTAClick"]
+        LAYOUT --> HTML
+        STAGE --> HTML
+    end
+    SHARP --> KIT
+    subgraph QA["Контроль якості"]
+        HTML --> VALID["Meta-валідатор: до 2 МБ, CTA, без зовнішніх запитів"]
+        HTML --> VISUAL["🧪 Playwright: 8 в'юпортів, зони, CTA в thumb-zone"]
+    end
+    VALID --> OUT["out/menu-heroes3.html"]
 ```
 
-## Layered architecture
+## Можливості
 
-Screens (and whole games) are assembled from validated data layers — see [`docs/KIT.md`](docs/KIT.md):
+- **Генерація асетів із версіонованих брифів** — 16 стильових брифів (`styles/*.brief.json`, схема `src/assetgen/brief.schema.json`). До кожної картинки пишеться sidecar-JSON із промптом і версією — будь-який асет можна перегенерувати відтворювано.
+- **Вартість під контролем** — $0.24–$1.13 за playable залежно від якості брифу; пул генерації враховує ліміт OpenAI 5 зображень/хв і пропускає вже згенеровані асети.
+- **UI-кіт з одним джерелом правди** (`src/assetgen/kit/kit.ts`) — шість 9-slice компонентів (`button / panel / bar / pill / avatar / banner`), вбудований шрифт, три рівні кнопок (`primary / default / tertiary`) — одна головна дія на екран.
+- **Зонна верстка** (`src/assetgen/kit/layout.ts`) — універсальний `BASE` (safe-зони, тач-таргети від 44px, CTA у thumb-zone) поєднується з архетипами екранів (`menu / pick-hero / endcard`); елементи ставляться за зонами (`zone("actions", …)`), не координатами. Debug-оверлей: `?zones=1`.
+- **Візуальні регресійні тести** (`npm run visual`) — Playwright-скриншоти у 8 в'юпортах (портретні телефони, планшет, ландшафт, квадрат); перевіряється відсутність overflow, що кожен елемент у своїй зоні і що головна CTA — в досяжності великого пальця.
+- **Meta-валідатор** — один файл до 2 МБ, обов'язковий `FbPlayableAd.onCTAClick()`, без редіректів і зовнішніх завантажень.
+- **Два стилі зібрані наскрізно** — `heroes3` (пейнтерлі) та `pixelart` (16-біт); обидва проходять усі перевірки в'юпортів і зон (`npm run visual` → `ALL PASS`).
+- **Лабораторія промптів** — `prompt-lab` для A/B-порівняння промпт-стратегій, `ref-test` для консистентності персонажів через `images.edit` з майстер-референсом.
 
-- **Catalog** (`kit/catalog.ts`) — *what* each component is + how to generate it.
-- **Groups** (`kit/groups.ts`) — semantic families with rules (`composeScreen` + `validateRecipe`).
-- **Zones** (`kit/layout.ts`) — *where* on screen (archetypes + debug overlay).
-- **Flow** (`kit/flow.ts`) — *function* + *how screens connect* (`validateFlow`).
-- **Scene** — background mood per beat (`world`/`focus`/`celebration`), one bg + CSS.
+## Чому це цікаво технічно
 
-## Recent work
+- **Обмеження в 2 МБ визначає архітектуру.** Усе інлайниться в один HTML, а base64 додає ~33% ваги — звідси 9-slice (одна маленька текстура тягне кнопку будь-якого розміру), прозорі PNG з нативної генерації та зрізання фону через sharp з фолбеком.
+- **Верстка перевіряється як інваріант, а не «на око».** Зонні правила з `layout.ts` — це ті самі дані, які потім assert-ить Playwright: тест падає, якщо елемент вийшов із зони або CTA покинула thumb-zone на будь-якому з 8 в'юпортів.
+- **Позиція тексту на банері обчислюється, не підбирається.** «Писабельна» смуга стрічки міряється через центроїд у sharp — тайтл сідає на неї автоматично для будь-якого згенерованого банера.
+- **Вибір моделі — компроміс, зафіксований у правилах.** `gpt-image-1.5` замість `gpt-image-2`: нативний прозорий PNG і в 3–4 рази швидша генерація за прийнятної якості.
+- **Екрани збираються з валідованих шарів даних** (див. [`docs/KIT.md`](docs/KIT.md)): *Catalog* (що це за компонент) → *Groups* (семантичні сім'ї, `validateRecipe`) → *Zones* (де на екрані) → *Flow* (як екрани з'єднані, `validateFlow`) → *Scene* (настрій фону: `world / focus / celebration`). Кожен шар має власну валідацію.
 
-- **Zone-based layout system** — universal `BASE` ⊕ screen archetypes, zone-driven placement, debug overlay,
-  and zone assertions baked into the visual tests.
-- **Button visual hierarchy** — `primary` (larger + gold glow + pulse) / `default` / `tertiary` (dimmed); one primary per screen.
-- **Endcard screen** — big hero + dominant Install CTA wired to `onCTAClick`.
-- **Banner title containment** — title auto-positions on the ribbon's writable band (centroid measured with `sharp`,
-  not tuned by eye); added a `pixelated` kit mode.
+## Як запустити
 
-> Both reference styles pass all 8 viewport + zone checks (`npm run visual` → `ALL PASS`).
+Потрібен Node.js (проєкт на ESM + `tsx`, запускається без окремого кроку компіляції).
 
-## Notes
+```bash
+git clone https://github.com/SerhiiDubei/playableads.git
+cd playableads
+npm install
+cp .env.example .env    # додай OPENAI_API_KEY — потрібен для генерації графіки
+```
 
-- Engineering insights & rules live in [`CLAUDE.md`](CLAUDE.md); the full experiment journal is in
-  [`test/EXPERIMENT-LOG.md`](test/EXPERIMENT-LOG.md). Session logs in [`docs/`](docs/) (e.g. [2026-06-01](docs/SESSION-2026-06-01.md)).
-- Generated assets (`out/`) and secrets (`.env`) are git-ignored. Copy `.env.example` → `.env` and add your `OPENAI_API_KEY`.
+Основні команди (з `package.json`):
+
+```bash
+npm run playable -- list             # список механік і стилів
+npm run playable -- menu heroes3     # зібрати playable -> out/menu-heroes3.html (з валідацією)
+npm run playable -- menu pixelart    # 16-бітний варіант
+npm run menu                         # тестовий playable на 10 екранів (heroes3)
+npm run experiments                  # 5 арт-дирекшн розкладок на одній зонній системі
+npm run recipes                      # екрани, зібрані лише з рецептів group@zone
+npm run game                         # інтерактивний playable tap-to-attack
+npm run connect                      # гра drag-to-connect: 3 рівні, фонові сцени
+npm run components                   # вітрина компонентів UI-кіта
+npm run catalog                      # перегенерувати docs/KIT.md
+npm run visual                       # візуальна регресія по 8 в'юпортах
+npm run check:layouts -- all         # лінт розкладок (потрібно 7/7 PASS)
+npm run typecheck
+npm run test
+```
+
+Для `npm run visual` потрібні браузери Playwright: `npx playwright install chromium`.
+
+Повний прогін одного стилю з генерацією і звітом: `npm run forge -- <style> [--layout <id>]` — фаза 1 (AI-асети) + фаза 2 (HTML) + репорт.
+
+## Стан проекту
+
+Версія 0.1.0, 119 комітів. Це дослідницький репозиторій: частина коду — стабільний конвеєр, частина — лабораторія.
+
+**Працює:**
+- Два стилі наскрізно (`heroes3`, `pixelart`): генерація → збірка → валідація → всі перевірки в'юпортів і зон зелені.
+- Збірка одного HTML-файла з Meta-валідацією, зонна верстка, UI-кіт, візуальні тести.
+- Відтворюваність асетів через sidecar-JSON.
+
+**Прототипи та лабораторія:**
+- `templates/` — за власним стандартом репо сюди мають потрапляти лише «промоутнуті» ігри; наявні папки створені до появи стандарту і фактично ще належать до `labs/`.
+- `styles/` містить 38 файлів — крім 16 брифів, це робочі чернетки клієнтських концептів різного ступеня готовності.
+- `pipeline:*`, `studio` (веб-сервер), `dashboard` — експериментальні гілки.
+
+**Чого нема:**
+- Пакета в npm — запуск лише з клона через `tsx` (`build:cli` через esbuild є, але дистрибуція не налаштована).
+- Автотестів ігрової логіки поза візуальними перевірками.
+- CI-деплою готових playable.
+
+Інженерні правила й інсайти — у [`CLAUDE.md`](CLAUDE.md); журнал експериментів — у [`test/EXPERIMENT-LOG.md`](test/EXPERIMENT-LOG.md); сесійні логи — в [`docs/`](docs/). Згенеровані файли (`out/`) і секрети (`.env`) не комітяться.
